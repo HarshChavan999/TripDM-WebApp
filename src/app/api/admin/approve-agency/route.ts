@@ -4,7 +4,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_VsUSeuHb_9RMNvbxQ6L8hfWRnfbAF8X5J';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
 export async function POST(req: Request) {
   try {
