@@ -1367,7 +1367,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       const downloadUrl = uploadData.url;
 
       await updateDoc(doc(dbInstance, 'users', user.uid), {
-        logoUrl: downloadUrl
+        logoUrl: downloadUrl,
+        agencyLogo: downloadUrl,
+        avatarUrl: downloadUrl
       });
 
       setAgencyLogoUrl(downloadUrl);
@@ -2056,68 +2058,52 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
   useEffect(() => {
     if (user && userData?.role === 'admin') {
-      const fetchPending = async () => {
-        try {
-          const dbInstance = getDbInstance();
-          if (!dbInstance) return;
-          const q = query(collection(dbInstance, 'users'), where('approved', '==', false), where('role', '==', 'agency'));
-          const querySnapshot = await getDocs(q);
-          const agencies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setPendingAgencies(agencies);
-        } catch (error) {
-          // Ignore cancelled requests on logout
-        }
-      };
+      const dbInstance = getDbInstance();
+      if (!dbInstance) return;
 
-      const fetchAllAgencies = async () => {
-        try {
-          const dbInstance = getDbInstance();
-          if (!dbInstance) return;
-          const q = query(collection(dbInstance, 'users'), where('role', '==', 'agency'));
-          const querySnapshot = await getDocs(q);
-          const agencies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setAllAgencies(agencies);
-        } catch (error) {
-          // Ignore cancelled requests on logout
-        }
-      };
+      // 1. Realtime listener for all agencies & pending approvals (single-field query, no composite index needed)
+      const agenciesQuery = query(collection(dbInstance, 'users'), where('role', '==', 'agency'));
+      const unsubAgencies = onSnapshot(agenciesQuery, (snapshot) => {
+        const agencies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAllAgencies(agencies);
+        setPendingAgencies(agencies.filter((a: any) => !a.approved));
+      }, (err) => {
+        console.warn('Error listening to agencies:', err);
+      });
 
-      const fetchPendingListings = async () => {
-        try {
-          const dbInstance = getDbInstance();
-          if (!dbInstance) return;
-          const q = query(collection(dbInstance, 'listings'), where('approved', '==', false));
-          const querySnapshot = await getDocs(q);
-          const listings = await Promise.all(querySnapshot.docs.map(async (docSnapshot) => {
-            const listingData = docSnapshot.data() as any;
-            // Get agency name
-            const agencyDoc = await getDoc(doc(dbInstance, 'users', listingData.agencyId));
-            const agencyName = agencyDoc.exists() ? (agencyDoc.data() as any).companyName : 'Unknown Agency';
-            return { id: docSnapshot.id, ...listingData, agencyName };
-          }));
-          setPendingListings(listings);
-        } catch (error) {
-          // Ignore cancelled requests on logout
-        }
-      };
+      // 2. Realtime listener for pending listings
+      const listingsQuery = query(collection(dbInstance, 'listings'), where('approved', '==', false));
+      const unsubListings = onSnapshot(listingsQuery, async (snapshot) => {
+        const listings = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
+          const listingData = docSnapshot.data() as any;
+          let agencyName = 'Unknown Agency';
+          try {
+            const agencyDoc = await getDoc(doc(dbInstance, 'users', listingData.agencyId || listingData.userId));
+            if (agencyDoc.exists()) {
+              agencyName = (agencyDoc.data() as any).companyName || (agencyDoc.data() as any).name || 'Unknown Agency';
+            }
+          } catch {}
+          return { id: docSnapshot.id, ...listingData, agencyName };
+        }));
+        setPendingListings(listings);
+      }, (err) => {
+        console.warn('Error listening to pending listings:', err);
+      });
 
-      const fetchAllListings = async () => {
-        try {
-          const dbInstance = getDbInstance();
-          if (!dbInstance) return;
-          const q = query(collection(dbInstance, 'listings'));
-          const querySnapshot = await getDocs(q);
-          const allListingsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setAgencyListings(allListingsData);
-        } catch (error) {
-          // Ignore cancelled requests on logout
-        }
-      };
+      // 3. Realtime listener for all listings
+      const allListingsQuery = query(collection(dbInstance, 'listings'));
+      const unsubAllListings = onSnapshot(allListingsQuery, (snapshot) => {
+        const allListingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAgencyListings(allListingsData);
+      }, (err) => {
+        console.warn('Error listening to all listings:', err);
+      });
 
-      fetchPending();
-      fetchAllAgencies();
-      fetchPendingListings();
-      fetchAllListings();
+      return () => {
+        unsubAgencies();
+        unsubListings();
+        unsubAllListings();
+      };
     }
   }, [user?.uid, userData?.role]);
 
@@ -2229,6 +2215,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         });
         webMsgs = msgs;
         combineAndProcess();
+      }, (err) => {
+        console.warn('Web messages listener warning:', err?.message || err);
       });
 
       // Also listen to mobile app messages collection (chat_messages)
@@ -2254,6 +2242,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         });
         mobileMsgs = msgs;
         combineAndProcess();
+      }, (err) => {
+        console.warn('Mobile messages listener warning:', err?.message || err);
       });
 
       return () => {
@@ -2264,7 +2254,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   }, [user?.uid, userData?.role]);
 
   useEffect(() => {
-    if (user && userData?.role === 'agency') {
+    if (user && userData?.role === 'agency' && userData?.approved) {
       const dbInstance = getDbInstance();
       if (!dbInstance) return;
 
@@ -2366,6 +2356,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         });
         webMsgs = msgs;
         combineAndProcess();
+      }, (err) => {
+        console.warn('Agency web messages listener warning:', err?.message || err);
       });
 
       // Also listen to mobile app messages collection (chat_messages)
@@ -2391,6 +2383,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         });
         mobileMsgs = msgs;
         combineAndProcess();
+      }, (err) => {
+        console.warn('Agency mobile messages listener warning:', err?.message || err);
       });
 
       return () => {
@@ -2398,7 +2392,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         unsubscribeMobileMessages();
       };
     }
-  }, [user?.uid, userData?.role]);
+  }, [user?.uid, userData?.role, userData?.approved]);
 
   useEffect(() => {
     // Fetch listings for users - only when user is authenticated
@@ -2413,26 +2407,19 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         const listingsData = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
           const listingData = docSnapshot.data() as any;
           // Get agency name
-          const agencyDoc = await getDoc(doc(dbInstance, 'users', listingData.agencyId));
-          const agencyData = agencyDoc.exists() ? agencyDoc.data() as any : null;
-          const agencyName = agencyData?.companyName || 'Unknown Agency';
-
-          // Debug: Log the listing data structure
-          console.log('Listing data structure:', {
-            id: docSnapshot.id,
-            title: listingData.title,
-            packageType: listingData.packageType,
-            placesCovered: listingData.placesCovered,
-            photos: listingData.photos,
-            hasPlacesCovered: !!listingData.placesCovered,
-            placesCoveredLength: listingData.placesCovered?.length || 0,
-            firstPlaceHasImages: listingData.placesCovered?.[0]?.imageUrls?.length > 0 || false,
-            photosLength: listingData.photos?.length || 0
-          });
+          let agencyName = 'Unknown Agency';
+          let agencyData: any = null;
+          try {
+            const agencyDoc = await getDoc(doc(dbInstance, 'users', listingData.agencyId));
+            agencyData = agencyDoc.exists() ? agencyDoc.data() as any : null;
+            agencyName = agencyData?.companyName || 'Unknown Agency';
+          } catch {}
 
           return { id: docSnapshot.id, ...listingData, agencyName, agencyData };
         }));
         setListings(listingsData);
+      }, (err) => {
+        console.warn('Listings listener note:', err?.message || err);
       });
 
       // Cleanup function to unsubscribe from the listener
@@ -2441,8 +2428,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   }, [user?.uid]);
 
   useEffect(() => {
-    // Fetch agency's own listings
-    if (user && userData?.role === 'agency') {
+    // Fetch agency's own listings - only if approved
+    if (user && userData?.role === 'agency' && userData?.approved) {
       const fetchAgencyListings = async () => {
         try {
           const dbInstance = getDbInstance();
@@ -2457,11 +2444,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       };
       fetchAgencyListings();
     }
-  }, [user?.uid, userData?.role]);
+  }, [user?.uid, userData?.role, userData?.approved]);
 
   useEffect(() => {
-    // Fetch agency's bookings
-    if (user && userData?.role === 'agency') {
+    // Fetch agency's bookings - only if approved
+    if (user && userData?.role === 'agency' && userData?.approved) {
       const fetchAgencyBookings = async () => {
         try {
           const dbInstance = getDbInstance();
@@ -2478,23 +2465,130 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       };
       fetchAgencyBookings();
     }
-  }, [user?.uid, userData?.role]);
+  }, [user?.uid, userData?.role, userData?.approved]);
 
   const approveAgency = async (id: string) => {
     try {
       const dbInstance = getDbInstance();
       if (!dbInstance) return;
+      
+      const foundAgency = allAgencies.find((a: any) => a.id === id) || 
+                          pendingAgencies.find((a: any) => a.id === id) || 
+                          (viewingAgency && viewingAgency.id === id ? viewingAgency : null);
+
       await updateDoc(doc(dbInstance, 'users', id), { approved: true });
       setPendingAgencies(prev => prev.filter(agency => agency.id !== id));
+
+      // Trigger backend approval and professional Resend email dispatch
+      let emailStatusMessage = '';
+      try {
+        const emailRes = await fetch('/api/admin/approve-agency', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agencyId: id,
+            email: foundAgency?.authEmail || foundAgency?.email || foundAgency?.contactEmail,
+            companyName: foundAgency?.companyName,
+            name: foundAgency?.name || foundAgency?.contactPerson,
+          }),
+        });
+        const emailData = await emailRes.json();
+        if (emailData.emailSent) {
+          emailStatusMessage = '\n\n📧 Approval email was dispatched successfully via Resend!';
+        } else if (emailData.emailError) {
+          emailStatusMessage = `\n\n⚠️ Resend Sandbox Note: ${emailData.emailError}`;
+        }
+      } catch (emailErr) {
+        console.warn('Approval email trigger error:', emailErr);
+      }
+
       // Refresh all agencies data
       const q = query(collection(dbInstance, 'users'), where('role', '==', 'agency'));
       const querySnapshot = await getDocs(q);
       const agencies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAllAgencies(agencies);
-      alert('Agency approved successfully!');
+      if (viewingAgency && viewingAgency.id === id) {
+        setViewingAgency((prev: any) => prev ? ({ ...prev, approved: true }) : null);
+      }
+      alert(`Agency approved successfully!${emailStatusMessage}`);
     } catch (error) {
       console.error('Error approving agency:', error);
       alert('Failed to approve agency. Please try again.');
+    }
+  };
+
+  const revokeAgencyApproval = async (id: string, agencyName?: string) => {
+    if (!window.confirm(`Are you sure you want to revoke approval for "${agencyName || 'this agency'}"? They will no longer be able to manage packages until approved again.`)) {
+      return;
+    }
+    try {
+      const dbInstance = getDbInstance();
+      if (!dbInstance) return;
+      await updateDoc(doc(dbInstance, 'users', id), { approved: false });
+      // Refresh all agencies and pending agencies data
+      const q = query(collection(dbInstance, 'users'), where('role', '==', 'agency'));
+      const querySnapshot = await getDocs(q);
+      const agencies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllAgencies(agencies);
+      setPendingAgencies(agencies.filter((a: any) => !a.approved));
+      if (viewingAgency && viewingAgency.id === id) {
+        setViewingAgency((prev: any) => prev ? ({ ...prev, approved: false }) : null);
+      }
+      alert('Agency approval has been revoked.');
+    } catch (error) {
+      console.error('Error revoking agency approval:', error);
+      alert('Failed to revoke agency approval. Please try again.');
+    }
+  };
+
+  const handleDeleteAgency = async (agencyId: string, agencyName?: string) => {
+    if (!window.confirm(`Are you sure you want to permanently remove "${agencyName || 'this agency'}"? This will delete the agency account and all their travel packages. This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // 1. Call server-side API to delete user from Firebase Auth and clean up database
+      try {
+        await fetch('/api/admin/delete-agency', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agencyId })
+        });
+      } catch (apiErr) {
+        console.warn('API delete-agency error, falling back to client delete:', apiErr);
+      }
+
+      // 2. Ensure client-side Firestore documents are also deleted
+      const dbInstance = getDbInstance();
+      if (dbInstance) {
+        await deleteDoc(doc(dbInstance, 'users', agencyId)).catch(() => {});
+
+        try {
+          const listingsQuery1 = query(collection(dbInstance, 'listings'), where('userId', '==', agencyId));
+          const listingsSnap1 = await getDocs(listingsQuery1);
+          const deletePromises1 = listingsSnap1.docs.map(d => deleteDoc(doc(dbInstance, 'listings', d.id)));
+
+          const listingsQuery2 = query(collection(dbInstance, 'listings'), where('agencyId', '==', agencyId));
+          const listingsSnap2 = await getDocs(listingsQuery2);
+          const deletePromises2 = listingsSnap2.docs.map(d => deleteDoc(doc(dbInstance, 'listings', d.id)));
+
+          await Promise.all([...deletePromises1, ...deletePromises2]);
+        } catch (err) {
+          console.warn('Error deleting agency listings:', err);
+        }
+      }
+
+      // 3. Update React states
+      setAllAgencies(prev => prev.filter(agency => agency.id !== agencyId));
+      setPendingAgencies(prev => prev.filter(agency => agency.id !== agencyId));
+      if (viewingAgency?.id === agencyId) {
+        setViewingAgency(null);
+      }
+
+      alert(`Agency "${agencyName || 'selected'}" has been permanently removed.`);
+    } catch (error) {
+      console.error('Error removing agency:', error);
+      alert('Failed to remove agency. Please try again.');
     }
   };
 
@@ -2970,7 +3064,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     await register(emailArg, passwordArg, role, data);
   };
 
-  if (loading || (user && !userData)) {
+  if (loading || (routeMode !== 'agency' && user && !userData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
@@ -2982,28 +3076,19 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   }
 
   // For admin routes, force login immediately if not authenticated
-  if (!user && routeMode === 'admin') {
-    return <AdminLoginView />;
+  if (routeMode === 'admin') {
+    if (!user || (!loading && userData?.role !== 'admin')) {
+      return <AdminLoginView />;
+    }
   }
   
-  // For agency routes, force login immediately if not authenticated
-  if (!user && routeMode === 'agency') {
-    return <AgencyLoginView />;
-  }
-
-  // If user navigated to Agency Portal with authenticated account, ensure agency role is active in Firestore
-  if (routeMode === 'agency' && user && userData && userData.role !== 'agency' && userData.role !== 'admin') {
-    const dbInstance = getDbInstance();
-    if (dbInstance) {
-      updateDoc(doc(dbInstance, 'users', user.uid), {
-        role: 'agency',
-        approved: true,
-        companyName: userData.companyName || userData.name || 'Travel Agency',
-        phone: userData.phone || userData.contactNumber || '',
-        plan: userData.plan || 'free',
-        credits: userData.credits ?? 0,
-        freeChats: userData.freeChats ?? 2,
-      }).catch(console.error);
+  // For agency routes, force login immediately if not authenticated or not registered as agency
+  if (routeMode === 'agency') {
+    if (!user || (!loading && (!userData || userData.role !== 'agency'))) {
+      return <AgencyLoginView />;
+    }
+    if (userData && userData.role === 'agency' && !userData.approved) {
+      return <AgencyLoginView pendingApproval={true} pendingEmail={userData.email || user?.email || ''} />;
     }
   }
 
@@ -3302,13 +3387,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                 <p className="text-sm text-gray-600">{agency.name} • {agency.authEmail || agency.email || agency.contactEmail || 'No email'}</p>
                               </div>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className="flex items-center space-x-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {/* Reject logic */ }}
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => handleDeleteAgency(agency.id, agency.companyName || agency.name)}
                               >
-                                Reject
+                                Reject / Remove
                               </Button>
                               <Button
                                 size="sm"
@@ -3354,18 +3440,36 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                               </div>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex items-center space-x-2">
                             <Button variant="outline" size="sm" onClick={() => setViewingAgency(agency)}>
                               View Details
                             </Button>
-                            {!agency.approved && (
+                            {!agency.approved ? (
                               <Button
                                 size="sm"
                                 onClick={() => approveAgency(agency.id)}
                               >
                                 Approve
                               </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                                onClick={() => revokeAgencyApproval(agency.id, agency.companyName || agency.name)}
+                              >
+                                Revoke
+                              </Button>
                             )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex items-center gap-1"
+                              onClick={() => handleDeleteAgency(agency.id, agency.companyName || agency.name)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Remove
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -3483,12 +3587,28 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex space-x-2 pt-4">
-                      {!viewingAgency.approved && (
+                    <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-gray-100 mt-6">
+                      {!viewingAgency.approved ? (
                         <Button onClick={() => approveAgency(viewingAgency.id)}>
                           Approve Agency
                         </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                          onClick={() => revokeAgencyApproval(viewingAgency.id, viewingAgency.companyName || viewingAgency.name)}
+                        >
+                          Revoke Approval
+                        </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5"
+                        onClick={() => handleDeleteAgency(viewingAgency.id, viewingAgency.companyName || viewingAgency.name)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remove Agency
+                      </Button>
                       <Button variant="outline" onClick={() => setViewingAgency(null)}>
                         Back
                       </Button>
@@ -7277,8 +7397,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       );
     }
 
-  // Agency Dashboard — render when on agency portal route OR when user has agency role and not on user route
-  if ((routeMode === 'agency' && user) || (user && userData?.role === 'agency' && routeMode !== 'user')) {
+  // Agency Dashboard — render when on agency portal route with valid agency account OR when user has agency role and not on user route
+  if (user && userData && (userData.role === 'agency' || (userData.role === 'admin' && routeMode === 'agency'))) {
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
           <div className={`w-64 bg-white border-r border-gray-200 flex flex-col z-20 shrink-0 ${agencyActiveSection === 'chat' ? 'hidden' : ''}`}>
@@ -7302,83 +7422,91 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
             </div>
             
             <nav className="p-4 flex-1 overflow-y-auto sidebar-scroll">
-              <div className="space-y-1">
-                <button
-                  onClick={() => setAgencyActiveSection('listings')}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
-                    agencyActiveSection === 'listings'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
-                  }`}
-                  style={{ borderRadius: '6px' }}
-                >
-                  <ClipboardList className={`h-4 w-4 ${agencyActiveSection === 'listings' ? 'text-white' : 'text-slate-500'}`} />
-                  <span>Listings</span>
-                </button>
-
-                <button
-                  onClick={() => setAgencyActiveSection('chat')}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
-                    agencyActiveSection === 'chat'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
-                  }`}
-                  style={{ borderRadius: '6px' }}
-                >
-                  <MessageSquare className={`h-4 w-4 ${agencyActiveSection === 'chat' ? 'text-white' : 'text-slate-500'}`} />
-                  <span>Customer Chat</span>
-                </button>
-
-                <button
-                  onClick={() => setAgencyActiveSection('credits')}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
-                    agencyActiveSection === 'credits'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
-                  }`}
-                  style={{ borderRadius: '6px' }}
-                >
-                  <CreditCard className={`h-4 w-4 ${agencyActiveSection === 'credits' ? 'text-white' : 'text-slate-500'}`} />
-                  <span>Plan & Credits</span>
-                </button>
-
-                <button
-                  onClick={() => setAgencyActiveSection('transactions')}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
-                    agencyActiveSection === 'transactions'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
-                  }`}
-                  style={{ borderRadius: '6px' }}
-                >
-                  <ClipboardList className={`h-4 w-4 ${agencyActiveSection === 'transactions' ? 'text-white' : 'text-slate-500'}`} />
-                  <span>Transactions</span>
-                </button>
-
-                <button
-                  onClick={() => setAgencyActiveSection('settings')}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
-                    agencyActiveSection === 'settings'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
-                  }`}
-                  style={{ borderRadius: '6px' }}
-                >
-                  <Settings className={`h-4 w-4 ${agencyActiveSection === 'settings' ? 'text-white' : 'text-slate-500'}`} />
-                  <span>Settings</span>
-                </button>
-
-                <div className="pt-2 mt-2 border-t border-slate-200/60">
-                  <a
-                    href="/"
-                    className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50"
+              {userData?.approved ? (
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setAgencyActiveSection('listings')}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'listings'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
+                    }`}
                     style={{ borderRadius: '6px' }}
-                    title="Navigate back to Landing Page"
                   >
-                    <Globe className="h-4 w-4 text-slate-500" />
-                    <span>Back to Website</span>
-                  </a>
+                    <ClipboardList className={`h-4 w-4 ${agencyActiveSection === 'listings' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Listings</span>
+                  </button>
+
+                  <button
+                    onClick={() => setAgencyActiveSection('chat')}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'chat'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <MessageSquare className={`h-4 w-4 ${agencyActiveSection === 'chat' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Customer Chat</span>
+                  </button>
+
+                  <button
+                    onClick={() => setAgencyActiveSection('credits')}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'credits'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <CreditCard className={`h-4 w-4 ${agencyActiveSection === 'credits' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Plan & Credits</span>
+                  </button>
+
+                  <button
+                    onClick={() => setAgencyActiveSection('transactions')}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'transactions'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <ClipboardList className={`h-4 w-4 ${agencyActiveSection === 'transactions' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Transactions</span>
+                  </button>
+
+                  <button
+                    onClick={() => setAgencyActiveSection('settings')}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'settings'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <Settings className={`h-4 w-4 ${agencyActiveSection === 'settings' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Settings</span>
+                  </button>
                 </div>
+              ) : (
+                <div className="p-4 text-center rounded-lg bg-amber-50 border border-amber-200/70">
+                  <Clock className="h-6 w-6 text-amber-600 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-amber-900">Application Pending</p>
+                  <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">Dashboard features unlock automatically once approved by the admin.</p>
+                </div>
+              )}
+
+              <div className="pt-2 mt-2 border-t border-slate-200/60">
+                <a
+                  href="/"
+                  className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50"
+                  style={{ borderRadius: '6px' }}
+                  title="Navigate back to Landing Page"
+                >
+                  <Globe className="h-4 w-4 text-slate-500" />
+                  <span>Back to Website</span>
+                </a>
               </div>
             </nav>
             
@@ -7450,7 +7578,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
             </header>
 
             <main className={`overflow-y-auto dashboard-scroll ${agencyActiveSection === 'chat' ? 'flex-1 flex flex-col min-h-0 p-0' : 'flex-1 p-8'}`}>
-              {userData?.approved || routeMode === 'agency' || userData?.role === 'agency' ? (
+              {userData?.approved ? (
                 <>
                   {agencyActiveSection === 'overview' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

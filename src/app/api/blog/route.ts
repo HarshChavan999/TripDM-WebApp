@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
       ? {
           structuredQuery: {
             from: [{ collectionId: 'blogs' }],
-            orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
             limit: 100,
           },
         }
@@ -49,8 +48,7 @@ export async function GET(request: NextRequest) {
                 value: { booleanValue: true },
               },
             },
-            orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
-            limit: 50,
+            limit: 100,
           },
         };
 
@@ -95,6 +93,13 @@ export async function GET(request: NextRequest) {
           photoPlaces: fields.photoPlaces?.arrayValue?.values?.map((v: any) => v.stringValue) || [],
         };
       });
+
+    // Sort blogs by publishedAt descending in memory (avoids requiring Firestore composite index)
+    blogs.sort((a: any, b: any) => {
+      const dateA = new Date(a.publishedAt || a.updatedAt || 0).getTime();
+      const dateB = new Date(b.publishedAt || b.updatedAt || 0).getTime();
+      return dateB - dateA;
+    });
 
     return NextResponse.json({ blogs });
   } catch (error) {

@@ -20,6 +20,7 @@ interface UserData {
   avatarUrl?: string;
   logoUrl?: string;
   agencyLogo?: string;
+  proofUrl?: string;
   coTravellers?: any[];
   defaultInclusions?: string[] | string;
   defaultExclusions?: string[] | string;
@@ -81,16 +82,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const dbInstance = getDbInstance();
         if (dbInstance) {
           const docRef = doc(dbInstance, 'users', firebaseUser.uid);
-          
-          // Update online status immediately on login (fails silently if doc not created yet)
-          updateDoc(docRef, { isOnline: true }).catch(console.error);
 
           docUnsubscribe = onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
               setUserData(docSnap.data() as UserData);
+              // Update online status immediately on login
+              updateDoc(docRef, { isOnline: true }).catch(() => {});
+            } else {
+              setUserData(null);
             }
           }, (error) => {
-            console.error('Error listening to user document:', error);
+            // Silently handle listener lifecycle changes during signout/unapproved status
+            console.warn('User document listener note:', error?.message || error);
           });
         }
       } else {
@@ -174,18 +177,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const dbInstance = getDbInstance();
       if (!dbInstance) return;
       const docRef = doc(dbInstance, 'users', user.uid);
+      try {
         if (document.visibilityState === 'visible') {
-          updateDoc(docRef, { isOnline: true }).catch(console.error);
+          updateDoc(docRef, { isOnline: true }).catch(() => {});
         } else {
-          updateDoc(docRef, { isOnline: false }).catch(console.error);
+          updateDoc(docRef, { isOnline: false }).catch(() => {});
         }
+      } catch {}
     };
     
     const handleBeforeUnload = () => {
       const dbInstance = getDbInstance();
       if (!dbInstance) return;
       const docRef = doc(dbInstance, 'users', user.uid);
-      updateDoc(docRef, { isOnline: false }).catch(console.error);
+      try {
+        updateDoc(docRef, { isOnline: false }).catch(() => {});
+      } catch {}
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -235,14 +242,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!data.approved) {
           console.warn('⚠️ User account not approved yet');
-          throw new Error('Account not approved yet. Please wait for admin approval.');
+          if (authInstance) {
+            await firebaseSignOut(authInstance).catch(() => {});
+          }
+          setUser(null);
+          setUserData(null);
+          throw new Error('Your agency account is pending approval from the admin. You will be able to log in once approved.');
         }
 
         setUserData(data);
         console.log('✅ Sign-in process completed successfully');
       } else {
         console.error('❌ User document not found in database');
-        throw new Error('User profile not found. Please contact support.');
+        if (authInstance) {
+          await firebaseSignOut(authInstance).catch(() => {});
+        }
+        setUser(null);
+        setUserData(null);
+        throw new Error('This account does not exist or has been removed by admin. Please register first.');
       }
     } catch (error: any) {
       console.error('❌ Sign-in failed:', error);
@@ -357,7 +374,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         const dbInstance = getDbInstance();
         if (dbInstance) {
-          await updateDoc(doc(dbInstance, 'users', user.uid), { isOnline: false }).catch(console.error);
+          try {
+            await updateDoc(doc(dbInstance, 'users', user.uid), { isOnline: false });
+          } catch {}
         }
       }
       // Clear cached agency chat data
@@ -370,9 +389,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (authInstance) {
         await firebaseSignOut(authInstance);
       }
+      setUser(null);
+      setUserData(null);
     } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
+      console.warn('Sign out warning:', error);
     }
   };
 
@@ -381,28 +401,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const authInstance = getAuthInstance();
       if (!authInstance) throw new Error('Auth not initialized');
 
-      const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
+      let userCredential;
+      try {
+        userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
+      } catch (authErr: any) {
+        if (authErr.code === 'auth/email-already-in-use') {
+          // Check if this is an orphaned account (e.g., previously removed by admin)
+          try {
+            const cleanRes = await fetch('/api/auth/clean-orphaned-user', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+            const cleanData = await cleanRes.json();
+            if (cleanData.cleaned) {
+              // Retry account creation now that the orphaned record was removed
+              userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
+            } else {
+              throw authErr;
+            }
+          } catch (retryErr) {
+            throw authErr;
+          }
+        } else {
+          throw authErr;
+        }
+      }
       const user = userCredential.user;
 
-      let proofUrl = null;
+      let uploadedFileUrl: string | null = null;
       // Upload file if provided via R2 API
       if (file) {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('category', 'proofs');
+        formData.append('category', role === 'agency' ? 'logos' : 'proofs');
         formData.append('userId', user.uid);
 
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
         if (!uploadRes.ok) {
           const errData = await uploadRes.json().catch(() => ({}));
-          throw new Error(errData.error || 'Identity proof upload failed');
+          throw new Error(errData.error || (role === 'agency' ? 'Agency logo upload failed' : 'Identity proof upload failed'));
         }
         const uploadData = await uploadRes.json();
-        proofUrl = uploadData.url;
+        uploadedFileUrl = uploadData.url;
       }
-
-      const dbInstance = getDbInstance();
-      if (!dbInstance) throw new Error('Database not initialized');
 
       // Save to Firestore
       const userDataToSave = {
@@ -413,7 +455,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authEmail: email,
         isOnline: true,
         ...userDataInput,
-        ...(proofUrl && { proofUrl }),
+        ...(uploadedFileUrl && (role === 'agency' ? {
+          logoUrl: uploadedFileUrl,
+          agencyLogo: uploadedFileUrl,
+          avatarUrl: uploadedFileUrl,
+        } : {
+          proofUrl: uploadedFileUrl,
+        })),
         ...(role === 'agency' && {
           plan: 'free',
           credits: 0,
@@ -431,8 +479,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       };
 
-      await setDoc(doc(dbInstance, 'users', user.uid), userDataToSave);
+      // 1. Save via server-side Admin API to prevent client permission issues
+      try {
+        const saveRes = await fetch('/api/auth/register-agency', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            userData: userDataToSave
+          })
+        });
+        if (!saveRes.ok) {
+          const dbInstance = getDbInstance();
+          if (dbInstance) {
+            await setDoc(doc(dbInstance, 'users', user.uid), userDataToSave);
+          }
+        }
+      } catch (saveErr) {
+        const dbInstance = getDbInstance();
+        if (dbInstance) {
+          await setDoc(doc(dbInstance, 'users', user.uid), userDataToSave);
+        }
+      }
     } catch (error: any) {
+      console.error('Registration error details:', error);
       // Handle specific Firebase errors with user-friendly messages
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('This email is already registered. Please use a different email address or try logging in instead.');
@@ -440,6 +510,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Password should be at least 6 characters long.');
       } else if (error.code === 'auth/invalid-email') {
         throw new Error('Please enter a valid email address.');
+      } else if (error.message) {
+        throw error;
       } else {
         throw new Error('Registration failed. Please try again.');
       }
