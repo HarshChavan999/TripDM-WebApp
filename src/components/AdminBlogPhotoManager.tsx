@@ -41,7 +41,8 @@ import {
   Square,
   Cpu,
   Zap,
-  ListOrdered
+  ListOrdered,
+  RotateCcw
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,6 +72,77 @@ export interface BlogItem {
   views?: number;
   hasPhoto: boolean;
   photoPlaces?: string[]; // AI-extracted landmark & place names for images
+  autoFilledRepeated?: boolean;
+  autoFilledAt?: number;
+  autoFilledSource?: string;
+}
+
+export interface KnownBlogPhotoSource {
+  urls: string[];
+  placeName: string;
+  sourceTitle: string;
+  sourceId: string;
+  dayNumber?: number;
+  destination?: string;
+  sourceType: 'itinerary' | 'placesCovered' | 'blog';
+}
+
+export interface BlogAutoFillCandidate {
+  id: string; // blog.id
+  targetBlogId: string;
+  targetBlogTitle: string;
+  targetBlogSlug: string;
+  targetCategory?: string;
+  targetMatchedTopic: string;
+
+  proposedUrls: string[];
+  primaryImageUrl: string;
+  imageTitle: string;
+
+  sourcePlaceName: string;
+  sourceTitle: string;
+  sourceId: string;
+  sourceDayNumber?: number;
+  sourceType: 'itinerary' | 'placesCovered' | 'blog' | 'ai_web_search';
+  matchType: 'exact' | 'landmark' | 'cleaned' | 'split' | 'topic';
+  matchReason: string;
+}
+
+export interface BlogAutoFillRevertEntry {
+  id: string; // blog.id
+  blogId: string;
+  blogTitle: string;
+  blogSlug: string;
+  category?: string;
+  imageUrl: string;
+  autoFilledAt?: number;
+  sourcePlaceName?: string;
+}
+
+// Extract human-readable image title/filename from URL (Wikimedia, R2, etc.)
+export function extractImageTitleFromUrl(url: string): string {
+  if (!url) return 'Unknown Asset';
+  try {
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const parts = cleanUrl.split('/').filter(Boolean);
+    if (parts.length === 0) return 'Unknown Asset';
+
+    const thumbIdx = parts.indexOf('thumb');
+    let rawFilename = '';
+    if (thumbIdx !== -1 && parts.length > thumbIdx + 3) {
+      rawFilename = parts[thumbIdx + 3];
+    } else {
+      rawFilename = parts[parts.length - 1];
+      rawFilename = rawFilename.replace(/^\d+px-/, '');
+    }
+
+    let decoded = decodeURIComponent(rawFilename);
+    decoded = decoded.replace(/\.(jpg|jpeg|png|webp|gif|svg|avif|tiff)$/i, '');
+    decoded = decoded.replace(/[-_+]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return decoded || 'Photo Asset';
+  } catch (e) {
+    return 'Photo Asset';
+  }
 }
 
 export interface QueueItem {
@@ -352,6 +424,7 @@ export default function AdminBlogPhotoManager({
   onBlogUpdated
 }: AdminBlogPhotoManagerProps) {
   const [blogs, setBlogs] = useState<BlogItem[]>(initialBlogs);
+  const [allListings, setAllListings] = useState<any[]>(initialListings || []);
   const [loading, setLoading] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [activeTab, setActiveTab] = useState<'missing' | 'all' | 'completed' | 'drafts' | 'unanalyzed'>('missing');
@@ -370,6 +443,31 @@ export default function AdminBlogPhotoManager({
   const [manualImageUrl, setManualImageUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [previewFullImageUrl, setPreviewFullImageUrl] = useState<string | null>(null);
+
+  // Auto-Fill Repeated Review Modal State
+  const [isAutoFillReviewOpen, setIsAutoFillReviewOpen] = useState(false);
+  const [autoFillModalSearch, setAutoFillModalSearch] = useState('');
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+  const [isAutoFillingRepeated, setIsAutoFillingRepeated] = useState(false);
+
+  // AI Web Auto-Fill Candidate State
+  const [aiWebCandidates, setAiWebCandidates] = useState<Map<string, BlogAutoFillCandidate>>(new Map());
+  const [isAiWebSearching, setIsAiWebSearching] = useState(false);
+  const [aiSearchProgress, setAiSearchProgress] = useState<{
+    current: number;
+    total: number;
+    blogTitle: string;
+    landmark?: string;
+    foundCount: number;
+  }>({ current: 0, total: 0, blogTitle: '', foundCount: 0 });
+  const [isFindingSingleAiPhoto, setIsFindingSingleAiPhoto] = useState<string | null>(null);
+  const aiSearchCancelRef = useRef(false);
+
+  // Revert Auto-Filled Modal State
+  const [isRevertModalOpen, setIsRevertModalOpen] = useState(false);
+  const [revertModalSearch, setRevertModalSearch] = useState('');
+  const [selectedRevertIds, setSelectedRevertIds] = useState<Set<string>>(new Set());
+  const [isReverting, setIsReverting] = useState(false);
 
   // Extracted Smart Topics
   const [extractedTopics, setExtractedTopics] = useState<{ name: string; query: string }[]>([]);
@@ -427,7 +525,10 @@ export default function AdminBlogPhotoManager({
           const items: BlogItem[] = (data.blogs || []).map((b: any) => ({
             ...b,
             photoPlaces: Array.isArray(b.photoPlaces) ? b.photoPlaces : [],
-            hasPhoto: !!(b.coverImage && b.coverImage.trim().length > 0)
+            hasPhoto: !!(b.coverImage && b.coverImage.trim().length > 0),
+            autoFilledRepeated: !!b.autoFilledRepeated,
+            autoFilledAt: b.autoFilledAt || undefined,
+            autoFilledSource: b.autoFilledSource || undefined
           }));
           setBlogs(items);
           showToast(`Loaded ${items.length} blogs.`, 'info');
@@ -459,7 +560,10 @@ export default function AdminBlogPhotoManager({
           readTime: d.readTime || '5 min read',
           views: d.views || 0,
           photoPlaces: Array.isArray(d.photoPlaces) ? d.photoPlaces : [],
-          hasPhoto: !!(cover && cover.trim().length > 0)
+          hasPhoto: !!(cover && cover.trim().length > 0),
+          autoFilledRepeated: !!d.autoFilledRepeated,
+          autoFilledAt: d.autoFilledAt || undefined,
+          autoFilledSource: d.autoFilledSource || undefined
         };
       });
 
@@ -479,13 +583,36 @@ export default function AdminBlogPhotoManager({
         initialBlogs.map(b => ({
           ...b,
           photoPlaces: Array.isArray(b.photoPlaces) ? b.photoPlaces : [],
-          hasPhoto: !!(b.coverImage && b.coverImage.trim().length > 0)
+          hasPhoto: !!(b.coverImage && b.coverImage.trim().length > 0),
+          autoFilledRepeated: !!b.autoFilledRepeated,
+          autoFilledAt: b.autoFilledAt,
+          autoFilledSource: b.autoFilledSource
         }))
       );
     } else {
       fetchAllBlogs();
     }
   }, [initialBlogs]);
+
+  // Keep package listings synchronized for cross-referencing photos
+  useEffect(() => {
+    if (initialListings && initialListings.length > 0) {
+      setAllListings(initialListings);
+    } else {
+      const fetchListings = async () => {
+        try {
+          const db = getDbInstance();
+          if (!db) return;
+          const snap = await getDocs(collection(db, 'listings'));
+          const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setAllListings(list);
+        } catch (e) {
+          console.error('Error loading listings for photo reference:', e);
+        }
+      };
+      fetchListings();
+    }
+  }, [initialListings]);
 
   // Global Known Photos Map from Package Listings & Existing Blogs
   const knownDestinationPhotos = useMemo(() => {
@@ -505,7 +632,7 @@ export default function AdminBlogPhotoManager({
     });
 
     // 2. From package listings
-    initialListings.forEach((pkg: any) => {
+    allListings.forEach((pkg: any) => {
       if (!pkg) return;
       if (Array.isArray(pkg.itinerary)) {
         pkg.itinerary.forEach((day: any) => {
@@ -529,7 +656,7 @@ export default function AdminBlogPhotoManager({
     });
 
     return map;
-  }, [blogs, initialListings]);
+  }, [blogs, allListings]);
 
   // Find known photos for a blog
   const findKnownBlogPhotos = (blog: BlogItem, topics: { name: string; query: string }[]): string[] => {
@@ -542,7 +669,358 @@ export default function AdminBlogPhotoManager({
     return [];
   };
 
-  // Stats
+  // Structured known photo sources with package & blog metadata for human-readable reasons
+  const allKnownPhotoSources = useMemo<KnownBlogPhotoSource[]>(() => {
+    const sources: KnownBlogPhotoSource[] = [];
+    const seenUrls = new Set<string>();
+
+    // 1. From package listings itinerary days
+    allListings.forEach((pkg: any) => {
+      if (!pkg) return;
+      if (Array.isArray(pkg.itinerary)) {
+        pkg.itinerary.forEach((day: any, idx: number) => {
+          const urls: string[] = Array.isArray(day.imageUrls)
+            ? day.imageUrls.filter(Boolean)
+            : day.imageUrl
+            ? [day.imageUrl]
+            : [];
+          if (urls.length > 0 && day.placeName) {
+            const firstUrl = urls[0];
+            if (!seenUrls.has(firstUrl)) {
+              seenUrls.add(firstUrl);
+              sources.push({
+                urls,
+                placeName: day.placeName,
+                sourceTitle: pkg.title || 'Package Itinerary',
+                sourceId: pkg.id,
+                dayNumber: day.dayNumber || idx + 1,
+                destination: pkg.destination || '',
+                sourceType: 'itinerary'
+              });
+            }
+          }
+        });
+      }
+
+      // 2. From package listings placesCovered
+      if (Array.isArray(pkg.placesCovered)) {
+        pkg.placesCovered.forEach((place: any) => {
+          const urls: string[] = Array.isArray(place.imageUrls)
+            ? place.imageUrls.filter(Boolean)
+            : place.imageUrl
+            ? [place.imageUrl]
+            : [];
+          if (urls.length > 0 && place.name) {
+            const firstUrl = urls[0];
+            if (!seenUrls.has(firstUrl)) {
+              seenUrls.add(firstUrl);
+              sources.push({
+                urls,
+                placeName: place.name,
+                sourceTitle: pkg.title || 'Package Highlight',
+                sourceId: pkg.id,
+                destination: pkg.destination || '',
+                sourceType: 'placesCovered'
+              });
+            }
+          }
+        });
+      }
+    });
+
+    // 3. From other existing blogs with cover photos
+    blogs.forEach((b: BlogItem) => {
+      if (b.hasPhoto && b.coverImage && b.coverImage.trim()) {
+        const firstUrl = b.coverImage.trim();
+        if (!seenUrls.has(firstUrl)) {
+          seenUrls.add(firstUrl);
+          const topPlace = (b.photoPlaces && b.photoPlaces.length > 0) ? b.photoPlaces[0] : b.title;
+          sources.push({
+            urls: [firstUrl],
+            placeName: topPlace,
+            sourceTitle: b.title,
+            sourceId: b.id,
+            sourceType: 'blog'
+          });
+        }
+      }
+    });
+
+    return sources;
+  }, [allListings, blogs]);
+
+  // Database repeated photo auto-fill candidates with exact match reasoning
+  const dbAutoFillCandidates = useMemo<BlogAutoFillCandidate[]>(() => {
+    const candidates: BlogAutoFillCandidate[] = [];
+
+    blogs.forEach(b => {
+      if (b.hasPhoto) return;
+
+      const blogTopics = extractBlogTopics(b);
+      const aiPlaces = Array.isArray(b.photoPlaces) ? b.photoPlaces : [];
+      const titleExtracted = extractPlacesFromTitle(b.title, b.category);
+
+      let bestMatch: {
+        source: KnownBlogPhotoSource;
+        matchedTopic: string;
+        matchType: 'exact' | 'landmark' | 'cleaned' | 'split' | 'topic';
+        matchReason: string;
+      } | null = null;
+
+      const formatSourceDesc = (s: KnownBlogPhotoSource) => {
+        if (s.sourceType === 'itinerary') {
+          return `package "${s.sourceTitle}" (Day ${s.dayNumber}: ${s.placeName})`;
+        } else if (s.sourceType === 'placesCovered') {
+          return `package highlight "${s.placeName}" in "${s.sourceTitle}"`;
+        } else {
+          return `blog "${s.sourceTitle}"`;
+        }
+      };
+
+      // 1. Check AI-extracted photoPlaces (highest precision)
+      if (aiPlaces.length > 0) {
+        for (const place of aiPlaces) {
+          const placeLower = place.toLowerCase().trim();
+          const placeClean = cleanPlaceQuery(place).toLowerCase().trim();
+
+          for (const s of allKnownPhotoSources) {
+            const sNameLower = s.placeName.toLowerCase().trim();
+            const sClean = cleanPlaceQuery(s.placeName).toLowerCase().trim();
+
+            if (sNameLower === placeLower) {
+              bestMatch = {
+                source: s,
+                matchedTopic: place,
+                matchType: 'exact',
+                matchReason: `AI landmark "${place}" matches exact place name in ${formatSourceDesc(s)}`
+              };
+              break;
+            }
+
+            if (!bestMatch && placeClean.length > 2 && sClean === placeClean) {
+              bestMatch = {
+                source: s,
+                matchedTopic: place,
+                matchType: 'cleaned',
+                matchReason: `AI landmark "${place}" matches "${s.placeName}" in ${formatSourceDesc(s)}`
+              };
+              break;
+            }
+          }
+          if (bestMatch) break;
+        }
+      }
+
+      // 2. Check extracted topics (destination keywords & title entities)
+      if (!bestMatch && blogTopics.length > 0) {
+        for (const t of blogTopics) {
+          const tLower = t.query.toLowerCase().trim();
+          const tClean = cleanPlaceQuery(t.query).toLowerCase().trim();
+
+          for (const s of allKnownPhotoSources) {
+            const sNameLower = s.placeName.toLowerCase().trim();
+            const sClean = cleanPlaceQuery(s.placeName).toLowerCase().trim();
+
+            if (sNameLower === tLower) {
+              bestMatch = {
+                source: s,
+                matchedTopic: t.name,
+                matchType: 'exact',
+                matchReason: `Topic "${t.name}" matches exact place name in ${formatSourceDesc(s)}`
+              };
+              break;
+            }
+
+            if (tClean.length > 2 && sClean === tClean) {
+              bestMatch = {
+                source: s,
+                matchedTopic: t.name,
+                matchType: 'cleaned',
+                matchReason: `Topic "${t.name}" matches place "${s.placeName}" in ${formatSourceDesc(s)}`
+              };
+              break;
+            }
+          }
+          if (bestMatch) break;
+        }
+      }
+
+      // 3. Substring / sub-location matching
+      if (!bestMatch) {
+        const searchTargets = [
+          ...aiPlaces.map(p => ({ text: cleanPlaceQuery(p).toLowerCase().trim(), orig: p, isAi: true })),
+          ...blogTopics.map(t => ({ text: cleanPlaceQuery(t.query).toLowerCase().trim(), orig: t.name, isAi: false })),
+          ...titleExtracted.map(p => ({ text: cleanPlaceQuery(p).toLowerCase().trim(), orig: p, isAi: false }))
+        ].filter(item => item.text.length > 2);
+
+        for (const target of searchTargets) {
+          for (const s of allKnownPhotoSources) {
+            const sClean = cleanPlaceQuery(s.placeName).toLowerCase().trim();
+            if (sClean.length > 2 && (sClean.includes(target.text) || target.text.includes(sClean))) {
+              bestMatch = {
+                source: s,
+                matchedTopic: target.orig,
+                matchType: target.isAi ? 'landmark' : 'split',
+                matchReason: `${target.isAi ? 'AI landmark' : 'Location'} "${target.orig}" matches photo for "${s.placeName}" in ${formatSourceDesc(s)}`
+              };
+              break;
+            }
+          }
+          if (bestMatch) break;
+        }
+      }
+
+      // 4. Fallback to existing knownDestinationPhotos map if found
+      if (!bestMatch) {
+        const known = findKnownBlogPhotos(b, blogTopics);
+        if (known.length > 0) {
+          const matchedUrl = known[0];
+          const matchedSource = allKnownPhotoSources.find(s => s.urls.includes(matchedUrl));
+          const topTopic = blogTopics[0]?.name || b.title;
+          if (matchedSource) {
+            bestMatch = {
+              source: matchedSource,
+              matchedTopic: topTopic,
+              matchType: 'topic',
+              matchReason: `Matches known destination photo from ${formatSourceDesc(matchedSource)}`
+            };
+          } else {
+            bestMatch = {
+              source: {
+                urls: [matchedUrl],
+                placeName: topTopic,
+                sourceTitle: 'Database Photo Archive',
+                sourceId: 'archive',
+                sourceType: 'blog'
+              },
+              matchedTopic: topTopic,
+              matchType: 'topic',
+              matchReason: `Matches known destination photo in database`
+            };
+          }
+        }
+      }
+
+      if (bestMatch && bestMatch.source.urls.length > 0) {
+        const primaryUrl = bestMatch.source.urls[0];
+        candidates.push({
+          id: b.id,
+          targetBlogId: b.id,
+          targetBlogTitle: b.title,
+          targetBlogSlug: b.slug,
+          targetCategory: b.category,
+          targetMatchedTopic: bestMatch.matchedTopic,
+
+          proposedUrls: bestMatch.source.urls,
+          primaryImageUrl: primaryUrl,
+          imageTitle: extractImageTitleFromUrl(primaryUrl),
+
+          sourcePlaceName: bestMatch.source.placeName,
+          sourceTitle: bestMatch.source.sourceTitle,
+          sourceId: bestMatch.source.sourceId,
+          sourceDayNumber: bestMatch.source.dayNumber,
+          sourceType: bestMatch.source.sourceType,
+          matchType: bestMatch.matchType,
+          matchReason: bestMatch.matchReason
+        });
+      }
+    });
+
+    return candidates;
+  }, [blogs, allKnownPhotoSources, knownDestinationPhotos]);
+
+  // Combined Auto-Fill Candidates (Repeated DB photos + Verified AI Web Search photos)
+  const autoFillCandidates = useMemo<BlogAutoFillCandidate[]>(() => {
+    const map = new Map<string, BlogAutoFillCandidate>();
+
+    // 1. Add candidates from package itineraries and repeated blog photos
+    dbAutoFillCandidates.forEach(cand => {
+      map.set(cand.id, cand);
+    });
+
+    // 2. Add or prioritize verified AI Web Search candidates (with exact landmark context)
+    aiWebCandidates.forEach((cand, blogId) => {
+      const blog = blogs.find(b => b.id === blogId);
+      if (blog && !blog.hasPhoto) {
+        map.set(blogId, cand);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [dbAutoFillCandidates, aiWebCandidates, blogs]);
+
+  // Revertible blogs: blogs that have auto-filled repeated photos OR duplicate shared cover photos
+  const revertibleBlogs = useMemo<BlogAutoFillRevertEntry[]>(() => {
+    let storedIds: string[] = [];
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('tripdm_blog_autofill_revert_ids') : null;
+      if (raw) storedIds = JSON.parse(raw);
+    } catch (e) {}
+
+    // Map of clean URLs to usages to detect duplicate photo assignments
+    const urlUsageMap = new Map<string, Array<BlogItem>>();
+    blogs.forEach(b => {
+      if (!b.coverImage) return;
+      const clean = b.coverImage.split('?')[0];
+      if (!urlUsageMap.has(clean)) urlUsageMap.set(clean, []);
+      urlUsageMap.get(clean)!.push(b);
+    });
+
+    const entries: BlogAutoFillRevertEntry[] = [];
+    const seen = new Set<string>();
+
+    blogs.forEach(b => {
+      if (!b.hasPhoto || !b.coverImage) return;
+      const clean = b.coverImage.split('?')[0];
+      const duplicateUsages = urlUsageMap.get(clean) || [];
+      const isDuplicateUsage = duplicateUsages.length > 1;
+      const isMarked = b.autoFilledRepeated || storedIds.includes(b.id);
+
+      if ((isMarked || isDuplicateUsage) && !seen.has(b.id)) {
+        seen.add(b.id);
+        entries.push({
+          id: b.id,
+          blogId: b.id,
+          blogTitle: b.title,
+          blogSlug: b.slug,
+          category: b.category,
+          imageUrl: b.coverImage,
+          autoFilledAt: b.autoFilledAt,
+          sourcePlaceName: b.autoFilledSource || (isDuplicateUsage ? `Duplicate shared across ${duplicateUsages.length} blogs` : undefined)
+        });
+      }
+    });
+
+    return entries;
+  }, [blogs]);
+
+  // Filtered candidate list for Auto-Fill Review Modal
+  const filteredCandidates = useMemo(() => {
+    if (!autoFillModalSearch.trim()) return autoFillCandidates;
+    const q = autoFillModalSearch.toLowerCase().trim();
+    return autoFillCandidates.filter(c =>
+      c.targetBlogTitle.toLowerCase().includes(q) ||
+      (c.targetCategory && c.targetCategory.toLowerCase().includes(q)) ||
+      c.targetBlogSlug.toLowerCase().includes(q) ||
+      c.sourcePlaceName.toLowerCase().includes(q) ||
+      c.sourceTitle.toLowerCase().includes(q) ||
+      c.matchReason.toLowerCase().includes(q)
+    );
+  }, [autoFillCandidates, autoFillModalSearch]);
+
+  // Filtered revert list for Revert Modal
+  const filteredRevertBlogs = useMemo(() => {
+    if (!revertModalSearch.trim()) return revertibleBlogs;
+    const q = revertModalSearch.toLowerCase().trim();
+    return revertibleBlogs.filter(r =>
+      r.blogTitle.toLowerCase().includes(q) ||
+      (r.category && r.category.toLowerCase().includes(q)) ||
+      r.blogSlug.toLowerCase().includes(q) ||
+      (r.sourcePlaceName && r.sourcePlaceName.toLowerCase().includes(q))
+    );
+  }, [revertibleBlogs, revertModalSearch]);
+
+  // Statistics & Fillable Count for repeated blogs
   const stats = useMemo(() => {
     const totalBlogs = blogs.length;
     const missingPhotos = blogs.filter(b => !b.hasPhoto).length;
@@ -552,13 +1030,8 @@ export default function AdminBlogPhotoManager({
     const coveragePercent = totalBlogs > 0 ? Math.round((completedPhotos / totalBlogs) * 100) : 100;
     const unanalyzedCount = blogs.filter(b => !b.photoPlaces || b.photoPlaces.length === 0).length;
 
-    // Count how many missing can be filled from existing database photos
-    const autoFillableCount = blogs.filter(b => {
-      if (b.hasPhoto) return false;
-      const topics = extractBlogTopics(b);
-      const known = findKnownBlogPhotos(b, topics);
-      return known.length > 0;
-    }).length;
+    // Count how many missing can be auto-filled immediately from repeated photos
+    const repeatedFillableCount = autoFillCandidates.length;
 
     return {
       totalBlogs,
@@ -568,9 +1041,10 @@ export default function AdminBlogPhotoManager({
       draftCount,
       coveragePercent,
       unanalyzedCount,
-      autoFillableCount
+      repeatedFillableCount,
+      autoFillableCount: repeatedFillableCount
     };
-  }, [blogs, knownDestinationPhotos]);
+  }, [blogs, autoFillCandidates]);
 
   // Categories
   const categoriesList = useMemo(() => {
@@ -864,50 +1338,510 @@ export default function AdminBlogPhotoManager({
     }
   };
 
-  // Auto-Fill All Matching Missing Blogs with 1-Click
-  const handleAutoFillMatchingBlogs = async () => {
-    setIsAutoFilling(true);
-    try {
-      const db = getDbInstance();
-      let filledCount = 0;
-      const updatedBlogs = [...blogs];
-      const now = new Date().toISOString();
+  // ─── AI LANDMARK EXTRACTION & WEB SEARCH ENGINE ───
 
-      for (let i = 0; i < updatedBlogs.length; i++) {
-        const b = updatedBlogs[i];
-        if (!b.hasPhoto) {
-          const topics = extractBlogTopics(b);
-          const known = findKnownBlogPhotos(b, topics);
-          if (known.length > 0) {
-            const photoUrl = known[0];
-            updatedBlogs[i] = {
-              ...b,
-              coverImage: photoUrl,
-              hasPhoto: true,
-              updatedAt: now
-            };
+  // Search web for verified landmark photos using Wikimedia Commons, Wikipedia & Flickr
+  const searchWebPhotosForLandmark = async (
+    landmark: string,
+    detailedQuery?: string,
+    categoryHint?: string
+  ): Promise<WikimediaImageResult[]> => {
+    const searchAttempts: string[] = [];
 
+    if (detailedQuery && detailedQuery.trim()) {
+      searchAttempts.push(detailedQuery.trim());
+    }
+    if (landmark && landmark.trim() && !searchAttempts.includes(landmark.trim())) {
+      searchAttempts.push(landmark.trim());
+    }
+    if (categoryHint && landmark && !searchAttempts.includes(`${landmark} ${categoryHint}`.trim())) {
+      searchAttempts.push(`${landmark} ${categoryHint}`.trim());
+    }
+
+    for (const q of searchAttempts) {
+      try {
+        const results = await searchWikimediaImages(q, {
+          limit: 12,
+          width: 1200,
+          includeWikipediaLead: true,
+          includeFlickr: true
+        });
+        if (results && results.length > 0) {
+          return results;
+        }
+      } catch (e) {
+        console.warn(`Web search failed for query "${q}":`, e);
+      }
+    }
+
+    return [];
+  };
+
+  // 1. Get exact landmark place name using AI -> 2. Search web -> 3. Return AutoFill candidate
+  const fetchAiPlaceAndWebPhoto = async (blog: BlogItem): Promise<BlogAutoFillCandidate | null> => {
+    let landmarkName = '';
+    let landmarkQuery = '';
+
+    // Step 1: Extract exact physical landmark places using AI
+    if (Array.isArray(blog.photoPlaces) && blog.photoPlaces.length > 0) {
+      landmarkName = blog.photoPlaces[0];
+      landmarkQuery = landmarkName;
+    } else {
+      try {
+        const res = await fetch('/api/admin/blogs/analyze-photo-places/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            blogId: blog.id,
+            title: blog.title,
+            excerpt: blog.excerpt,
+            content: blog.content,
+            category: blog.category
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.detailedPlaces) && data.detailedPlaces.length > 0) {
+            landmarkName = data.detailedPlaces[0].name || data.detailedPlaces[0].query;
+            landmarkQuery = data.detailedPlaces[0].query || landmarkName;
+          } else if (Array.isArray(data.photoPlaces) && data.photoPlaces.length > 0) {
+            landmarkName = data.photoPlaces[0];
+            landmarkQuery = landmarkName;
+          }
+
+          // Persist the extracted places to blog state and Firestore
+          if (Array.isArray(data.photoPlaces) && data.photoPlaces.length > 0) {
+            const db = getDbInstance();
             if (db) {
-              await updateDoc(doc(db, 'blogs', b.id), {
-                coverImage: photoUrl,
-                updatedAt: now
-              });
+              updateDoc(doc(db, 'blogs', blog.id), {
+                photoPlaces: data.photoPlaces,
+                updatedAt: new Date().toISOString()
+              }).catch(e => console.warn('Firestore updateDoc photoPlaces error:', e));
             }
-
-            filledCount++;
+            setBlogs(prev => prev.map(b => (b.id === blog.id ? { ...b, photoPlaces: data.photoPlaces } : b)));
           }
         }
+      } catch (err) {
+        console.warn('AI place extraction error for blog:', blog.title, err);
+      }
+    }
+
+    // Heuristic fallback if AI returned empty or is unavailable
+    if (!landmarkName) {
+      const extracted = extractPlacesFromTitle(blog.title, blog.category);
+      if (extracted.length > 0) {
+        landmarkName = extracted[0];
+        landmarkQuery = extracted[0];
+      } else {
+        landmarkName = cleanPlaceQuery(blog.title);
+        landmarkQuery = landmarkName;
+      }
+    }
+
+    if (!landmarkName || landmarkName.trim().length < 2) return null;
+
+    // Step 2: Search web for verified photos of this exact landmark
+    const webResults = await searchWebPhotosForLandmark(landmarkName, landmarkQuery, blog.category);
+    if (webResults.length === 0) return null;
+
+    const bestImg = webResults[0];
+    const primaryUrl = bestImg.fullUrl || bestImg.thumbUrl;
+
+    // Step 3: Return BlogAutoFillCandidate with exact AI context
+    return {
+      id: blog.id,
+      targetBlogId: blog.id,
+      targetBlogTitle: blog.title,
+      targetBlogSlug: blog.slug,
+      targetCategory: blog.category,
+      targetMatchedTopic: landmarkName,
+      proposedUrls: webResults.map(r => r.fullUrl || r.thumbUrl).filter(Boolean),
+      primaryImageUrl: primaryUrl,
+      imageTitle: bestImg.title || extractImageTitleFromUrl(primaryUrl),
+      sourcePlaceName: landmarkName,
+      sourceTitle: `Web Search (${bestImg.source})`,
+      sourceId: `web_${blog.id}_${bestImg.id || 'photo'}`,
+      sourceType: 'ai_web_search',
+      matchType: 'landmark',
+      matchReason: `AI identified exact landmark "${landmarkName}" → Fetched verified photo from ${bestImg.source}`
+    };
+  };
+
+  // Switch selected photo for a candidate in the Auto-Fill Review modal
+  const handleSwitchCandidateImage = (candId: string, newUrl: string) => {
+    setAiWebCandidates(prev => {
+      const next = new Map(prev);
+      const existing = next.get(candId);
+      if (existing) {
+        next.set(candId, {
+          ...existing,
+          primaryImageUrl: newUrl,
+          imageTitle: extractImageTitleFromUrl(newUrl)
+        });
+      } else {
+        const dbCand = dbAutoFillCandidates.find(c => c.id === candId);
+        if (dbCand) {
+          next.set(candId, {
+            ...dbCand,
+            primaryImageUrl: newUrl,
+            imageTitle: extractImageTitleFromUrl(newUrl)
+          });
+        }
+      }
+      return next;
+    });
+  };
+
+  // Run Batch AI Landmark Extraction + Web Photo Search
+  const handleRunAiWebAutoFill = async (targetBlogIds?: string[]) => {
+    const missingBlogs = targetBlogIds
+      ? blogs.filter(b => targetBlogIds.includes(b.id) && !b.hasPhoto)
+      : blogs.filter(b => !b.hasPhoto);
+
+    if (missingBlogs.length === 0) {
+      showToast('All target blogs already have cover photos!', 'info');
+      return;
+    }
+
+    setIsAiWebSearching(true);
+    aiSearchCancelRef.current = false;
+    setAiSearchProgress({
+      current: 0,
+      total: missingBlogs.length,
+      blogTitle: missingBlogs[0].title,
+      foundCount: 0
+    });
+
+    let foundCount = 0;
+    const newCandidatesMap = new Map<string, BlogAutoFillCandidate>();
+
+    // Process in concurrent chunks of 3 for high speed and rate limit safety
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < missingBlogs.length; i += BATCH_SIZE) {
+      if (aiSearchCancelRef.current) {
+        showToast('AI Web Auto-Fill cancelled.', 'info');
+        break;
       }
 
-      setBlogs(updatedBlogs);
-      showToast(`🎉 Auto-filled cover photos for ${filledCount} blogs!`, 'success');
-    } catch (err: any) {
-      console.error('Auto-fill error:', err);
-      showToast('Failed to auto-fill matching blogs.', 'error');
-    } finally {
-      setIsAutoFilling(false);
+      const batch = missingBlogs.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (blog, bIdx) => {
+          const overallIndex = i + bIdx;
+          setAiSearchProgress(prev => ({
+            ...prev,
+            current: overallIndex + 1,
+            blogTitle: blog.title
+          }));
+
+          try {
+            const cand = await fetchAiPlaceAndWebPhoto(blog);
+            if (cand) {
+              setAiSearchProgress(prev => ({
+                ...prev,
+                landmark: cand.sourcePlaceName
+              }));
+              return cand;
+            }
+          } catch (err) {
+            console.warn(`Error finding AI photo for "${blog.title}":`, err);
+          }
+          return null;
+        })
+      );
+
+      batchResults.forEach(cand => {
+        if (cand) {
+          newCandidatesMap.set(cand.id, cand);
+          foundCount++;
+          setAiSearchProgress(prev => ({ ...prev, foundCount }));
+        }
+      });
+    }
+
+    if (newCandidatesMap.size > 0) {
+      setAiWebCandidates(prev => {
+        const next = new Map(prev);
+        newCandidatesMap.forEach((c, k) => next.set(k, c));
+        return next;
+      });
+
+      // Pre-select the newly found candidates
+      setSelectedCandidateIds(prev => {
+        const next = new Set(prev);
+        newCandidatesMap.forEach((_, id) => next.add(id));
+        return next;
+      });
+
+      setIsAiWebSearching(false);
+      setIsAutoFillReviewOpen(true);
+      showToast(`🎉 AI found verified web photos for ${foundCount} blogs! Review and click Done.`, 'success');
+    } else {
+      setIsAiWebSearching(false);
+      showToast('No web photos could be verified for these blogs. Try manual search.', 'info');
     }
   };
+
+  // Run AI Place Extraction + Web Search for Single Blog
+  const handleRunSingleBlogAiWebAutoFill = async (blog: BlogItem) => {
+    setIsFindingSingleAiPhoto(blog.id);
+    try {
+      const cand = await fetchAiPlaceAndWebPhoto(blog);
+      if (cand) {
+        setAiWebCandidates(prev => new Map(prev).set(cand.id, cand));
+        setSelectedCandidateIds(new Set([cand.id]));
+        setAutoFillModalSearch('');
+        setIsAutoFillReviewOpen(true);
+        showToast(`✨ AI identified "${cand.sourcePlaceName}" and found verified photo from ${cand.sourceTitle}!`, 'success');
+      } else {
+        showToast(`Could not find a verified web photo for "${blog.title}". Opening manual search...`, 'info');
+        handleOpenPhotoSelector(blog);
+      }
+    } catch (e: any) {
+      console.error('Error finding single AI photo:', e);
+      showToast('Failed to find photo with AI.', 'error');
+    } finally {
+      setIsFindingSingleAiPhoto(null);
+    }
+  };
+
+  const handleCancelAiWebSearch = () => {
+    aiSearchCancelRef.current = true;
+    setIsAiWebSearching(false);
+  };
+
+  // Open the Auto-Fill Review Modal
+  const handleOpenAutoFillReview = (targetBlogId?: string) => {
+    if (targetBlogId) {
+      setSelectedCandidateIds(new Set([targetBlogId]));
+    } else {
+      setSelectedCandidateIds(new Set(autoFillCandidates.map(c => c.id)));
+    }
+    setAutoFillModalSearch('');
+    setIsAutoFillReviewOpen(true);
+  };
+
+  // Toggle selection for an individual candidate in the review modal
+  const handleToggleCandidate = (id: string) => {
+    setSelectedCandidateIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Select all visible candidates
+  const handleSelectAllCandidates = (list: BlogAutoFillCandidate[]) => {
+    setSelectedCandidateIds(prev => {
+      const next = new Set(prev);
+      list.forEach(c => next.add(c.id));
+      return next;
+    });
+  };
+
+  // Deselect all visible candidates
+  const handleDeselectAllCandidates = (list: BlogAutoFillCandidate[]) => {
+    setSelectedCandidateIds(prev => {
+      const next = new Set(prev);
+      list.forEach(c => next.delete(c.id));
+      return next;
+    });
+  };
+
+  // Execute Auto-Fill for the user-selected repeated blogs (triggered by "Done" button)
+  const handleExecuteAutoFill = async () => {
+    const candidatesToApply = autoFillCandidates.filter(c => selectedCandidateIds.has(c.id));
+    if (candidatesToApply.length === 0) {
+      showToast('Please select at least one blog to auto-fill.', 'info');
+      return;
+    }
+
+    setIsAutoFillingRepeated(true);
+    try {
+      const db = getDbInstance();
+      const now = new Date().toISOString();
+      const updatedBlogs = [...blogs];
+      let totalFilled = 0;
+
+      for (const cand of candidatesToApply) {
+        const blogIndex = updatedBlogs.findIndex(b => b.id === cand.id);
+        if (blogIndex === -1) continue;
+
+        const sourceDesc = cand.sourceType === 'itinerary'
+          ? `${cand.sourceTitle} (Day ${cand.sourceDayNumber}: ${cand.sourcePlaceName})`
+          : cand.sourceType === 'placesCovered'
+          ? `${cand.sourceTitle} - ${cand.sourcePlaceName}`
+          : cand.sourceType === 'ai_web_search'
+          ? `${cand.sourceTitle}: ${cand.sourcePlaceName}`
+          : cand.sourceTitle;
+
+        const preservedPlaces = updatedBlogs[blogIndex].photoPlaces && updatedBlogs[blogIndex].photoPlaces!.length > 0
+          ? updatedBlogs[blogIndex].photoPlaces
+          : (cand.sourcePlaceName ? [cand.sourcePlaceName] : []);
+
+        const updatedBlog: BlogItem = {
+          ...updatedBlogs[blogIndex],
+          coverImage: cand.primaryImageUrl,
+          hasPhoto: true,
+          photoPlaces: preservedPlaces,
+          autoFilledRepeated: true,
+          autoFilledAt: Date.now(),
+          autoFilledSource: sourceDesc,
+          updatedAt: now
+        };
+
+        if (db) {
+          await updateDoc(doc(db, 'blogs', cand.id), {
+            coverImage: cand.primaryImageUrl,
+            photoPlaces: preservedPlaces,
+            autoFilledRepeated: true,
+            autoFilledAt: Date.now(),
+            autoFilledSource: sourceDesc,
+            updatedAt: now
+          });
+        }
+
+        updatedBlogs[blogIndex] = updatedBlog;
+        if (onBlogUpdated) {
+          onBlogUpdated(updatedBlog);
+        }
+        totalFilled++;
+      }
+
+      // Clean up applied items from aiWebCandidates map
+      setAiWebCandidates(prev => {
+        const next = new Map(prev);
+        candidatesToApply.forEach(c => next.delete(c.id));
+        return next;
+      });
+
+      // Store applied IDs in localStorage so user can revert even after refresh
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('tripdm_blog_autofill_revert_ids') : null;
+        const prev: string[] = raw ? JSON.parse(raw) : [];
+        const newIds = Array.from(new Set([...prev, ...candidatesToApply.map(c => c.id)]));
+        localStorage.setItem('tripdm_blog_autofill_revert_ids', JSON.stringify(newIds));
+      } catch (e) {}
+
+      setBlogs(updatedBlogs);
+      setIsAutoFillReviewOpen(false);
+      showToast(`🎉 Successfully auto-filled cover photos for ${totalFilled} blogs!`, 'success');
+    } catch (err: any) {
+      console.error('Error auto-filling repeated blogs:', err);
+      showToast('Failed to auto-fill repeated blogs. Please try again.', 'error');
+    } finally {
+      setIsAutoFillingRepeated(false);
+    }
+  };
+
+  // Open the Revert Modal
+  const handleOpenRevertModal = (singleTargetId?: string) => {
+    if (singleTargetId) {
+      setSelectedRevertIds(new Set([singleTargetId]));
+    } else {
+      setSelectedRevertIds(new Set(revertibleBlogs.map(r => r.id)));
+    }
+    setRevertModalSearch('');
+    setIsRevertModalOpen(true);
+  };
+
+  // Toggle selection for an individual item in the revert modal
+  const handleToggleRevertItem = (id: string) => {
+    setSelectedRevertIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Select all visible revert items
+  const handleSelectAllRevert = (list: BlogAutoFillRevertEntry[]) => {
+    setSelectedRevertIds(prev => {
+      const next = new Set(prev);
+      list.forEach(r => next.add(r.id));
+      return next;
+    });
+  };
+
+  // Deselect all visible revert items
+  const handleDeselectAllRevert = (list: BlogAutoFillRevertEntry[]) => {
+    setSelectedRevertIds(prev => {
+      const next = new Set(prev);
+      list.forEach(r => next.delete(r.id));
+      return next;
+    });
+  };
+
+  // Execute Revert for the user-selected auto-filled blogs
+  const handleExecuteRevert = async () => {
+    const itemsToRevert = revertibleBlogs.filter(item => selectedRevertIds.has(item.id));
+    if (itemsToRevert.length === 0) {
+      showToast('Please select at least one blog to revert.', 'info');
+      return;
+    }
+
+    setIsReverting(true);
+    try {
+      const db = getDbInstance();
+      const now = new Date().toISOString();
+      const updatedBlogs = [...blogs];
+      let totalReverted = 0;
+
+      for (const item of itemsToRevert) {
+        const blogIndex = updatedBlogs.findIndex(b => b.id === item.id);
+        if (blogIndex === -1) continue;
+
+        const currentBlog = { ...updatedBlogs[blogIndex] };
+        delete currentBlog.autoFilledRepeated;
+        delete currentBlog.autoFilledAt;
+        delete currentBlog.autoFilledSource;
+        currentBlog.coverImage = '';
+        currentBlog.hasPhoto = false;
+        currentBlog.updatedAt = now;
+
+        if (db) {
+          await updateDoc(doc(db, 'blogs', item.id), {
+            coverImage: '',
+            autoFilledRepeated: false,
+            autoFilledAt: null,
+            autoFilledSource: null,
+            updatedAt: now
+          });
+        }
+
+        updatedBlogs[blogIndex] = currentBlog;
+        if (onBlogUpdated) {
+          onBlogUpdated(currentBlog);
+        }
+        totalReverted++;
+      }
+
+      // Remove reverted IDs from localStorage
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('tripdm_blog_autofill_revert_ids') : null;
+        if (raw) {
+          const prev: string[] = JSON.parse(raw);
+          const remaining = prev.filter(id => !selectedRevertIds.has(id));
+          localStorage.setItem('tripdm_blog_autofill_revert_ids', JSON.stringify(remaining));
+        }
+      } catch (e) {}
+
+      setBlogs(updatedBlogs);
+      setIsRevertModalOpen(false);
+      showToast(`↺ Successfully reverted cover photos for ${totalReverted} blog(s)!`, 'success');
+    } catch (err: any) {
+      console.error('Error reverting auto-filled blogs:', err);
+      showToast('Failed to revert auto-filled blogs. Please try again.', 'error');
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
+  // Backwards compatibility aliases
+  const handleAutoFillAllRepeatedBlogs = () => handleOpenAutoFillReview();
+  const handleAutoFillMatchingBlogs = () => handleOpenAutoFillReview();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ─── AI QUEUE PROCESSOR FOR PREVIOUS/EXISTING BLOGS ───
@@ -1149,22 +2083,58 @@ export default function AdminBlogPhotoManager({
             <span>Run AI Location Queue ({stats.totalBlogs})</span>
           </Button>
 
-          {stats.autoFillableCount > 0 && (
+          {/* AI Auto-Fill with Web Search Button */}
+          {stats.missingPhotos > 0 && (
             <Button
               size="sm"
-              onClick={handleAutoFillMatchingBlogs}
-              disabled={loading || isAutoFilling}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 shadow-sm font-semibold rounded-xl"
-              title="Auto-fill matching destination photos from packages & existing blogs"
+              onClick={() => handleRunAiWebAutoFill()}
+              disabled={loading || isAiWebSearching || isAutoFillingRepeated}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white flex items-center gap-2 shadow-sm font-semibold rounded-xl transition-all"
+              title="Extract exact landmark places using AI, search Wikimedia/Wikipedia/Flickr on the web, and auto-fill cover photos"
             >
-              {isAutoFilling ? (
+              {isAiWebSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin text-white" />
               ) : (
-                <Sparkles className="h-4 w-4 text-emerald-200" />
+                <Sparkles className="h-4 w-4 text-purple-200" />
               )}
-              <span>Auto-Fill ({stats.autoFillableCount})</span>
+              <span>AI Auto-Fill (Web Search) ({stats.missingPhotos})</span>
             </Button>
           )}
+
+          {autoFillCandidates.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() => handleOpenAutoFillReview()}
+              disabled={loading || isAutoFillingRepeated}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 shadow-sm font-semibold rounded-xl animate-in fade-in"
+              title="Review matching photos and auto-fill across blogs"
+            >
+              {isAutoFillingRepeated ? (
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <CheckCircle className="h-4 w-4 text-emerald-200" />
+              )}
+              <span>Review &amp; Auto-Fill ({autoFillCandidates.length})</span>
+            </Button>
+          )}
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleOpenRevertModal()}
+            disabled={loading || isReverting || revertibleBlogs.length === 0}
+            className={`border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 flex items-center gap-2 shadow-xs font-semibold rounded-xl transition-all ${
+              revertibleBlogs.length === 0 ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
+            title="Revert duplicate or auto-filled photos back to missing"
+          >
+            {isReverting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-amber-700" />
+            ) : (
+              <RotateCcw className="h-4 w-4 text-amber-700" />
+            )}
+            <span>Revert Duplicates ({revertibleBlogs.length})</span>
+          </Button>
 
           {stats.missingPhotos > 0 && (
             <Button
@@ -1515,7 +2485,7 @@ export default function AdminBlogPhotoManager({
                   )}
 
                   {/* Status Badges Overlay */}
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
                     <Badge
                       className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${
                         blog.published
@@ -1528,6 +2498,11 @@ export default function AdminBlogPhotoManager({
                     <Badge variant="secondary" className="bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-md border-0">
                       {blog.category || 'Article'}
                     </Badge>
+                    {blog.hasPhoto && (blog.autoFilledRepeated || revertibleBlogs.some(r => r.id === blog.id)) && (
+                      <Badge className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border-0 shadow-xs flex items-center gap-1">
+                        <Sparkles className="h-2.5 w-2.5" /> Auto-Filled
+                      </Badge>
+                    )}
                   </div>
 
                   {blog.readTime && (
@@ -1586,6 +2561,66 @@ export default function AdminBlogPhotoManager({
                       )}
                     </div>
                   </div>
+
+                  {/* Quick Auto-Fill button if matching photo exists OR AI Web Search button */}
+                  {(() => {
+                    if (blog.hasPhoto) return null;
+                    const autofillCand = autoFillCandidates.find(c => c.id === blog.id);
+                    if (autofillCand) {
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenAutoFillReview(blog.id)}
+                          className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all"
+                          title={`Auto-fill photo available: ${autofillCand.sourcePlaceName} (${autofillCand.sourceTitle})`}
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Auto-Fill Photo Available</span>
+                        </Button>
+                      );
+                    }
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRunSingleBlogAiWebAutoFill(blog)}
+                        disabled={isFindingSingleAiPhoto === blog.id}
+                        className="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all"
+                        title="Extract exact landmark using AI and find verified photo on the web"
+                      >
+                        {isFindingSingleAiPhoto === blog.id ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-600" />
+                            <span>AI Finding Place &amp; Photo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                            <span>AI Auto-Fill (Web Search)</span>
+                          </>
+                        )}
+                      </Button>
+                    );
+                  })()}
+
+                  {/* Revert Auto-Fill button if this blog was auto-filled */}
+                  {(() => {
+                    const isAutoFilled = blog.hasPhoto && (blog.autoFilledRepeated || revertibleBlogs.some(r => r.id === blog.id));
+                    if (!isAutoFilled) return null;
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenRevertModal(blog.id)}
+                        className="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all"
+                        title="Revert this auto-filled photo"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 text-amber-700" />
+                        <span>Revert Auto-Fill</span>
+                      </Button>
+                    );
+                  })()}
 
                   {/* Action Buttons */}
                   <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
@@ -1651,6 +2686,11 @@ export default function AdminBlogPhotoManager({
                             <ImageIcon className="h-5 w-5" />
                           </div>
                         )}
+                        {blog.hasPhoto && (blog.autoFilledRepeated || revertibleBlogs.some(r => r.id === blog.id)) && (
+                          <span className="absolute bottom-1 right-1 bg-emerald-600/90 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                            Auto
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
@@ -1661,22 +2701,75 @@ export default function AdminBlogPhotoManager({
                             {blog.photoPlaces?.[0] ? `📍 ${blog.photoPlaces[0]}` : (blog.readTime || '5 min')}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleOpenPhotoSelector(blog)}
-                            className="h-6 text-[11px] px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            {blog.hasPhoto ? 'Edit' : 'Add Photo'}
-                          </Button>
-                          <a
-                            href={`/blog/${blog.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-gray-400 hover:text-blue-600 p-1"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
+                        <div className="flex flex-col gap-1.5 mt-2">
+                          {(() => {
+                            if (blog.hasPhoto) return null;
+                            const autofillCand = autoFillCandidates.find(c => c.id === blog.id);
+                            if (autofillCand) {
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenAutoFillReview(blog.id)}
+                                  className="h-6 text-[10px] px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold flex items-center justify-center gap-1 shadow-2xs"
+                                  title={`Auto-fill photo from ${autofillCand.sourceTitle}`}
+                                >
+                                  <Sparkles className="h-3 w-3 text-emerald-600" />
+                                  <span>Auto-Fill Photo</span>
+                                </Button>
+                              );
+                            }
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRunSingleBlogAiWebAutoFill(blog)}
+                                disabled={isFindingSingleAiPhoto === blog.id}
+                                className="h-6 text-[10px] px-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200 font-semibold flex items-center justify-center gap-1 shadow-2xs"
+                                title="Extract exact landmark using AI & search web"
+                              >
+                                {isFindingSingleAiPhoto === blog.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin text-purple-600" />
+                                ) : (
+                                  <Sparkles className="h-3 w-3 text-purple-600" />
+                                )}
+                                <span>AI Auto-Fill</span>
+                              </Button>
+                            );
+                          })()}
+                          {(() => {
+                            const isAutoFilled = blog.hasPhoto && (blog.autoFilledRepeated || revertibleBlogs.some(r => r.id === blog.id));
+                            if (!isAutoFilled) return null;
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenRevertModal(blog.id)}
+                                className="h-6 text-[10px] px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 font-semibold flex items-center justify-center gap-1 shadow-2xs"
+                                title="Revert auto-filled photo"
+                              >
+                                <RotateCcw className="h-3 w-3 text-amber-700" />
+                                <span>Revert Photo</span>
+                              </Button>
+                            );
+                          })()}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleOpenPhotoSelector(blog)}
+                              className="h-6 text-[11px] px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              {blog.hasPhoto ? 'Edit' : 'Add Photo'}
+                            </Button>
+                            <a
+                              href={`/blog/${blog.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-400 hover:text-blue-600 p-1"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1755,7 +2848,63 @@ export default function AdminBlogPhotoManager({
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 flex-wrap">
+                        {(() => {
+                          if (blog.hasPhoto) return null;
+                          const autofillCand = autoFillCandidates.find(c => c.id === blog.id);
+                          if (autofillCand) {
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenAutoFillReview(blog.id)}
+                                className="h-8 text-xs rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold flex items-center gap-1 shadow-2xs"
+                                title={`Auto-fill photo from ${autofillCand.sourceTitle}`}
+                              >
+                                <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                                <span>Auto-Fill</span>
+                              </Button>
+                            );
+                          }
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRunSingleBlogAiWebAutoFill(blog)}
+                              disabled={isFindingSingleAiPhoto === blog.id}
+                              className="h-8 text-xs rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200 font-semibold flex items-center gap-1 shadow-2xs"
+                              title="Extract exact landmark using AI & search web"
+                            >
+                              {isFindingSingleAiPhoto === blog.id ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-600" />
+                                  <span>Searching...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                                  <span>AI Auto-Fill</span>
+                                </>
+                              )}
+                            </Button>
+                          );
+                        })()}
+                        {(() => {
+                          const isAutoFilled = blog.hasPhoto && (blog.autoFilledRepeated || revertibleBlogs.some(r => r.id === blog.id));
+                          if (!isAutoFilled) return null;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenRevertModal(blog.id)}
+                              className="h-8 text-xs rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 font-semibold flex items-center gap-1 shadow-2xs"
+                              title="Revert auto-filled photo"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5 text-amber-700" />
+                              <span>Revert</span>
+                            </Button>
+                          );
+                        })()}
                         <Button
                           size="sm"
                           onClick={() => handleOpenPhotoSelector(blog)}
@@ -2310,6 +3459,584 @@ export default function AdminBlogPhotoManager({
                 className="rounded-xl text-xs"
               >
                 Close Queue Window
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── AUTO-FILL REPEATED BLOG PHOTOS REVIEW MODAL ─── */}
+      {isAutoFillReviewOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-gray-100 flex items-start justify-between bg-gradient-to-r from-emerald-50/70 via-teal-50/40 to-white">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-200">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-xl font-black text-gray-900">
+                      Auto-Fill Blog Cover Photos
+                    </h2>
+                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none font-bold text-xs">
+                      {autoFillCandidates.length} Found
+                    </Badge>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                    Review matching images with AI landmark context &amp; verified web sources. Uncheck any blog you wish to skip, then click <strong>Done</strong>.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAutoFillReviewOpen(false)}
+                disabled={isAutoFillingRepeated}
+                className="text-gray-400 hover:text-gray-700 p-2 rounded-xl hover:bg-gray-100 transition-colors shrink-0"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Filter & Selection Controls */}
+            <div className="p-4 bg-gray-50 border-b border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Filter blog, landmark or match reason..."
+                  value={autoFillModalSearch}
+                  onChange={e => setAutoFillModalSearch(e.target.value)}
+                  className="pl-9 h-9 text-xs sm:text-sm bg-white border-gray-300 rounded-xl"
+                />
+                {autoFillModalSearch && (
+                  <button
+                    onClick={() => setAutoFillModalSearch('')}
+                    className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+                {blogs.some(b => !b.hasPhoto && !autoFillCandidates.some(c => c.id === b.id)) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRunAiWebAutoFill()}
+                    disabled={isAiWebSearching}
+                    className="h-8 text-xs font-semibold rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200 flex items-center gap-1.5 shadow-2xs"
+                    title="Find exact places and web photos for remaining missing blogs"
+                  >
+                    <Sparkles className="h-3 w-3 text-purple-600" />
+                    <span>AI Search Remaining ({blogs.filter(b => !b.hasPhoto && !autoFillCandidates.some(c => c.id === b.id)).length})</span>
+                  </Button>
+                )}
+                <div className="text-xs font-semibold text-gray-600">
+                  <span className="text-emerald-700 font-bold">{selectedCandidateIds.size}</span> of {autoFillCandidates.length} selected
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSelectAllCandidates(filteredCandidates)}
+                    className="h-8 text-xs font-medium rounded-lg"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeselectAllCandidates(filteredCandidates)}
+                    className="h-8 text-xs font-medium rounded-lg text-gray-500"
+                  >
+                    Deselect All
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Candidate List (Scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+              {filteredCandidates.length === 0 ? (
+                <div className="p-10 text-center text-gray-500">
+                  <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm font-semibold">No candidates match your search</p>
+                  <p className="text-xs text-gray-400 mt-1">Try clearing or changing your filter term.</p>
+                </div>
+              ) : (
+                filteredCandidates.map(c => {
+                  const isChecked = selectedCandidateIds.has(c.id);
+                  return (
+                    <div
+                      key={c.id}
+                      className={`transition-all rounded-xl p-3 border ${
+                        isChecked
+                          ? 'bg-emerald-50/30 border-emerald-200'
+                          : 'bg-gray-50/60 border-gray-200 opacity-60'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        {/* Selection Checkbox */}
+                        <div
+                          onClick={() => handleToggleCandidate(c.id)}
+                          className="cursor-pointer shrink-0 mt-1 sm:mt-0"
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
+                              isChecked
+                                ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                                : 'border-gray-300 bg-white hover:border-emerald-500'
+                            }`}
+                          >
+                            {isChecked && <Check className="h-4 w-4 stroke-[3]" />}
+                          </div>
+                        </div>
+
+                        {/* Image Preview Thumbnail */}
+                        <div
+                          onClick={() => setPreviewFullImageUrl(c.primaryImageUrl)}
+                          className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100 cursor-pointer group shadow-2xs"
+                          title="Click to view full image"
+                        >
+                          <img
+                            src={c.primaryImageUrl}
+                            alt={c.imageTitle}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={e => { (e.target as HTMLImageElement).src = '/images/placeholder.svg'; }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <Eye className="h-5 w-5" />
+                          </div>
+                          {c.proposedUrls.length > 1 && (
+                            <span className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                              +{c.proposedUrls.length}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Blog & Reasoning Details */}
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-[11px] text-gray-600 border-gray-300 bg-white">
+                              {c.targetCategory || 'Article'}
+                            </Badge>
+                            <h4 className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                              {c.targetBlogTitle}
+                            </h4>
+                          </div>
+
+                          <p className="text-xs text-gray-400 truncate">
+                            /{c.targetBlogSlug}
+                          </p>
+
+                          {/* "Why" this photo will be auto-filled */}
+                          <div className="bg-white rounded-lg p-2.5 border border-emerald-200/80 shadow-2xs text-xs space-y-1">
+                            <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                              <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                              <span>Why this photo:</span>
+                              <Badge className={`text-[10px] font-bold py-0 px-1.5 border-none ${
+                                c.sourceType === 'ai_web_search'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                {c.sourceType === 'ai_web_search'
+                                  ? 'AI Web Search (Verified Landmark)'
+                                  : c.matchType === 'exact'
+                                  ? 'Exact Match'
+                                  : c.matchType === 'landmark'
+                                  ? 'AI Landmark Match'
+                                  : c.matchType === 'cleaned'
+                                  ? 'Place Name Match'
+                                  : c.matchType === 'split'
+                                  ? 'Sub-location Match'
+                                  : 'Topic Match'}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-700 text-xs font-medium">
+                              {c.matchReason}
+                            </p>
+                            <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] text-gray-500">
+                              <p>
+                                Source: <strong className="text-gray-700 font-medium">{c.sourceTitle}</strong>
+                              </p>
+                              <p>
+                                Photo asset: <strong className="text-gray-700 font-medium">{c.imageTitle}</strong>
+                              </p>
+                            </div>
+
+                            {/* Multi-Photo Carousel / Alternative Switcher for Web Search */}
+                            {c.proposedUrls && c.proposedUrls.length > 1 && (
+                              <div className="flex items-center gap-1.5 pt-1.5 border-t border-gray-100 mt-1">
+                                <span className="text-[10px] text-gray-500 font-medium shrink-0">
+                                  Alternative web photos ({c.proposedUrls.length}):
+                                </span>
+                                <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                                  {c.proposedUrls.slice(0, 6).map((url, uIdx) => (
+                                    <button
+                                      key={uIdx}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSwitchCandidateImage(c.id, url);
+                                      }}
+                                      className={`w-7 h-7 rounded-md border overflow-hidden shrink-0 transition-all ${
+                                        c.primaryImageUrl === url
+                                          ? 'ring-2 ring-emerald-600 border-transparent shadow-xs scale-105'
+                                          : 'opacity-60 hover:opacity-100 border-gray-300'
+                                      }`}
+                                      title={`Switch to photo option ${uIdx + 1}`}
+                                    >
+                                      <img src={url} alt="" className="w-full h-full object-cover" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="shrink-0 self-end sm:self-center">
+                          {isChecked ? (
+                            <Badge className="bg-emerald-600 text-white font-semibold text-xs py-1 px-2.5 rounded-lg flex items-center gap-1">
+                              <Check className="h-3 w-3" /> Will Auto-Fill
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-400 border-gray-300 font-medium text-xs py-1 px-2.5 rounded-lg">
+                              Skipped
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer with DONE option */}
+            <div className="p-4 sm:p-5 bg-white border-t border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-xs text-gray-500 text-center sm:text-left">
+                {selectedCandidateIds.size > 0 ? (
+                  <span>
+                    Will auto-populate <strong>{selectedCandidateIds.size}</strong> blog article{selectedCandidateIds.size > 1 ? 's' : ''}.
+                  </span>
+                ) : (
+                  <span className="text-amber-600 font-medium">
+                    No blogs selected. Select at least one blog to apply photos.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAutoFillReviewOpen(false)}
+                  disabled={isAutoFillingRepeated}
+                  className="rounded-xl px-4 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  onClick={handleExecuteAutoFill}
+                  disabled={selectedCandidateIds.size === 0 || isAutoFillingRepeated}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-5 text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all"
+                >
+                  {isAutoFillingRepeated ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Applying Photos...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-200" />
+                      <span>Done (Auto-Fill {selectedCandidateIds.size})</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── REVERT AUTO-FILLED BLOG PHOTOS MODAL ─── */}
+      {isRevertModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-gray-100 flex items-start justify-between bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-white">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-200">
+                  <RotateCcw className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-xl font-black text-gray-900">
+                      Revert Auto-Filled Photos
+                    </h2>
+                    <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 border-none font-bold text-xs">
+                      {revertibleBlogs.length} Auto-Filled
+                    </Badge>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                    Select the blogs whose auto-filled photos you want to remove. Uncheck any blog you wish to keep, then click <strong>Revert Selected</strong>.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRevertModalOpen(false)}
+                disabled={isReverting}
+                className="text-gray-400 hover:text-gray-700 p-2 rounded-xl hover:bg-gray-100 transition-colors shrink-0"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Filter & Selection Controls */}
+            <div className="p-4 bg-gray-50 border-b border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Filter blog or match reason..."
+                  value={revertModalSearch}
+                  onChange={e => setRevertModalSearch(e.target.value)}
+                  className="pl-9 h-9 text-xs sm:text-sm bg-white border-gray-300 rounded-xl"
+                />
+                {revertModalSearch && (
+                  <button
+                    onClick={() => setRevertModalSearch('')}
+                    className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end">
+                <div className="text-xs font-semibold text-gray-600">
+                  <span className="text-amber-800 font-bold">{selectedRevertIds.size}</span> of {revertibleBlogs.length} selected
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSelectAllRevert(filteredRevertBlogs)}
+                    className="h-8 text-xs font-medium rounded-lg"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeselectAllRevert(filteredRevertBlogs)}
+                    className="h-8 text-xs font-medium rounded-lg text-gray-500"
+                  >
+                    Deselect All
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Items List (Scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+              {filteredRevertBlogs.length === 0 ? (
+                <div className="p-10 text-center text-gray-500">
+                  <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm font-semibold">No auto-filled blogs match your search</p>
+                  <p className="text-xs text-gray-400 mt-1">Try clearing or changing your search query.</p>
+                </div>
+              ) : (
+                filteredRevertBlogs.map(item => {
+                  const isChecked = selectedRevertIds.has(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`transition-all rounded-xl p-3 border ${
+                        isChecked
+                          ? 'bg-amber-50/40 border-amber-200'
+                          : 'bg-gray-50/60 border-gray-200 opacity-60'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        {/* Checkbox */}
+                        <div
+                          onClick={() => handleToggleRevertItem(item.id)}
+                          className="cursor-pointer shrink-0 mt-1 sm:mt-0"
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
+                              isChecked
+                                ? 'bg-amber-600 border-amber-600 text-white shadow-xs'
+                                : 'border-gray-300 bg-white hover:border-amber-500'
+                            }`}
+                          >
+                            {isChecked && <Check className="h-4 w-4 stroke-[3]" />}
+                          </div>
+                        </div>
+
+                        {/* Image Preview Thumbnail */}
+                        <div
+                          onClick={() => setPreviewFullImageUrl(item.imageUrl)}
+                          className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100 cursor-pointer group shadow-2xs"
+                          title="Click to view full image"
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt={item.blogTitle}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={e => { (e.target as HTMLImageElement).src = '/images/placeholder.svg'; }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <Eye className="h-5 w-5" />
+                          </div>
+                        </div>
+
+                        {/* Blog Details */}
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-[11px] text-gray-600 border-gray-300 bg-white">
+                              {item.category || 'Article'}
+                            </Badge>
+                            <h4 className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                              {item.blogTitle}
+                            </h4>
+                          </div>
+
+                          <p className="text-xs text-gray-400 truncate">
+                            /{item.blogSlug}
+                          </p>
+
+                          <div className="bg-white rounded-lg p-2 border border-amber-200/80 shadow-2xs text-xs flex items-center gap-2 text-amber-900">
+                            <RotateCcw className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                            <span>
+                              Auto-filled photo asset: <strong>{extractImageTitleFromUrl(item.imageUrl)}</strong>
+                              {item.sourcePlaceName && <span> (matched from: {item.sourcePlaceName})</span>}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="shrink-0 self-end sm:self-center">
+                          {isChecked ? (
+                            <Badge className="bg-rose-600 text-white font-semibold text-xs py-1 px-2.5 rounded-lg flex items-center gap-1">
+                              Will Revert (Clear Photo)
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-emerald-700 border-emerald-300 font-medium text-xs py-1 px-2.5 rounded-lg">
+                              Keep Photo
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 bg-white border-t border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-xs text-gray-500 text-center sm:text-left">
+                {selectedRevertIds.size > 0 ? (
+                  <span>
+                    Will remove auto-filled photos from <strong>{selectedRevertIds.size}</strong> blog{selectedRevertIds.size > 1 ? 's' : ''} and mark them missing again.
+                  </span>
+                ) : (
+                  <span className="text-gray-500 font-medium">
+                    No blogs selected to revert.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsRevertModalOpen(false)}
+                  disabled={isReverting}
+                  className="rounded-xl px-4 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  onClick={handleExecuteRevert}
+                  disabled={selectedRevertIds.size === 0 || isReverting}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-5 text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all"
+                >
+                  {isReverting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Reverting Photos...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-4 w-4 text-amber-200" />
+                      <span>Revert Selected ({selectedRevertIds.size})</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── AI WEB SEARCH PROGRESS MODAL ─── */}
+      {isAiWebSearching && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-purple-100 flex flex-col items-center text-center space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-purple-200 animate-pulse">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">AI Place Extraction &amp; Web Search</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Extracting exact tourist landmarks with AI &amp; fetching verified photos from Wikimedia &amp; Flickr...
+              </p>
+            </div>
+
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-600">
+                <span>Blog {aiSearchProgress.current} of {aiSearchProgress.total}</span>
+                <span className="text-purple-700 font-bold">
+                  {Math.round((aiSearchProgress.current / (aiSearchProgress.total || 1)) * 100)}%
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round((aiSearchProgress.current / (aiSearchProgress.total || 1)) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="w-full bg-purple-50/70 border border-purple-100 rounded-xl p-3 text-left">
+              <p className="text-[11px] text-gray-500 font-medium">Analyzing article context:</p>
+              <p className="text-xs font-bold text-gray-900 truncate mt-0.5">
+                {aiSearchProgress.blogTitle || 'Analyzing blog...'}
+              </p>
+              {aiSearchProgress.landmark && (
+                <p className="text-[11px] text-purple-700 font-semibold mt-1 flex items-center gap-1">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span>Exact Landmark: {aiSearchProgress.landmark}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between w-full pt-2">
+              <span className="text-xs text-emerald-700 font-bold">
+                {aiSearchProgress.foundCount} photos verified
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelAiWebSearch}
+                className="text-xs text-gray-600 hover:text-gray-900 rounded-xl"
+              >
+                Stop
               </Button>
             </div>
           </div>

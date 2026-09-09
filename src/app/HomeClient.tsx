@@ -45,7 +45,6 @@ import {
   Trash2, 
   ArrowLeft, 
   ClipboardList, 
-  Wrench,
   Camera,
   Search,
   LayoutGrid,
@@ -368,6 +367,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const [allAgencies, setAllAgencies] = useState<any[]>([]);
   const [pendingListings, setPendingListings] = useState<any[]>([]);
   const [agencyActiveSection, setAgencyActiveSection] = useState('listings');
+  const [userActiveSection, setUserActiveSection] = useState('listings');
+  const [fromSection, setFromSection] = useState('listings');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pricingConfig, setPricingConfig] = useState({ starterPrice: 2000, premiumPrice: 5000, vipPrice: 10000, addonCreditPrice: 1 });
   const searchParams = useSearchParams();
   const sectionParam = searchParams.get('section');
@@ -394,24 +396,30 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     }
   }, [sectionParam, user, loading]);
 
-  useEffect(() => {
-    const fetchPricingConfig = async () => {
-      try {
-        const response = await fetch('/api/admin/get-config');
-        if (response.ok) {
-          const data = await response.json();
-          setPricingConfig(data);
+  const fetchPricingConfig = async () => {
+    try {
+      const response = await fetch('/api/admin/get-config/', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && typeof data === 'object') {
+          setPricingConfig(prev => ({
+            ...prev,
+            ...data,
+            starterPrice: Number(data.starterPrice) || prev.starterPrice,
+            premiumPrice: Number(data.premiumPrice) || prev.premiumPrice,
+            vipPrice: Number(data.vipPrice) || prev.vipPrice,
+            addonCreditPrice: Number(data.addonCreditPrice) || prev.addonCreditPrice,
+          }));
         }
-      } catch (e) {
-        console.error('Error fetching pricing config:', e);
       }
-    };
-    fetchPricingConfig();
-  }, []);
+    } catch (e) {
+      console.error('Error fetching pricing config:', e);
+    }
+  };
 
-  const [userActiveSection, setUserActiveSection] = useState('listings');  const [fromSection, setFromSection] = useState('listings');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  useEffect(() => {
+    fetchPricingConfig();
+  }, [agencyActiveSection, userActiveSection, routeMode]);
 
   // Lock background scroll when mobile sidebar drawer is open & handle Escape key
   useEffect(() => {
@@ -1769,40 +1777,6 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       console.error('Payment error:', err);
       setIsPurchasingCredits(false);
       alert('Transaction failed to initialize. Please try again.');
-    }
-  };
-
-  // Reset helper for developers
-  const simulateResetCredits = async (targetPlan: 'free' | 'starter' | 'premium') => {
-    if (!user) return;
-    const dbInstance = getDbInstance();
-    if (!dbInstance) return;
-
-    let initCredits = 0;
-    if (targetPlan === 'free') initCredits = 100;
-    else if (targetPlan === 'starter') initCredits = 2000;
-    else if (targetPlan === 'premium') initCredits = 5000;
-    else if (targetPlan === 'vip') initCredits = 10000;
-
-    const txId = 'TX-RST-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    const newTransaction = {
-      id: txId,
-      type: 'reset',
-      amount: initCredits,
-      description: `Developer Reset to ${targetPlan.toUpperCase()}`,
-      timestamp: Date.now()
-    };
-
-    try {
-      await updateDoc(doc(getDbInstance()!, 'users', user.uid), {
-        plan: targetPlan,
-        credits: initCredits,
-        unlockedUsers: [],
-        creditHistory: [newTransaction]
-      });
-      alert(`Developer simulation reset complete: Plan set to ${targetPlan.toUpperCase()}`);
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -4315,7 +4289,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         <h3 className="text-lg font-semibold mb-4 text-blue-700">Dynamic Pricing Configuration (INR)</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
-                            <Label>Starter Plan</Label>
+                            <Label>Standard Plan (Starter)</Label>
                             <Input type="number" value={pricingConfig.starterPrice} onChange={(e) => setPricingConfig({...pricingConfig, starterPrice: parseInt(e.target.value) || 0})} />
                           </div>
                           <div>
@@ -4335,12 +4309,13 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                       <Button onClick={async () => {
                         try {
-                          const response = await fetch('/api/admin/save-config', {
+                          const response = await fetch('/api/admin/save-config/', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(pricingConfig)
                           });
                           if (!response.ok) throw new Error('Failed to save configuration');
+                          await fetchPricingConfig();
                           alert('Pricing configuration saved successfully!');
                         } catch (err) {
                           alert('Error saving config.');
@@ -4967,15 +4942,6 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
               {/* Right: Quick Action Icons */}
               <div className="flex items-center gap-1 sm:gap-1.5">
-                {/* Search Toggle Icon */}
-                <button
-                  onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-                  className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
-                  aria-label="Search destinations"
-                >
-                  <Search className="h-5 w-5" />
-                </button>
-
                 {/* Compare Icon with Badge */}
                 <button
                   onClick={() => {
@@ -5083,25 +5049,25 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
               </div>
             </div>
 
-            {/* Mobile Expandable Search Bar */}
-            {mobileSearchOpen && (
-              <div className="md:hidden px-4 pb-3 pt-1 border-t border-slate-100 bg-white/95">
-                <AutocompleteSearch
-                  placeholder="Search for destination"
-                  typewriterPrefix="Search for "
-                  typewriter={["Rajasthan", "Kerala", "Kashmir", "Goa", "Himachal Pradesh", "Dubai", "Assam", "Thailand"]}
-                  value={searchTerm}
-                  onChange={(val) => setSearchTerm(val)}
-                  onSelect={(val) => {
-                    setSearchTerm(val);
-                    setMobileSearchOpen(false);
-                  }}
-                  suggestions={allDestinations}
-                  inputClassName="w-full pl-10 pr-4 py-2 rounded-full text-slate-900 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200 text-sm h-10 shadow-sm font-medium"
-                  iconClassName="left-3.5 top-3 text-slate-400"
-                />
-              </div>
-            )}
+            {/* Mobile Search Bar (Directly below the top header bar) */}
+            <div className="md:hidden px-3.5 sm:px-4 pb-2.5 pt-0.5 border-t border-slate-100/80 bg-white/95">
+              <AutocompleteSearch
+                placeholder="Search for destination"
+                typewriterPrefix="Search for "
+                typewriter={["Rajasthan", "Kerala", "Kashmir", "Goa", "Himachal Pradesh", "Dubai", "Assam", "Thailand"]}
+                value={searchTerm}
+                onChange={(val) => setSearchTerm(val)}
+                onSelect={(val) => {
+                  setSearchTerm(val);
+                  setUserActiveSection('listings');
+                  setViewingListing(null);
+                  setShowComparison(false);
+                }}
+                suggestions={allDestinations}
+                inputClassName="w-full pl-10 pr-4 py-2 rounded-full text-slate-900 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200 text-sm h-10 shadow-sm font-medium"
+                iconClassName="left-3.5 top-3 text-slate-400"
+              />
+            </div>
           </header>
 
 
@@ -9063,62 +9029,6 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                 <ClipboardList className="w-5 h-5" />
                               </div>
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Developer Testing Panel inside Dashboard */}
-                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-md p-4 shadow-xs" style={{ borderRadius: '6px' }}>
-                          <h4 className="text-xs font-bold text-orange-800 flex items-center gap-1.5 mb-1.5">
-                            <Wrench className="w-4 h-4 mr-1.5 text-amber-600" /> Developer Billing & Credits Simulator
-                          </h4>
-                          <p className="text-[10px] text-orange-700 mb-3 leading-relaxed">
-                            Use these controls to simulate plan resets, add credits, and verify unlock behavior. Changes reflect in Firebase Firestore immediately.
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => simulateResetCredits('free')}
-                              className="bg-white hover:bg-slate-50 text-[11px] border border-slate-200/80 font-semibold rounded-md text-blue-700 py-1.5 px-3 shadow-xs hover:border-slate-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                              style={{ borderRadius: '6px' }}
-                            >
-                              Reset to Free
-                            </button>
-                            <button
-                              onClick={() => simulateResetCredits('starter')}
-                              className="bg-white hover:bg-slate-50 text-[11px] border border-slate-200/80 font-semibold rounded-md text-amber-700 py-1.5 px-3 shadow-xs hover:border-slate-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                              style={{ borderRadius: '6px' }}
-                            >
-                              Reset to Starter
-                            </button>
-                            <button
-                              onClick={() => simulateResetCredits('premium')}
-                              className="bg-white hover:bg-slate-50 text-[11px] border border-slate-200/80 font-semibold rounded-md text-purple-700 py-1.5 px-3 shadow-xs hover:border-slate-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                              style={{ borderRadius: '6px' }}
-                            >
-                              Reset to Premium
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (!user || !userData) return;
-                                const currentCredits = userData.credits || 0;
-                                const txId = 'TX-SIM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-                                const newTransaction = {
-                                  id: txId,
-                                  type: 'top-up',
-                                  amount: 500,
-                                  description: 'Simulated Developer top-up',
-                                  timestamp: Date.now()
-                                };
-                                await updateDoc(doc(getDbInstance()!, 'users', user.uid), {
-                                  credits: currentCredits + 500,
-                                  creditHistory: [newTransaction, ...(userData.creditHistory || [])]
-                                });
-                                alert('Simulated: Added 500 Credits');
-                              }}
-                              className="bg-white hover:bg-slate-50 text-[11px] border border-slate-200/80 font-semibold rounded-md text-emerald-700 py-1.5 px-3 shadow-xs hover:border-slate-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                              style={{ borderRadius: '6px' }}
-                            >
-                              +500 Credits
-                            </button>
                           </div>
                         </div>
 
