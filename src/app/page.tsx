@@ -52,7 +52,43 @@ async function getApprovedListings() {
 
 export const metadata: Metadata = {
   title: "TripDM: Direct Message. Better Travel.",
-  description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  description:
+    "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top India travel packages, get personalised itineraries and book with confidence.",
+  keywords: [
+    'travel agents India',
+    'travel packages',
+    'book travel online',
+    'TripDM',
+    'direct message travel',
+    'India tour packages',
+    'verified travel agents',
+  ],
+  alternates: {
+    canonical: 'https://tripdm.com',
+  },
+  openGraph: {
+    title: 'TripDM: Direct Message. Better Travel.',
+    description:
+      'Connect directly with trusted travel agents. Browse curated India travel packages and book your dream trip with TripDM.',
+    type: 'website',
+    url: 'https://tripdm.com',
+    siteName: 'TripDM',
+    images: [
+      {
+        url: 'https://tripdm.com/homepage-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'TripDM – Direct Message. Better Travel.',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TripDM: Direct Message. Better Travel.',
+    description:
+      'Connect directly with trusted travel agents. Browse curated India travel packages.',
+    images: ['https://tripdm.com/homepage-image.png'],
+  },
 };
 
 import { Suspense } from 'react';
