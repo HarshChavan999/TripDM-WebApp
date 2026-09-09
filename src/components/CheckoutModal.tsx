@@ -314,31 +314,31 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white border border-gray-100 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transition-all">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transition-all max-h-[92vh]">
         {/* Header Bar */}
-        <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between relative">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-500/20 border border-orange-400/30 rounded-2xl flex items-center justify-center text-orange-400">
-              <CreditCard className="w-5 h-5" />
+        <div className="px-4 sm:px-6 py-3.5 sm:py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between relative shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-orange-500/20 border border-orange-400/30 rounded-xl sm:rounded-2xl flex items-center justify-center text-orange-400 shrink-0">
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Upgrade Checkout</h3>
-              <p className="text-xs text-slate-300">Complete your agency subscription upgrade</p>
+              <h3 className="font-bold text-sm sm:text-base text-white">Upgrade Checkout</h3>
+              <p className="text-[11px] sm:text-xs text-slate-300">Complete your agency subscription upgrade</p>
             </div>
           </div>
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors border border-slate-700"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors border border-slate-700 shrink-0 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto max-h-[80vh]">
           {/* Selected Plan Summary Card */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-wider border border-orange-200">
                 Selected Plan

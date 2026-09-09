@@ -370,6 +370,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const [userActiveSection, setUserActiveSection] = useState('listings');
   const [fromSection, setFromSection] = useState('listings');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [agencyMobileMenuOpen, setAgencyMobileMenuOpen] = useState(false);
   const [pricingConfig, setPricingConfig] = useState({ starterPrice: 2000, premiumPrice: 5000, vipPrice: 10000, addonCreditPrice: 1 });
   const searchParams = useSearchParams();
   const sectionParam = searchParams.get('section');
@@ -7363,11 +7364,204 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       );
     }
 
-  // Agency Dashboard — render when on agency portal route with valid agency account OR when user has agency role and not on user route
   if (user && userData && (userData.role === 'agency' || (userData.role === 'admin' && routeMode === 'agency'))) {
+    const totalAgencyUnreadCount = agencyConversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
-          <div className={`w-64 bg-white border-r border-gray-200 flex flex-col z-20 shrink-0 ${agencyActiveSection === 'chat' ? 'hidden' : ''}`}>
+        <div className="flex h-screen bg-gray-50 overflow-hidden font-sans relative">
+          {/* Mobile Drawer Backdrop */}
+          {agencyMobileMenuOpen && (
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+              onClick={() => setAgencyMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Mobile Slide-out Drawer */}
+          <div
+            className={`fixed top-0 bottom-0 left-0 w-72 max-w-[85vw] bg-white z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
+              agencyMobileMenuOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+            }`}
+          >
+            {/* Drawer Header with Close Button */}
+            <div className="p-4 sm:p-5 border-b border-gray-200 flex items-center justify-between shrink-0 bg-slate-50/70">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                  {(agencyLogoUrl || userData?.logoUrl || userData?.agencyLogo) ? (
+                    <img
+                      src={agencyLogoUrl || userData?.logoUrl || userData?.agencyLogo}
+                      alt={userData?.companyName || 'Agency Logo'}
+                      className="max-h-10 max-w-[50px] object-contain"
+                      onError={() => setAgencyLogoError(true)}
+                    />
+                  ) : (
+                    <Building2 className="h-7 w-7 text-orange-500" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-bold text-gray-900 truncate">{userData?.companyName || 'Travel Agency'}</h2>
+                  <span className="text-[10px] text-gray-500 flex items-center gap-1 truncate mt-0.5">
+                    {userData?.approved ? <span className="text-emerald-600 font-semibold flex items-center gap-0.5"><CheckCircle className="h-3 w-3" /> Approved</span> : <span className="text-amber-600 font-semibold flex items-center gap-0.5"><Clock className="h-3 w-3" /> Pending</span>}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setAgencyMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors shrink-0 cursor-pointer"
+                aria-label="Close navigation menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Navigation links inside Mobile Drawer */}
+            <nav className="p-3 flex-1 overflow-y-auto sidebar-scroll space-y-1">
+              {userData?.approved ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setAgencyActiveSection('listings');
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'listings'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <ClipboardList className={`h-4 w-4 ${agencyActiveSection === 'listings' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Listings</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAgencyActiveSection('chat');
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                      agencyActiveSection === 'chat'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className={`h-4 w-4 ${agencyActiveSection === 'chat' ? 'text-white' : 'text-slate-500'}`} />
+                      <span>Customer Chat</span>
+                    </div>
+                    {totalAgencyUnreadCount > 0 && (
+                      <span className="bg-[#25D366] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {totalAgencyUnreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAgencyActiveSection('credits');
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'credits'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <CreditCard className={`h-4 w-4 ${agencyActiveSection === 'credits' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Plan & Credits</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAgencyActiveSection('transactions');
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'transactions'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <ClipboardList className={`h-4 w-4 ${agencyActiveSection === 'transactions' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Transactions</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAgencyActiveSection('settings');
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                      agencyActiveSection === 'settings'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <Settings className={`h-4 w-4 ${agencyActiveSection === 'settings' ? 'text-white' : 'text-slate-500'}`} />
+                    <span>Settings</span>
+                  </button>
+                </>
+              ) : (
+                <div className="p-3 text-center rounded-lg bg-amber-50 border border-amber-200/70">
+                  <Clock className="h-5 w-5 text-amber-600 mx-auto mb-1.5" />
+                  <p className="text-xs font-bold text-amber-900">Application Pending</p>
+                  <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">Dashboard features unlock automatically once approved.</p>
+                </div>
+              )}
+
+              <div className="pt-2.5 mt-2.5 border-t border-slate-200/60 space-y-1">
+                <a
+                  href="/"
+                  className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  style={{ borderRadius: '6px' }}
+                >
+                  <Globe className="h-4 w-4 text-slate-500" />
+                  <span>Back to Website</span>
+                </a>
+                <button
+                  onClick={signOut}
+                  className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+                  style={{ borderRadius: '6px' }}
+                >
+                  <LogOut className="h-4 w-4 text-red-500" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </nav>
+
+            {userData?.approved && (
+              <div className="p-4 border-t border-slate-200/70 bg-slate-50/60 shrink-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">
+                      Plan: <span className="text-orange-600 font-extrabold">{userData?.plan || 'Free'}</span>
+                    </p>
+                    <p className="text-xs font-bold text-slate-900">
+                      {`${userData?.credits ?? 0} Credits`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAgencyActiveSection('credits');
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className="text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 rounded-md shadow-xs cursor-pointer"
+                    style={{ borderRadius: '6px' }}
+                  >
+                    Upgrade
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Sidebar */}
+          <div className={`hidden md:flex md:w-64 bg-white border-r border-gray-200 flex-col z-20 shrink-0 ${agencyActiveSection === 'chat' ? 'hidden' : ''}`}>
             <div className="p-6 border-b border-gray-200 flex flex-col items-center text-center shrink-0">
               <div className="w-28 h-20 flex items-center justify-center mb-3 shrink-0">
                 {(agencyLogoUrl || userData?.logoUrl || userData?.agencyLogo) ? (
@@ -7405,15 +7599,22 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                   <button
                     onClick={() => setAgencyActiveSection('chat')}
-                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer ${
+                    className={`w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center justify-between cursor-pointer ${
                       agencyActiveSection === 'chat'
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.01]'
                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200/50'
                     }`}
                     style={{ borderRadius: '6px' }}
                   >
-                    <MessageSquare className={`h-4 w-4 ${agencyActiveSection === 'chat' ? 'text-white' : 'text-slate-500'}`} />
-                    <span>Customer Chat</span>
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className={`h-4 w-4 ${agencyActiveSection === 'chat' ? 'text-white' : 'text-slate-500'}`} />
+                      <span>Customer Chat</span>
+                    </div>
+                    {totalAgencyUnreadCount > 0 && (
+                      <span className="bg-[#25D366] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {totalAgencyUnreadCount}
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -7500,18 +7701,28 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           </div>
 
           <div className="flex-1 flex flex-col min-w-0 bg-gray-50/50">
-            <header className="h-16 sticky top-0 z-10 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
+            <header className="h-14 sm:h-16 sticky top-0 z-20 bg-white border-b border-gray-200 px-3 sm:px-6 md:px-8 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                {/* Mobile Menu Hamburger */}
+                <button
+                  onClick={() => setAgencyMobileMenuOpen(true)}
+                  className="md:hidden p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+                  aria-label="Open menu"
+                  title="Open Navigation Menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+
                 {agencyActiveSection === 'chat' && (
                   <button
                     onClick={() => setAgencyActiveSection('listings')}
-                    className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm mr-2"
+                    className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-xs mr-0.5 sm:mr-2 shrink-0"
                     title="Back to Dashboard"
                   >
                     ←
                   </button>
                 )}
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-sm sm:text-lg md:text-xl font-bold text-gray-900 truncate">
                   {agencyActiveSection === 'overview' && 'Agency Overview'}
                   {agencyActiveSection === 'listings' && 'Travel Listings'}
                   {agencyActiveSection === 'bookings' && 'Booking Management'}
@@ -7521,35 +7732,36 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   {agencyActiveSection === 'settings' && 'Agency Settings'}
                 </h1>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <a
                   href="/"
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold bg-white/90 text-slate-700 hover:bg-white hover:text-slate-900 border border-slate-200/80 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02] transition-all duration-200"
+                  className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold bg-white/90 text-slate-700 hover:bg-white hover:text-slate-900 border border-slate-200/80 hover:border-slate-300 hover:shadow-xs transition-all duration-200"
                   style={{ borderRadius: '6px' }}
                   title="View Landing Page Website"
                 >
-                  <ArrowLeft className="h-3.5 w-3.5 text-slate-500" />
                   <Globe className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Back to Website</span>
+                  <span className="hidden sm:inline">Back to Website</span>
+                  <span className="inline sm:hidden">Website</span>
                 </a>
-                <span className="text-sm text-gray-600 flex items-center gap-1">Status: {userData?.approved ? <span className="flex items-center gap-1"><CheckCircle className="h-4 w-4 text-green-600" /> Approved</span> : <span className="flex items-center gap-1"><Clock className="h-4 w-4 text-yellow-600" /> Pending</span>}</span>
+                <span className="hidden md:flex text-xs text-gray-600 items-center gap-1">Status: {userData?.approved ? <span className="flex items-center gap-1 text-emerald-700 font-semibold"><CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Approved</span> : <span className="flex items-center gap-1 text-amber-700 font-semibold"><Clock className="h-3.5 w-3.5 text-amber-600" /> Pending</span>}</span>
                 <button
                   onClick={signOut}
-                  className="px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold bg-white/90 text-slate-700 hover:bg-red-50 hover:text-red-600 border border-slate-200/80 hover:border-red-200 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                  className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold bg-white/90 text-slate-700 hover:bg-red-50 hover:text-red-600 border border-slate-200/80 hover:border-red-200 hover:shadow-xs transition-all duration-200 cursor-pointer"
                   style={{ borderRadius: '6px' }}
                 >
-                  Sign Out
+                  <span className="hidden xs:inline">Sign Out</span>
+                  <LogOut className="h-3.5 w-3.5 inline xs:hidden" />
                 </button>
               </div>
             </header>
 
-            <main className={`overflow-y-auto dashboard-scroll ${agencyActiveSection === 'chat' ? 'flex-1 flex flex-col min-h-0 p-0' : 'flex-1 p-8'}`}>
+            <main className={`overflow-y-auto dashboard-scroll ${agencyActiveSection === 'chat' ? 'flex-1 flex flex-col min-h-0 p-0' : 'flex-1 p-3.5 sm:p-6 md:p-8 pb-20 md:pb-8'}`}>
               {userData?.approved ? (
                 <>
                   {agencyActiveSection === 'overview' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                       <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden" style={{ borderRadius: '6px' }}>
-                        <CardContent className="p-6">
+                        <CardContent className="p-4 sm:p-6">
                           <div className="flex items-center">
                             <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-md" style={{ borderRadius: '6px' }}>
                               <Users className="h-6 w-6 text-amber-600" />
@@ -7563,7 +7775,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       </Card>
 
                       <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden" style={{ borderRadius: '6px' }}>
-                        <CardContent className="p-6">
+                        <CardContent className="p-4 sm:p-6">
                           <div className="flex items-center">
                             <div className="p-2 bg-emerald-50 border border-emerald-200/60 rounded-md" style={{ borderRadius: '6px' }}>
                               <CheckCircle className="h-6 w-6 text-emerald-600" />
@@ -7577,7 +7789,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       </Card>
 
                       <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden" style={{ borderRadius: '6px' }}>
-                        <CardContent className="p-6">
+                        <CardContent className="p-4 sm:p-6">
                           <div className="flex items-center">
                             <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-md" style={{ borderRadius: '6px' }}>
                               <Clock className="h-6 w-6 text-amber-600" />
@@ -7595,7 +7807,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   {agencyActiveSection === 'listings' && (
                     <div className="space-y-6">
                       {/* Navigation Buttons */}
-                      <div className="flex flex-wrap gap-3 mb-6">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 overflow-x-auto no-scrollbar pb-1">
                         <button
                           onClick={() => {
                             setShowListingForm(false);
@@ -7603,7 +7815,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                             setEditingListing(null);
                             setViewingListing(null);
                           }}
-                          className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 shrink-0 cursor-pointer ${
+                          className={`px-3.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${
                             (!showListingForm && !showBulkUpload && !viewingListing)
                               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
                               : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
@@ -7619,7 +7831,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                             setEditingListing(null);
                             setViewingListing(null);
                           }}
-                          className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 shrink-0 cursor-pointer ${
+                          className={`px-3.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${
                             showListingForm
                               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
                               : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
@@ -7635,7 +7847,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                             setEditingListing(null);
                             setViewingListing(null);
                           }}
-                          className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 shrink-0 cursor-pointer ${
+                          className={`px-3.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${
                             showBulkUpload
                               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
                               : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
@@ -7717,10 +7929,10 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                         return (
                           <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden w-full" style={{ borderRadius: '8px' }}>
-                            <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                               <div>
-                                <CardTitle className="flex items-center text-xl font-bold text-gray-900">
-                                  <Palmtree className="mr-2 h-6 w-6 text-amber-600" />
+                                <CardTitle className="flex items-center text-lg sm:text-xl font-bold text-gray-900">
+                                  <Palmtree className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                                   Your Travel Listings
                                 </CardTitle>
                                 <CardDescription className="text-gray-500 text-xs mt-1">
@@ -7742,7 +7954,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                   {agencyListingSearchQuery && (
                                     <button
                                       onClick={() => setAgencyListingSearchQuery('')}
-                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition-colors"
+                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                                       title="Clear search"
                                     >
                                       <X className="h-3.5 w-3.5" />
@@ -7751,7 +7963,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                 </div>
                               )}
                             </CardHeader>
-                            <CardContent className="p-6">
+                            <CardContent className="p-4 sm:p-6">
                               {agencyListingSearchQuery && (
                                 <div className="mb-4 flex items-center justify-between text-xs text-slate-600 bg-amber-50/70 border border-amber-200/60 px-3.5 py-2 rounded-lg">
                                   <span>
@@ -7806,38 +8018,40 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                   </div>
                                 ) : (
                                   filteredAgencyListings.map((listing) => (
-                                    <div key={listing.id} className="flex items-center justify-between p-4 bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all duration-200 rounded-md" style={{ borderRadius: '6px' }}>
-                                      <div className="flex items-center space-x-4">
-                                        <div className="w-12 h-12 bg-amber-50 border border-amber-200/60 rounded-md flex items-center justify-center shrink-0" style={{ borderRadius: '6px' }}>
-                                          <Palmtree className="h-6 w-6 text-amber-600" />
+                                    <div key={listing.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all duration-200 rounded-md" style={{ borderRadius: '6px' }}>
+                                      <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 border border-amber-200/60 rounded-md flex items-center justify-center shrink-0 mt-0.5 sm:mt-0" style={{ borderRadius: '6px' }}>
+                                          <Palmtree className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                                         </div>
-                                        <div>
-                                          <h3 className="font-bold text-gray-900 text-sm">{listing.title}</h3>
+                                        <div className="min-w-0 flex-1">
+                                          <h3 className="font-bold text-gray-900 text-sm truncate">{listing.title}</h3>
                                           {listing.packageType && (
-                                            <p className="text-xs text-slate-600 mb-1 font-semibold">
-                                              {listing.packageType === 'international' ? ' International' : ' Domestic'}
+                                            <p className="text-xs text-slate-600 mb-0.5 font-semibold">
+                                              {listing.packageType === 'international' ? 'International' : 'Domestic'}
                                               {listing.packageType === 'international' && listing.countryName && ` • ${listing.countryName}`}
                                               {listing.packageType === 'domestic' && listing.stateName && ` • ${listing.stateName}`}
                                             </p>
                                           )}
-                                          <p className="text-xs text-gray-500">
-                                            {listing.itinerary?.length || 0} days • {listing.packageType === 'international' ? '$' : '₹'}{listing.cost || listing.price || 'N/A'}
-                                            <span className={`ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold border ${listing.approved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                                          <div className="text-xs text-gray-500 flex flex-wrap items-center gap-1.5">
+                                            <span>{listing.itinerary?.length || 0} days</span>
+                                            <span>•</span>
+                                            <span className="font-medium text-slate-800">{listing.packageType === 'international' ? '$' : '₹'}{listing.cost || listing.price || 'N/A'}</span>
+                                            <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${listing.approved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
                                               }`} style={{ borderRadius: '4px' }}>
                                               {listing.approved ? 'Approved' : 'Pending'}
                                             </span>
-                                          </p>
+                                          </div>
                                           {listing.placesCovered && listing.placesCovered.length > 0 && (
-                                            <p className="text-[11px] text-gray-400 mt-1">
+                                            <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">
                                               Places: {listing.placesCovered.map((place: any) => place.name).join(', ')}
                                             </p>
                                           )}
                                         </div>
                                       </div>
-                                      <div className="flex space-x-2">
+                                      <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 justify-end shrink-0">
                                         <button
                                           onClick={() => handleViewListing(listing)}
-                                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-xs hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-pointer text-center"
                                           style={{ borderRadius: '6px' }}
                                         >
                                           Preview
@@ -7848,14 +8062,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                             setShowBulkUpload(false);
                                             setEditingListing(listing);
                                           }}
-                                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-xs hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-pointer text-center"
                                           style={{ borderRadius: '6px' }}
                                         >
                                           Edit
                                         </button>
                                         <button
                                           onClick={() => handleDeleteListing(listing.id)}
-                                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 hover:shadow-xs hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-semibold bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 hover:shadow-xs transition-all duration-200 cursor-pointer text-center"
                                           style={{ borderRadius: '6px' }}
                                         >
                                           Delete
@@ -7884,9 +8098,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                   {agencyActiveSection === 'bookings' && (
                     <div className="space-y-6 w-full">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                         <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden" style={{ borderRadius: '6px' }}>
-                          <CardContent className="p-6">
+                          <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center">
                               <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-md" style={{ borderRadius: '6px' }}>
                                 <Calendar className="h-6 w-6 text-amber-600" />
@@ -7900,7 +8114,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         </Card>
 
                         <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden" style={{ borderRadius: '6px' }}>
-                          <CardContent className="p-6">
+                          <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center">
                               <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-md" style={{ borderRadius: '6px' }}>
                                 <Clock className="h-6 w-6 text-amber-600" />
@@ -7914,7 +8128,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         </Card>
 
                         <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden" style={{ borderRadius: '6px' }}>
-                          <CardContent className="p-6">
+                          <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center">
                               <div className="p-2 bg-emerald-50 border border-emerald-200/60 rounded-md" style={{ borderRadius: '6px' }}>
                                 <CheckCircle className="h-6 w-6 text-emerald-600" />
@@ -7929,16 +8143,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       </div>
 
                       <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden w-full" style={{ borderRadius: '8px' }}>
-                        <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
-                          <CardTitle className="flex items-center text-xl font-bold text-gray-900">
-                            <Calendar className="mr-2 h-6 w-6 text-amber-600" />
+                        <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 sm:p-6">
+                          <CardTitle className="flex items-center text-lg sm:text-xl font-bold text-gray-900">
+                            <Calendar className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                             Recent Bookings
                           </CardTitle>
                           <CardDescription className="text-xs text-gray-500 mt-1">
                             Manage customer bookings and inquiries
                           </CardDescription>
                         </CardHeader>
-                        <CardContent className="p-6">
+                        <CardContent className="p-4 sm:p-6">
                           {agencyBookings.length === 0 ? (
                             <div className="text-center py-12">
                               <div className="w-16 h-16 bg-amber-50 border border-amber-200/60 rounded-md flex items-center justify-center mx-auto mb-4" style={{ borderRadius: '6px' }}>
@@ -7955,20 +8169,28 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           ) : (
                             <div className="space-y-4">
                               {agencyBookings.map((booking) => (
-                                <div key={booking.id} className="flex items-center justify-between p-4 bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all duration-200 rounded-md" style={{ borderRadius: '6px' }}>
-                                  <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-amber-50 border border-amber-200/60 rounded-md flex items-center justify-center shrink-0" style={{ borderRadius: '6px' }}>
-                                      <User className="h-6 w-6 text-amber-600" />
+                                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all duration-200 rounded-md" style={{ borderRadius: '6px' }}>
+                                  <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 border border-amber-200/60 rounded-md flex items-center justify-center shrink-0 mt-0.5 sm:mt-0" style={{ borderRadius: '6px' }}>
+                                      <User className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                                     </div>
-                                    <div>
-                                      <h3 className="font-bold text-gray-900 text-sm">{booking.userName}</h3>
-                                      <p className="text-xs text-slate-600 mb-0.5 font-medium">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                        <h3 className="font-bold text-gray-900 text-sm">{booking.userName}</h3>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border sm:hidden ${booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                            booking.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                              'bg-red-50 text-red-700 border-red-200'
+                                          }`} style={{ borderRadius: '4px' }}>
+                                          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-slate-700 font-medium">
                                         {booking.listingTitle} • {booking.travelers} traveler{booking.travelers > 1 ? 's' : ''} • ${booking.totalAmount}
                                       </p>
                                       <p className="text-xs text-gray-500">
                                         Travel Date: {booking.travelDate || 'Not specified'} • Ref: {booking.bookingReference}
                                       </p>
-                                      <p className="text-xs text-gray-500">
+                                      <p className="text-xs text-gray-500 truncate">
                                         {booking.userEmail} • {(userData?.role === 'agency' && (userData?.plan === 'free' || !userData?.plan)) && booking.userPhone ? (
                                           <span 
                                             className="select-none inline-block bg-gray-200/50 rounded px-1"
@@ -7983,19 +8205,19 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col items-end space-y-2">
-                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                                    <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border ${booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                         booking.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                           'bg-red-50 text-red-700 border-red-200'
                                       }`} style={{ borderRadius: '4px' }}>
                                       {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                                     </span>
-                                    <div className="flex space-x-2">
+                                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                                       <button
                                         onClick={() => {
                                           alert(`Booking Details:\n\n${booking.specialRequests || 'No special requests'}\n\nPreferences: ${booking.preferences.join(', ') || 'None'}`);
                                         }}
-                                        className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-xs hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-pointer text-center"
                                         style={{ borderRadius: '6px' }}
                                       >
                                         Details
@@ -8017,7 +8239,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                               alert('Failed to confirm booking. Please try again.');
                                             }
                                           }}
-                                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 transition-all duration-200 cursor-pointer text-center"
                                           style={{ borderRadius: '6px' }}
                                         >
                                           Confirm
@@ -8528,7 +8750,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                   </div>
                                 </div>
                               ) : (
-                                  <div className="px-6 py-3.5 bg-white border-t border-gray-200 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                  <div className="px-4 sm:px-6 py-3 sm:py-3.5 bg-white border-t border-gray-200 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
                                     <div className="space-y-0.5 text-center sm:text-left">
                                       <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5 justify-center sm:justify-start">
                                         <Lock className="h-3.5 w-3.5 text-amber-600" /> Conversation Locked
@@ -8541,8 +8763,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                         }.
                                       </p>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                      <div className="text-right hidden md:block">
+                                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                      <div className="text-right hidden sm:block">
                                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Your Balance</p>
                                         <p className="text-xs font-black text-gray-800">
                                           {`${userData?.credits ?? 0} Credits`}
@@ -8550,7 +8772,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                       </div>
                                       <button
                                         onClick={() => unlockCustomerChat(selectedConversation.userId, selectedConversation.userName)}
-                                        className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-95"
+                                        className="w-full sm:w-auto justify-center bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-95"
                                       >
                                         <Sparkles className="h-3.5 w-3.5" /> Unlock to Reply
                                       </button>
@@ -8582,19 +8804,19 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     return (
                       <div className="space-y-5 w-full">
                         {/* Page Title */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>
-                            <h2 className="text-xl font-bold text-gray-900">Billing &amp; Transactions</h2>
+                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Billing &amp; Transactions</h2>
                             <p className="text-xs text-gray-500 mt-0.5">All payments made on your TripDM account</p>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 border border-slate-200/80 bg-white rounded-md px-3 py-1.5 shadow-xs" style={{ borderRadius: '6px' }}>
+                          <div className="inline-flex items-center gap-1.5 text-xs text-slate-500 border border-slate-200/80 bg-white rounded-md px-3 py-1.5 shadow-xs w-fit" style={{ borderRadius: '6px' }}>
                             <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                             Secured by Razorpay
                           </div>
                         </div>
 
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
                           <div className="bg-white border border-slate-200/80 rounded-md p-4 shadow-xs" style={{ borderRadius: '6px' }}>
                             <p className="text-[11px] text-gray-500 font-medium mb-1">Total Transactions</p>
                             <p className="text-2xl font-bold text-gray-900">{txList.length}</p>
@@ -8612,16 +8834,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           </div>
                         </div>
 
-                        {/* Table */}
+                        {/* Table / Cards Container */}
                         <div className="bg-white border border-slate-200/80 rounded-md overflow-hidden shadow-xs" style={{ borderRadius: '8px' }}>
                           {/* Table Header Bar */}
-                          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
                             <p className="text-xs font-bold text-gray-800">Transaction History</p>
                             <p className="text-[11px] text-gray-400">{txList.length} record{txList.length !== 1 ? 's' : ''}</p>
                           </div>
 
                           {txList.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                               <div className="w-12 h-12 bg-amber-50 border border-amber-200/60 rounded-md flex items-center justify-center mb-3" style={{ borderRadius: '6px' }}>
                                 <ClipboardList className="w-6 h-6 text-amber-600" />
                               </div>
@@ -8636,81 +8858,127 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                               </button>
                             </div>
                           ) : (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="border-b border-slate-100 bg-slate-50/30">
-                                    <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Date</th>
-                                    <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Description</th>
-                                    <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Type</th>
-                                    <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Payment ID</th>
-                                    <th className="text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Amount</th>
-                                    <th className="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Status</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 text-xs">
-                                  {txList.map((tx: any, idx: number) => {
-                                    const isPlan = tx.type === 'plan-change';
-                                    const isTopUp = tx.type === 'top-up';
-                                    const date = new Date(tx.timestamp);
-                                    const payId = tx.razorpay_payment_id || tx.id || '';
-                                    const shortId = payId ? payId.slice(-12).toUpperCase() : `TXN-${String(idx + 1).padStart(4, '0')}`;
-                                    return (
-                                      <tr key={tx.id || idx} className="hover:bg-gray-50/70 transition-colors">
-                                        {/* Date */}
-                                        <td className="px-5 py-3.5 whitespace-nowrap">
-                                          <p className="text-xs font-medium text-gray-900">{date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                                          <p className="text-[11px] text-gray-400">{date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
-                                        </td>
-                                        {/* Description */}
-                                        <td className="px-5 py-3.5">
-                                          <p className="text-xs font-semibold text-gray-900">{tx.description}</p>
-                                          <p className="text-[11px] text-gray-400">
-                                            {isPlan ? `→ ${String(tx.amount || '').toUpperCase()} Plan` : isTopUp ? `+${tx.amount} Credits added` : `${tx.amount}`}
-                                          </p>
-                                        </td>
-                                        {/* Type Badge */}
-                                        <td className="px-5 py-3.5 whitespace-nowrap">
-                                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
-                                            isPlan
-                                              ? 'bg-violet-50 text-violet-700 border-violet-200'
-                                              : isTopUp
-                                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                              : 'bg-blue-50 text-blue-700 border-blue-200'
-                                          }`} style={{ borderRadius: '4px' }}>
-                                            {isPlan ? 'Plan Upgrade' : isTopUp ? 'Credit Top-up' : 'Credit'}
-                                          </span>
-                                        </td>
-                                        {/* Payment ID */}
-                                        <td className="px-5 py-3.5">
-                                          <span className="font-mono text-[11px] text-gray-400 hover:text-gray-700 transition-colors cursor-default" title={payId}>
-                                            {payId ? shortId : '—'}
-                                          </span>
-                                        </td>
-                                        {/* Amount */}
-                                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                                          <p className="text-sm font-bold text-gray-900">
-                                            {tx.amountPaid ? `₹${Number(tx.amountPaid).toLocaleString('en-IN')}` : '—'}
-                                          </p>
-                                        </td>
-                                        {/* Status */}
-                                        <td className="px-5 py-3.5 text-center">
-                                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md" style={{ borderRadius: '4px' }}>
-                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                                            Paid
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
+                            <>
+                              {/* Mobile Card Layout (< 640px) */}
+                              <div className="block sm:hidden divide-y divide-gray-100">
+                                {txList.map((tx: any, idx: number) => {
+                                  const isPlan = tx.type === 'plan-change';
+                                  const isTopUp = tx.type === 'top-up';
+                                  const date = new Date(tx.timestamp);
+                                  const payId = tx.razorpay_payment_id || tx.id || '';
+                                  const shortId = payId ? payId.slice(-12).toUpperCase() : `TXN-${String(idx + 1).padStart(4, '0')}`;
+                                  return (
+                                    <div key={tx.id || idx} className="p-4 space-y-2 hover:bg-slate-50/50 transition-colors">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                                          isPlan
+                                            ? 'bg-violet-50 text-violet-700 border-violet-200'
+                                            : isTopUp
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                                        }`} style={{ borderRadius: '4px' }}>
+                                          {isPlan ? 'Plan Upgrade' : isTopUp ? 'Credit Top-up' : 'Credit'}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md" style={{ borderRadius: '4px' }}>
+                                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                          Paid
+                                        </span>
+                                      </div>
+                                      <div className="flex items-baseline justify-between gap-2">
+                                        <p className="text-xs font-semibold text-gray-900">{tx.description}</p>
+                                        <p className="text-sm font-bold text-gray-900 shrink-0">
+                                          {tx.amountPaid ? `₹${Number(tx.amountPaid).toLocaleString('en-IN')}` : '—'}
+                                        </p>
+                                      </div>
+                                      <p className="text-[11px] text-gray-500">
+                                        {isPlan ? `→ ${String(tx.amount || '').toUpperCase()} Plan` : isTopUp ? `+${tx.amount} Credits added` : `${tx.amount}`}
+                                      </p>
+                                      <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-dashed border-gray-100">
+                                        <span>{date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} • {date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="font-mono">{payId ? shortId : '—'}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Desktop / Tablet Table Layout (>= 640px) */}
+                              <div className="hidden sm:block overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="border-b border-slate-100 bg-slate-50/30">
+                                      <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Date</th>
+                                      <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Description</th>
+                                      <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Type</th>
+                                      <th className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Payment ID</th>
+                                      <th className="text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Amount</th>
+                                      <th className="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-50 text-xs">
+                                    {txList.map((tx: any, idx: number) => {
+                                      const isPlan = tx.type === 'plan-change';
+                                      const isTopUp = tx.type === 'top-up';
+                                      const date = new Date(tx.timestamp);
+                                      const payId = tx.razorpay_payment_id || tx.id || '';
+                                      const shortId = payId ? payId.slice(-12).toUpperCase() : `TXN-${String(idx + 1).padStart(4, '0')}`;
+                                      return (
+                                        <tr key={tx.id || idx} className="hover:bg-gray-50/70 transition-colors">
+                                          {/* Date */}
+                                          <td className="px-5 py-3.5 whitespace-nowrap">
+                                            <p className="text-xs font-medium text-gray-900">{date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                            <p className="text-[11px] text-gray-400">{date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                                          </td>
+                                          {/* Description */}
+                                          <td className="px-5 py-3.5">
+                                            <p className="text-xs font-semibold text-gray-900">{tx.description}</p>
+                                            <p className="text-[11px] text-gray-400">
+                                              {isPlan ? `→ ${String(tx.amount || '').toUpperCase()} Plan` : isTopUp ? `+${tx.amount} Credits added` : `${tx.amount}`}
+                                            </p>
+                                          </td>
+                                          {/* Type Badge */}
+                                          <td className="px-5 py-3.5 whitespace-nowrap">
+                                            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                                              isPlan
+                                                ? 'bg-violet-50 text-violet-700 border-violet-200'
+                                                : isTopUp
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                                            }`} style={{ borderRadius: '4px' }}>
+                                              {isPlan ? 'Plan Upgrade' : isTopUp ? 'Credit Top-up' : 'Credit'}
+                                            </span>
+                                          </td>
+                                          {/* Payment ID */}
+                                          <td className="px-5 py-3.5">
+                                            <span className="font-mono text-[11px] text-gray-400 hover:text-gray-700 transition-colors cursor-default" title={payId}>
+                                              {payId ? shortId : '—'}
+                                            </span>
+                                          </td>
+                                          {/* Amount */}
+                                          <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                                            <p className="text-sm font-bold text-gray-900">
+                                              {tx.amountPaid ? `₹${Number(tx.amountPaid).toLocaleString('en-IN')}` : '—'}
+                                            </p>
+                                          </td>
+                                          {/* Status */}
+                                          <td className="px-5 py-3.5 text-center">
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md" style={{ borderRadius: '4px' }}>
+                                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                              Paid
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </>
                           )}
 
                           {/* Table Footer */}
                           {txList.length > 0 && (
-                            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <div className="px-4 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <p className="text-[11px] text-gray-400">Showing {txList.length} of {txList.length} transactions · Amounts in INR</p>
                               <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
                                 <svg className="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
@@ -8725,18 +8993,18 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                   {agencyActiveSection === 'settings' && (
                     <Card className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden w-full" style={{ borderRadius: '8px' }}>
-                      <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 md:p-8">
-                        <CardTitle className="flex items-center text-xl font-bold text-gray-900">
-                          <Settings className="mr-2.5 h-6 w-6 text-amber-600" />
+                      <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 sm:p-6 md:p-8">
+                        <CardTitle className="flex items-center text-lg sm:text-xl font-bold text-gray-900">
+                          <Settings className="mr-2.5 h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                           Profile Branding & Contact Information
                         </CardTitle>
                         <CardDescription className="text-xs text-gray-500 mt-1">
                           Manage your agency profile branding, contact info, and business description
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="p-6 md:p-8 space-y-8">
+                      <CardContent className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
                         {/* Agency Logo Upload Section */}
-                        <div className="bg-slate-50 border border-slate-200/80 rounded-md p-6 flex flex-col md:flex-row items-center gap-6 shadow-xs" style={{ borderRadius: '6px' }}>
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-md p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 shadow-xs" style={{ borderRadius: '6px' }}>
                           <div className="w-20 h-20 bg-white rounded-md border border-slate-200/80 shadow-xs flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: '6px' }}>
                             {(agencyLogoUrl || userData?.logoUrl || userData?.agencyLogo) && !agencyLogoError ? (
                               <img
@@ -8749,13 +9017,13 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                               <Building2 className="h-8 w-8 text-slate-400" />
                             )}
                           </div>
-                          <div className="flex-1 text-center md:text-left">
+                          <div className="flex-1 text-center sm:text-left">
                             <h3 className="text-sm font-bold text-gray-900">Agency Branding Logo</h3>
                             <p className="text-xs text-gray-500 mt-1 max-w-lg leading-relaxed">
                               Upload a clean, professional company logo to stand out in travel listings and customer chats. We recommend a high-resolution PNG or JPG.
                             </p>
                             <label
-                              className="mt-4 inline-flex items-center gap-2 bg-white/90 hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-semibold px-4 py-2 rounded-md border border-slate-200/80 shadow-xs cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:border-slate-300"
+                              className="mt-3.5 inline-flex items-center gap-2 bg-white/90 hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-semibold px-4 py-2 rounded-md border border-slate-200/80 shadow-xs cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:border-slate-300"
                               style={{ borderRadius: '6px' }}
                             >
                               <span className="flex items-center gap-1.5"><Upload className="h-4 w-4 text-amber-600" /> Upload New Logo</span>
@@ -8769,7 +9037,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                           <div>
                             <Label htmlFor="agencyName" className="text-xs font-semibold text-gray-600 mb-1.5 block">Agency Company Name</Label>
                             <Input
@@ -8805,9 +9073,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                           {/* Default Inclusions */}
-                          <div className="space-y-4 bg-white p-5 border border-slate-200/80 rounded-md shadow-xs" style={{ borderRadius: '6px' }}>
+                          <div className="space-y-4 bg-white p-4 sm:p-5 border border-slate-200/80 rounded-md shadow-xs" style={{ borderRadius: '6px' }}>
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
                               <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider block">Default Inclusions</Label>
                               <button
@@ -8853,7 +9121,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           </div>
 
                           {/* Default Exclusions */}
-                          <div className="space-y-4 bg-white p-5 border border-slate-200/80 rounded-md shadow-xs" style={{ borderRadius: '6px' }}>
+                          <div className="space-y-4 bg-white p-4 sm:p-5 border border-slate-200/80 rounded-md shadow-xs" style={{ borderRadius: '6px' }}>
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
                               <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider block">Default Exclusions</Label>
                               <button
@@ -8901,7 +9169,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                         <div>
                           <h3 className="text-sm font-bold text-gray-900 mb-3">Notification Preferences</h3>
-                          <div className="space-y-3 bg-slate-50/70 border border-slate-200/80 rounded-md p-5 shadow-xs" style={{ borderRadius: '6px' }}>
+                          <div className="space-y-3 bg-slate-50/70 border border-slate-200/80 rounded-md p-4 sm:p-5 shadow-xs" style={{ borderRadius: '6px' }}>
                             <label className="flex items-center gap-3 cursor-pointer">
                               <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-400" defaultChecked />
                               <span className="text-xs font-semibold text-gray-700">Email notifications for new user bookings & inquiries</span>
@@ -8921,7 +9189,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           <button
                             onClick={handleSaveAgencySettings}
                             disabled={savingAgencySettings}
-                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-md shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-md shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             style={{ borderRadius: '6px' }}
                           >
                             {savingAgencySettings ? 'Saving Settings...' : 'Save All Settings'}
@@ -8933,26 +9201,26 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                   {agencyActiveSection === 'credits' && (
                     <Card id="plans-and-credits-card" className="bg-white border border-slate-200/80 shadow-xs rounded-md overflow-hidden w-full" style={{ borderRadius: '8px' }}>
-                      <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 md:p-8">
-                        <CardTitle className="flex items-center text-xl font-bold text-gray-900">
-                          <CreditCard className="mr-2.5 h-6 w-6 text-amber-600" />
+                      <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-4 sm:p-6 md:p-8">
+                        <CardTitle className="flex items-center text-lg sm:text-xl font-bold text-gray-900">
+                          <CreditCard className="mr-2.5 h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                           Plan & Message Credits
                         </CardTitle>
                         <CardDescription className="text-xs text-gray-500 mt-1">
                           Manage subscription plans, buy add-on credits, and track transaction history
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="p-6 md:p-8 space-y-8">
+                      <CardContent className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
                         {/* Hero Header */}
-                        <div className="bg-slate-50 border border-slate-200/80 rounded-md p-6 flex flex-col md:flex-row items-center gap-6 shadow-xs" style={{ borderRadius: '6px' }}>
-                          <div className="w-20 h-20 bg-white rounded-md border border-slate-200/80 shadow-xs flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: '6px' }}>
-                            <CreditCard className="h-8 w-8 text-slate-400" />
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-md p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 shadow-xs" style={{ borderRadius: '6px' }}>
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-md border border-slate-200/80 shadow-xs flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: '6px' }}>
+                            <CreditCard className="h-7 w-7 sm:h-8 sm:w-8 text-slate-400" />
                           </div>
-                          <div className="flex-1 text-center md:text-left">
+                          <div className="flex-1 text-center sm:text-left">
                             <div className="inline-flex items-center gap-1.5 bg-white text-slate-800 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-md border border-slate-200/80 shadow-xs mb-3" style={{ borderRadius: '6px' }}>
                               <CreditCard className="w-3.5 h-3.5 mr-1 text-amber-600" /> Billing & Subscription Control Panel
                             </div>
-                            <h3 className="text-sm font-bold text-gray-900">
+                            <h3 className="text-sm sm:text-base font-bold text-gray-900">
                               Premium Reply Credits
                             </h3>
                             <p className="text-xs text-gray-500 mt-1 max-w-lg leading-relaxed">
@@ -8962,8 +9230,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         </div>
 
                         {/* Current Plan Summary Card & Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div className="md:col-span-1 bg-white border border-slate-200/80 shadow-xs rounded-md p-5 relative overflow-hidden flex flex-col justify-between" style={{ borderRadius: '6px' }}>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                          <div className="lg:col-span-1 bg-white border border-slate-200/80 shadow-xs rounded-md p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between" style={{ borderRadius: '6px' }}>
                             <div>
                               <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Current Plan</h3>
@@ -8998,7 +9266,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           </div>
 
                           {/* Quick Stats Grid */}
-                          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                             <div className="bg-white border border-slate-200/80 shadow-xs rounded-md p-4 flex items-center justify-between" style={{ borderRadius: '6px' }}>
                               <div className="space-y-0.5">
                                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Per Reply Cost</p>
@@ -9197,11 +9465,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         {/* Link to dedicated Transactions page */}
                         <div
                           onClick={() => setAgencyActiveSection('transactions')}
-                          className="flex items-center justify-between bg-slate-50 border border-slate-200/80 hover:border-amber-300 hover:bg-amber-50/50 rounded-md p-5 cursor-pointer transition-all group shadow-xs"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 border border-slate-200/80 hover:border-amber-300 hover:bg-amber-50/50 rounded-md p-4 sm:p-5 cursor-pointer transition-all group shadow-xs gap-3"
                           style={{ borderRadius: '6px' }}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-amber-100 group-hover:bg-amber-200 rounded-md flex items-center justify-center transition-colors" style={{ borderRadius: '6px' }}>
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="w-10 h-10 bg-amber-100 group-hover:bg-amber-200 rounded-md flex items-center justify-center transition-colors shrink-0" style={{ borderRadius: '6px' }}>
                               <ClipboardList className="w-5 h-5 text-amber-600" />
                             </div>
                             <div>
@@ -9210,7 +9478,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                             </div>
                           </div>
                           <div
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-slate-200/80 text-amber-600 shadow-xs group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500 transition-all duration-200"
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-slate-200/80 text-amber-600 shadow-xs group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500 transition-all duration-200 w-full sm:w-auto"
                             style={{ borderRadius: '6px' }}
                           >
                             View All →
@@ -9239,6 +9507,77 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
               )}
             </main>
           </div>
+
+          {/* Mobile Bottom Navigation Bar */}
+          <nav className={`fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 md:hidden flex items-center justify-around px-1 py-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] ${agencyActiveSection === 'chat' && selectedConversation ? 'hidden' : 'flex'}`}>
+            <button
+              onClick={() => setAgencyActiveSection('listings')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+                agencyActiveSection === 'listings'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <ClipboardList className="h-4 w-4 mb-0.5" />
+              <span className="text-[10px] leading-tight">Listings</span>
+            </button>
+
+            <button
+              onClick={() => setAgencyActiveSection('chat')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors relative cursor-pointer ${
+                agencyActiveSection === 'chat'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <div className="relative">
+                <MessageSquare className="h-4 w-4 mb-0.5" />
+                {totalAgencyUnreadCount > 0 && (
+                  <span className="absolute -top-1 -right-2.5 bg-[#25D366] text-white text-[8px] font-bold px-1 py-0.2 rounded-full min-w-[14px] text-center">
+                    {totalAgencyUnreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] leading-tight">Chat</span>
+            </button>
+
+            <button
+              onClick={() => setAgencyActiveSection('credits')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+                agencyActiveSection === 'credits'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <CreditCard className="h-4 w-4 mb-0.5" />
+              <span className="text-[10px] leading-tight">Credits</span>
+            </button>
+
+            <button
+              onClick={() => setAgencyActiveSection('transactions')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+                agencyActiveSection === 'transactions'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <ClipboardList className="h-4 w-4 mb-0.5" />
+              <span className="text-[10px] leading-tight">Billing</span>
+            </button>
+
+            <button
+              onClick={() => setAgencyActiveSection('settings')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+                agencyActiveSection === 'settings'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Settings className="h-4 w-4 mb-0.5" />
+              <span className="text-[10px] leading-tight">Settings</span>
+            </button>
+          </nav>
+
           <CheckoutModal
             isOpen={checkoutModalOpen}
             onClose={() => setCheckoutModalOpen(false)}
