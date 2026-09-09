@@ -69,12 +69,25 @@ export default function PackageClientView({ listing }: { listing: any }) {
     const unsubscribe = onSnapshot(doc(dbInstance, 'users', user.uid), (docSnapshot) => {
       if (docSnapshot.exists()) {
         const userData = docSnapshot.data();
-        const wishlistData = userData.wishlist && Array.isArray(userData.wishlist)
+        let wishlistData = userData.wishlist && Array.isArray(userData.wishlist)
           ? userData.wishlist
           : [];
+        
+        // Check for pending wishlist item saved before login
+        const pendingWishlist = sessionStorage.getItem('pending_wishlist_target');
+        if (pendingWishlist) {
+          sessionStorage.removeItem('pending_wishlist_target');
+          if (!wishlistData.includes(pendingWishlist)) {
+            wishlistData = [...wishlistData, pendingWishlist];
+            updateDoc(doc(dbInstance, 'users', user.uid), {
+              wishlist: wishlistData
+            }).catch(console.error);
+          }
+        }
+
         setWishlist(wishlistData);
         
-        if (!userData.wishlist) {
+        if (!userData.wishlist && !pendingWishlist) {
           updateDoc(doc(dbInstance, 'users', user.uid), {
             wishlist: []
           }).catch(console.error);
@@ -100,7 +113,8 @@ export default function PackageClientView({ listing }: { listing: any }) {
 
   const handleWishlistToggle = (listingId: string) => {
     if (!user) {
-      alert("Please login to add packages to your wishlist.");
+      sessionStorage.setItem('pending_wishlist_target', listingId);
+      setShowAuthModal(true);
       return;
     }
     setWishlist(prev => {
@@ -115,9 +129,11 @@ export default function PackageClientView({ listing }: { listing: any }) {
   // Auto-redirect to chat after user logs in if a pending chat target was saved
   useEffect(() => {
     if (user) {
+      setShowAuthModal(false);
       try {
         const pendingRaw = sessionStorage.getItem('pending_chat_target');
         if (pendingRaw) {
+          sessionStorage.removeItem('pending_chat_target');
           const pending = JSON.parse(pendingRaw);
           if (pending && pending.agencyId) {
             router.push(`/?action=chat&agencyId=${pending.agencyId}&agencyName=${encodeURIComponent(pending.agencyName || 'Travel Agency')}`);
@@ -237,7 +253,11 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=wishlist');
+                  if (!user) {
+                    setShowAuthModal(true);
+                  } else {
+                    router.push('/?section=wishlist');
+                  }
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >

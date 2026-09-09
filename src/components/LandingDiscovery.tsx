@@ -69,6 +69,8 @@ export default function LandingDiscovery({
     initialPackageTypeTab || 'all'
   );
 
+  const effectivePackageTypeTab = initialPackageTypeTab || packageTypeTab || 'all';
+
   React.useEffect(() => {
     if (initialPackageTypeTab) {
       setPackageTypeTab(initialPackageTypeTab);
@@ -101,8 +103,8 @@ export default function LandingDiscovery({
   }, []);
 
   // Dynamic auto-created destination sections & navigation pills
-  const destinationSections = getDynamicDestinationSections(listings, packageTypeTab);
-  const destinationPills = getDiscoveredDestinationPills(listings, packageTypeTab);
+  const destinationSections = getDynamicDestinationSections(listings, effectivePackageTypeTab);
+  const destinationPills = getDiscoveredDestinationPills(listings, effectivePackageTypeTab);
 
   // Data collections
   const popularDestinations = getPopularDestinations(listings, 1);

@@ -49,6 +49,9 @@ R2_ACCESS_KEY_ID=c7046612f63141c3db768593d205c858,\
 R2_SECRET_ACCESS_KEY=811666076732b8fd865380f8864ddb2661bc148412db5cd964ad13afc1aec1a2,\
 R2_BUCKET_NAME=tripdm-images,\
 R2_PUBLIC_URL=https://pub-72f938952ddd47cc95bd3efcf3b9419c.r2.dev,\
+RESEND_API_KEY="${RESEND_API_KEY}",\
+RESEND_FROM_EMAIL=TripDM <support@tripdm.com>,\
+NEXT_PUBLIC_APP_URL=https://tripdm.com,\
 NODE_ENV=production"
 
 echo "✅ Cloud Run deployment completed successfully"

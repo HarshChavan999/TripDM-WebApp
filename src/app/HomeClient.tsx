@@ -21,7 +21,7 @@ import Footer from '@/components/Footer';
 import AutocompleteSearch from '@/components/AutocompleteSearch';
 import WishlistView from '@/components/WishlistView';
 import AuthModal from '@/components/AuthModal';
-import FilterSidebar from '@/components/FilterSidebar';
+import FilterSidebar, { FilterState } from '@/components/FilterSidebar';
 import UserProfile from '@/components/UserProfile';
 import AdminCouponManagement from '@/components/AdminCouponManagement';
 
@@ -703,11 +703,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     return Array.from(dests).filter((d) => typeof d === 'string' && d.length >= 3 && !blocklist.includes(d.toLowerCase().trim()));
   }, [listings]);
 
-  const [advancedFilters, setAdvancedFilters] = useState({
-    duration: 7,
-    budget: 77000,
-    budgetCategory: null as string | null,
-    hotelCategory: null as string | null,
+  const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
+    styles: [],
+    duration: null,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
@@ -1857,14 +1855,27 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           console.log('🔍 Is wishlist array?', Array.isArray(userData.wishlist));
 
           // Safely handle wishlist field - initialize as empty array if it doesn't exist
-          const wishlistData = userData.wishlist && Array.isArray(userData.wishlist)
+          let wishlistData = userData.wishlist && Array.isArray(userData.wishlist)
             ? userData.wishlist
             : [];
+
+          // Check for pending wishlist item saved before login
+          const pendingWishlist = sessionStorage.getItem('pending_wishlist_target');
+          if (pendingWishlist) {
+            sessionStorage.removeItem('pending_wishlist_target');
+            if (!wishlistData.includes(pendingWishlist)) {
+              wishlistData = [...wishlistData, pendingWishlist];
+              updateDoc(doc(dbInstance, 'users', user.uid), {
+                wishlist: wishlistData
+              }).catch(console.error);
+            }
+          }
+
           console.log('🎯 Final wishlist data to set:', wishlistData);
           setWishlist(wishlistData);
 
           // If wishlist field doesn't exist in Firestore, initialize it
-          if (!userData.wishlist) {
+          if (!userData.wishlist && !pendingWishlist) {
             console.log('📝 Initializing wishlist field in Firestore');
             updateDoc(doc(dbInstance, 'users', user.uid), {
               wishlist: []
@@ -1904,6 +1915,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
   // Handle wishlist toggle with persistence
   const handleWishlistToggle = (listingId: string) => {
+    if (!user) {
+      sessionStorage.setItem('pending_wishlist_target', listingId);
+      setAuthModalTab('login');
+      setShowAuthModal(true);
+      return;
+    }
     setWishlist(prev => {
       const newWishlist = prev.includes(listingId)
         ? prev.filter(id => id !== listingId)
@@ -2468,10 +2485,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           }),
         });
         const emailData = await emailRes.json();
-        if (emailData.emailSent) {
-          emailStatusMessage = '\n\n📧 Approval email was dispatched successfully via Resend!';
+        if (emailData.isDirectDelivery) {
+          emailStatusMessage = `\n\n📧 Approval email dispatched directly to ${emailData.targetEmail || 'agency'}!`;
+        } else if (emailData.isFallback) {
+          emailStatusMessage = `\n\n⚠️ Resend Sandbox Note: Domain tripdm.com is pending verification in Resend. A preview was sent to the admin email (phitanshu962@gmail.com) instead of ${emailData.targetEmail}.`;
         } else if (emailData.emailError) {
-          emailStatusMessage = `\n\n⚠️ Resend Sandbox Note: ${emailData.emailError}`;
+          emailStatusMessage = `\n\n⚠️ Email Dispatch Note: ${emailData.emailError}`;
         }
       } catch (emailErr) {
         console.warn('Approval email trigger error:', emailErr);
@@ -4606,10 +4625,15 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   {/* Wishlist */}
                   <button
                     onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (!user) {
+                        setAuthModalTab('login');
+                        setShowAuthModal(true);
+                        return;
+                      }
                       setFromSection(userActiveSection);
                       setUserActiveSection('wishlist');
                       setShowComparison(false);
-                      setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'wishlist'
@@ -4762,10 +4786,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     setDashboardViewMode('categories');
                     setSearchTerm('');
                     setAdvancedFilters({
-                      duration: 7,
-                      budget: 77000,
-                      budgetCategory: null,
-                      hotelCategory: null
+                      styles: [],
+                      duration: null,
                     });
                     setShowBookingForm(false);
                     setShowComparison(false);
@@ -4821,6 +4843,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 <span
                   className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
                   onClick={() => {
+                    if (!user) {
+                      setAuthModalTab('login');
+                      setShowAuthModal(true);
+                      return;
+                    }
                     setFromSection(userActiveSection);
                     setUserActiveSection('wishlist');
                     setShowComparison(false);
@@ -4964,6 +4991,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 {/* Wishlist Icon with Badge */}
                 <button
                   onClick={() => {
+                    if (!user) {
+                      setAuthModalTab('login');
+                      setShowAuthModal(true);
+                      return;
+                    }
                     setFromSection(userActiveSection);
                     setUserActiveSection('wishlist');
                     setShowComparison(false);
@@ -5108,10 +5140,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   {(() => {
                     const activeFilterCount = (
                       (selectedCategoryFilter ? 1 : 0) +
-                      (advancedFilters.duration < 7 ? 1 : 0) +
-                      (advancedFilters.budget < 77000 ? 1 : 0) +
-                      (advancedFilters.budgetCategory ? 1 : 0) +
-                      (advancedFilters.hotelCategory ? 1 : 0)
+                      (advancedFilters.styles.length + (advancedFilters.duration ? 1 : 0))
                     );
 
                     return (
@@ -5135,28 +5164,27 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           <div className="flex gap-2 sm:gap-3.5 items-center justify-center px-2 overflow-x-auto horizontal-scroll-nav scrollbar-hide max-w-full">
                             {[
                               { id: 'all_categories', label: 'Categories', type: 'categories', filter: null },
-                              { id: 'all_packages', label: 'All Packages', type: 'all', filter: null, hidden: dashboardViewMode !== 'all' },
                               { id: 'domestic_tab', label: 'Domestic', type: 'all', filter: { category: 'domestic', title: 'Domestic Packages' } },
                               { id: 'intl_tab', label: 'International', type: 'all', filter: { category: 'international', title: 'International Packages' } },
                               { id: 'family_tab', label: 'Family', type: 'all', filter: { category: 'tourCategory', subcategory: 'Family Tour', title: 'Tour by Category - Family Tour' } },
                               { id: 'honeymoon_tab', label: 'Honeymoon', type: 'all', filter: { category: 'tourCategory', subcategory: 'Honeymoon Tour', title: 'Tour by Category - Honeymoon Tour' } },
                               { id: 'experience_tab', label: 'Adventure', type: 'all', filter: { category: 'experiences', subcategory: 'Adventure', title: 'Experience Travel - Adventure' } }
                             ].map((item) => {
-                              if ((item as any).hidden) return null;
-                              const isCategoriesActive = item.type === 'categories' && dashboardViewMode === 'categories' && !selectedCategoryFilter;
-                              const isAllActive = item.type === 'all' && dashboardViewMode === 'all' && !selectedCategoryFilter && !item.filter;
-                              const isFilterActive = item.filter && selectedCategoryFilter && 
-                                                     selectedCategoryFilter.category === item.filter.category && 
-                                                     selectedCategoryFilter.subcategory === item.filter.subcategory;
+                              const isCategoriesActive = item.id === 'all_categories' && dashboardViewMode === 'categories' && !selectedCategoryFilter;
+                              const isDomesticActive = item.id === 'domestic_tab' && selectedCategoryFilter?.category === 'domestic';
+                              const isIntlActive = item.id === 'intl_tab' && selectedCategoryFilter?.category === 'international';
+                              const isFamilyActive = item.id === 'family_tab' && selectedCategoryFilter?.category === 'tourCategory' && selectedCategoryFilter?.subcategory === 'Family Tour';
+                              const isHoneymoonActive = item.id === 'honeymoon_tab' && selectedCategoryFilter?.category === 'tourCategory' && selectedCategoryFilter?.subcategory === 'Honeymoon Tour';
+                              const isAdventureActive = item.id === 'experience_tab' && selectedCategoryFilter?.category === 'experiences' && selectedCategoryFilter?.subcategory === 'Adventure';
                               
-                              const isActive = isCategoriesActive || isAllActive || isFilterActive;
+                              const isActive = isCategoriesActive || isDomesticActive || isIntlActive || isFamilyActive || isHoneymoonActive || isAdventureActive;
 
                               return (
                                 <button
                                   key={item.id}
                                   onClick={() => {
                                     setSearchTerm('');
-                                    if (item.type === 'categories') {
+                                    if (item.id === 'all_categories') {
                                       setDashboardViewMode('categories');
                                       setSelectedCategoryFilter(null);
                                     } else if (item.id === 'domestic_tab') {
@@ -5170,7 +5198,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                       setSelectedCategoryFilter(item.filter);
                                     }
                                   }}
-                                  className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 shrink-0 cursor-pointer ${
+                                  className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-[transform,box-shadow,border-color] duration-150 flex items-center gap-2 shrink-0 cursor-pointer ${
                                     isActive
                                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
                                       : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
@@ -5189,38 +5217,33 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           <div className="relative shrink-0 flex items-center">
                             <button
                               onClick={() => setShowFilters(!showFilters)}
-                              className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 border ${
-                                showFilters 
-                                  ? 'bg-orange-50 border-orange-300 text-orange-600 shadow-sm'
-                                  : 'bg-white/90 border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
+                              className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-[transform,box-shadow,border-color] duration-150 flex items-center gap-2 border cursor-pointer ${
+                                showFilters
+                                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
+                                  : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
                               }`}
                               style={{ borderRadius: '6px' }}
                             >
-                              <SlidersHorizontal className={`h-4 w-4 ${showFilters ? 'text-orange-500' : 'text-slate-500'}`} />
-                              Filter
+                              <SlidersHorizontal className={`h-4 w-4 ${showFilters ? 'text-white' : 'text-slate-500'}`} />
+                              <span>Filter</span>
                             </button>
+
+                            {/* Filter Sidebar & Mobile Sliding Bottom Sheet */}
+                            <FilterSidebar 
+                              isOpen={showFilters} 
+                              onClose={() => setShowFilters(false)} 
+                              initialFilters={advancedFilters}
+                              onApply={(newFilters) => {
+                                setAdvancedFilters(newFilters);
+                                if (newFilters.styles.length > 0 || !!newFilters.duration) {
+                                  if (dashboardViewMode === 'categories') {
+                                    setDashboardViewMode('all');
+                                  }
+                                }
+                              }}
+                            />
                           </div>
                         </div>
-
-                        {/* Filter Sidebar & Mobile Sliding Bottom Sheet */}
-                        <FilterSidebar 
-                          isOpen={showFilters} 
-                          onClose={() => setShowFilters(false)} 
-                          initialFilters={advancedFilters}
-                          selectedCategory={selectedCategoryFilter}
-                          onSelectCategory={(newCat) => {
-                            setSelectedCategoryFilter(newCat);
-                            if (newCat) {
-                              setDashboardViewMode('all');
-                            }
-                          }}
-                          onApply={(newFilters) => {
-                            setAdvancedFilters(newFilters);
-                            if (dashboardViewMode === 'categories') {
-                              setDashboardViewMode('all');
-                            }
-                          }}
-                        />
                       </>
                     );
                   })()}
@@ -5432,40 +5455,66 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                             }
 
                             // 3. Apply Advanced Filters (from FilterSidebar)
-                            // A. Duration
-                            if (advancedFilters.duration < 7) {
-                              const listNights = parseInt(listing.duration) || (listing.itinerary && Array.isArray(listing.itinerary) ? listing.itinerary.length - 1 : 0);
-                              if (listNights > advancedFilters.duration) return false;
-                            }
+                            // A. Travel Styles (Multi-Select)
+                            if (advancedFilters.styles && advancedFilters.styles.length > 0) {
+                              const destStyles = advancedFilters.styles.filter(s => s === 'domestic' || s === 'international');
+                              const themeStyles = advancedFilters.styles.filter(s => ['family', 'honeymoon', 'adventure', 'spiritual'].includes(s));
 
-                            // B. Budget & Budget Category
-                            const rawPrice = (listing.cost || listing.price || '0').toString();
-                            const cleanedPrice = rawPrice.replace(/[^0-9.]/g, '');
-                            const priceVal = parseFloat(cleanedPrice || '0');
-                            
-                            if (advancedFilters.budget < 77000) {
-                              if (priceVal > advancedFilters.budget) return false;
-                            }
-                            
-                            if (advancedFilters.budgetCategory) {
-                              if (advancedFilters.budgetCategory === '<10k' && priceVal >= 10000) return false;
-                              if (advancedFilters.budgetCategory === '10k-15k' && (priceVal < 10000 || priceVal >= 15000)) return false;
-                              if (advancedFilters.budgetCategory === '15k-20k' && (priceVal < 15000 || priceVal >= 20000)) return false;
-                              if (advancedFilters.budgetCategory === '>20k' && priceVal <= 20000) return false;
-                            }
-
-                            // C. Hotel Category
-                            if (advancedFilters.hotelCategory) {
-                              const hotels = (Array.isArray(listing.hotelTypes) ? listing.hotelTypes : typeof listing.hotelTypes === 'string' ? [listing.hotelTypes] : []).map((h: any) => String(h).toLowerCase());
-                              if (advancedFilters.hotelCategory === '<3') {
-                                if (!hotels.some((h: any) => h.includes('1') || h.includes('2') || h.includes('hostel'))) return false;
-                              } else if (advancedFilters.hotelCategory === '3') {
-                                if (!hotels.some((h: any) => h.includes('3') || h.includes('three'))) return false;
-                              } else if (advancedFilters.hotelCategory === '4') {
-                                if (!hotels.some((h: any) => h.includes('4') || h.includes('four'))) return false;
-                              } else if (advancedFilters.hotelCategory === '5') {
-                                if (!hotels.some((h: any) => h.includes('5') || h.includes('five'))) return false;
+                              // Destination Type match
+                              if (destStyles.length > 0) {
+                                const pkgType = (listing.packageType || listing.type || '').toLowerCase();
+                                const matchesDest = destStyles.some(style => {
+                                  if (style === 'domestic') return pkgType === 'domestic' || pkgType.includes('domestic');
+                                  if (style === 'international') return pkgType === 'international' || pkgType.includes('international');
+                                  return false;
+                                });
+                                if (!matchesDest) return false;
                               }
+
+                              // Theme Style match
+                              if (themeStyles.length > 0) {
+                                const tourCats = (Array.isArray(listing.tourCategories) ? listing.tourCategories : typeof listing.tourCategories === 'string' ? [listing.tourCategories] : [])
+                                  .map((c: any) => String(c).toLowerCase());
+                                const expTypes = (Array.isArray(listing.experienceType) ? listing.experienceType : typeof listing.experienceType === 'string' ? [listing.experienceType] : [])
+                                  .map((e: any) => String(e).toLowerCase());
+                                const titleLower = (listing.title || '').toLowerCase();
+                                const typeLower = (listing.type || '').toLowerCase();
+                                const descLower = (listing.description || '').toLowerCase();
+
+                                const matchesTheme = themeStyles.some(style => {
+                                  if (style === 'family') {
+                                    return tourCats.some((c: string) => c.includes('family')) || typeLower.includes('family') || titleLower.includes('family') || descLower.includes('family');
+                                  }
+                                  if (style === 'honeymoon') {
+                                    return tourCats.some((c: string) => c.includes('honeymoon') || c.includes('romantic') || c.includes('couple')) || 
+                                           typeLower.includes('honeymoon') || titleLower.includes('honeymoon') || descLower.includes('honeymoon');
+                                  }
+                                  if (style === 'adventure') {
+                                    return tourCats.some((c: string) => c.includes('adventure') || c.includes('trek') || c.includes('safari') || c.includes('camping')) || 
+                                           expTypes.some((e: string) => e.includes('adventure') || e.includes('trekking') || e.includes('safari')) ||
+                                           typeLower.includes('adventure') || titleLower.includes('adventure') || titleLower.includes('trek');
+                                  }
+                                  if (style === 'spiritual') {
+                                    return tourCats.some((c: string) => c.includes('spiritual') || c.includes('pilgrimage') || c.includes('religious') || c.includes('temple') || c.includes('darshan')) || 
+                                           typeLower.includes('spiritual') || titleLower.includes('temple') || titleLower.includes('darshan') || titleLower.includes('spiritual') || titleLower.includes('yatra');
+                                  }
+                                  return false;
+                                });
+                                if (!matchesTheme) return false;
+                              }
+                            }
+
+                            // B. Duration Range in Days (Single-Select)
+                            if (advancedFilters.duration) {
+                              const listDays = (Array.isArray(listing.itinerary) && listing.itinerary.length > 0)
+                                ? listing.itinerary.length
+                                : (parseInt(String(listing.duration || '0'), 10) || 0);
+
+                              const range = advancedFilters.duration;
+                              if (range === '1-3' && (listDays < 1 || listDays > 3)) return false;
+                              if (range === '4-5' && (listDays < 4 || listDays > 5)) return false;
+                              if (range === '6-7' && (listDays < 6 || listDays > 7)) return false;
+                              if (range === '8+' && listDays < 8) return false;
                             }
 
                             return true;
