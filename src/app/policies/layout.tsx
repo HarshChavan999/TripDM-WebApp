@@ -222,7 +222,12 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=wishlist');
+                  if (!user) {
+                    setAuthModalTab('login');
+                    setShowAuthModal(true);
+                  } else {
+                    router.push('/?section=wishlist');
+                  }
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
@@ -357,7 +362,14 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
             {/* Wishlist */}
             <span
               className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
-              onClick={() => router.push('/?section=wishlist')}
+              onClick={() => {
+                if (!user) {
+                  setAuthModalTab('login');
+                  setShowAuthModal(true);
+                  return;
+                }
+                router.push('/?section=wishlist');
+              }}
             >
               <Heart className="h-4 w-4 text-slate-600" /> Wishlist
             </span>
