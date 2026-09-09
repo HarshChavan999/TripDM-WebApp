@@ -108,6 +108,19 @@ async function getRecommendedBlogs(currentBlog: Blog): Promise<Blog[]> {
         where: {
           fieldFilter: { field: { fieldPath: 'published' }, op: 'EQUAL', value: { booleanValue: true } }
         },
+        select: {
+          fields: [
+            { fieldPath: 'title' },
+            { fieldPath: 'slug' },
+            { fieldPath: 'excerpt' },
+            { fieldPath: 'coverImage' },
+            { fieldPath: 'category' },
+            { fieldPath: 'tags' },
+            { fieldPath: 'author' },
+            { fieldPath: 'publishedAt' },
+            { fieldPath: 'readTime' },
+          ],
+        },
         limit: 50,
       },
     };

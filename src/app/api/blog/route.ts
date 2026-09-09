@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 const BLOG_ADMIN_EMAIL = 'tripdm26@gmail.com';
@@ -31,10 +31,31 @@ export async function GET(request: NextRequest) {
 
     const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
 
+    // Only project metadata fields to keep response well below Next.js 2MB cache limit (excludes massive content)
+    const blogFieldsSelect = {
+      fields: [
+        { fieldPath: 'title' },
+        { fieldPath: 'slug' },
+        { fieldPath: 'excerpt' },
+        { fieldPath: 'coverImage' },
+        { fieldPath: 'category' },
+        { fieldPath: 'tags' },
+        { fieldPath: 'author' },
+        { fieldPath: 'published' },
+        { fieldPath: 'publishedAt' },
+        { fieldPath: 'updatedAt' },
+        { fieldPath: 'metaTitle' },
+        { fieldPath: 'metaDescription' },
+        { fieldPath: 'readTime' },
+        { fieldPath: 'photoPlaces' },
+      ],
+    };
+
     const query = all
       ? {
           structuredQuery: {
             from: [{ collectionId: 'blogs' }],
+            select: blogFieldsSelect,
             limit: 100,
           },
         }
@@ -48,6 +69,7 @@ export async function GET(request: NextRequest) {
                 value: { booleanValue: true },
               },
             },
+            select: blogFieldsSelect,
             limit: 100,
           },
         };
@@ -56,7 +78,7 @@ export async function GET(request: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query),
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
 
     if (!res.ok) {
