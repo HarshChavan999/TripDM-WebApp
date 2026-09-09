@@ -29,7 +29,7 @@ env:
   - variable: NEXT_PUBLIC_CLARITY_PROJECT_ID
     value: yclfyeguxu
   - variable: RESEND_API_KEY
-    value: re_VsUSeuHb_9RMNvbxQ6L8hfWRnfbAF8X5J
+    secret: RESEND_API_KEY
   - variable: RESEND_FROM_EMAIL
     value: TripDM <support@tripdm.com>
   - variable: NEXT_PUBLIC_APP_URL

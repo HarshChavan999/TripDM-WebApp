@@ -40,6 +40,8 @@ export async function POST(req: Request) {
 
     // 2. Send email via Resend if email is available
     let emailSent = false;
+    let isDirectDelivery = false;
+    let isFallback = false;
     let emailError = null;
 
     if (targetEmail) {
@@ -173,16 +175,16 @@ export async function POST(req: Request) {
 
         if (resendRes.ok) {
           const resendData = await resendRes.json();
-          console.log(`Resend email sent successfully to ${targetEmail}:`, resendData);
+          console.log(`Resend email sent directly to ${targetEmail}:`, resendData);
           emailSent = true;
+          isDirectDelivery = true;
         } else {
           const errData = await resendRes.json().catch(() => ({}));
           console.warn(`Resend API returned warning (${resendRes.status}):`, errData);
           emailError = errData.message || JSON.stringify(errData);
 
-          // If Resend blocked because test domain only allows sending to registered Resend account email:
-          // Fallback to sending testing preview to the account owner email
-          if (resendRes.status === 403 && errData.message?.includes('You can only send testing emails to your own email address')) {
+          // If Resend blocked because domain not verified (only allows sending to registered Resend account email):
+          if (resendRes.status === 403 && (errData.message?.includes('You can only send testing emails to your own email address') || errData.message?.includes('domain is not verified'))) {
             const fallbackEmail = 'phitanshu962@gmail.com';
             console.log(`Sending approval preview copy to registered account email (${fallbackEmail})...`);
             
@@ -195,13 +197,14 @@ export async function POST(req: Request) {
               body: JSON.stringify({
                 from: 'TripDM <onboarding@resend.dev>',
                 to: [fallbackEmail],
-                subject: `[Approval Preview for ${targetEmail}] 🎉 Agency "${targetCompanyName}" Approved on TripDM`,
+                subject: `[Sandbox Preview for ${targetEmail}] 🎉 Agency "${targetCompanyName}" Approved on TripDM`,
                 html: emailHtml,
               }),
             });
 
             if (fallbackRes.ok) {
               emailSent = true;
+              isFallback = true;
               console.log(`Approval preview sent successfully to ${fallbackEmail}`);
             }
           }
@@ -217,6 +220,9 @@ export async function POST(req: Request) {
       success: true,
       message: 'Agency approved successfully',
       emailSent,
+      isDirectDelivery,
+      isFallback,
+      targetEmail,
       emailError,
     });
   } catch (error: any) {

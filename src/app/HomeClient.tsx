@@ -2484,10 +2484,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           }),
         });
         const emailData = await emailRes.json();
-        if (emailData.emailSent) {
-          emailStatusMessage = '\n\n📧 Approval email was dispatched successfully via Resend!';
+        if (emailData.isDirectDelivery) {
+          emailStatusMessage = `\n\n📧 Approval email dispatched directly to ${emailData.targetEmail || 'agency'}!`;
+        } else if (emailData.isFallback) {
+          emailStatusMessage = `\n\n⚠️ Resend Sandbox Note: Domain tripdm.com is pending verification in Resend. A preview was sent to the admin email (phitanshu962@gmail.com) instead of ${emailData.targetEmail}.`;
         } else if (emailData.emailError) {
-          emailStatusMessage = `\n\n⚠️ Resend Sandbox Note: ${emailData.emailError}`;
+          emailStatusMessage = `\n\n⚠️ Email Dispatch Note: ${emailData.emailError}`;
         }
       } catch (emailErr) {
         console.warn('Approval email trigger error:', emailErr);
