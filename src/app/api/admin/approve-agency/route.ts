@@ -4,8 +4,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-
 export async function POST(req: Request) {
   try {
     const { agencyId, email, companyName, name } = await req.json();
@@ -13,6 +11,11 @@ export async function POST(req: Request) {
     if (!agencyId) {
       return NextResponse.json({ error: 'Agency ID is required' }, { status: 400 });
     }
+
+    const resendApiKey = process.env.RESEND_API_KEY?.trim() || '';
+    const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || 'TripDM <support@tripdm.com>';
+    const baseAppUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || 'https://tripdm.com').replace(/\/$/, '');
+    const portalUrl = `${baseAppUrl}/agencytripdm`;
 
     initializeFirebase();
     const db = getFirestore();
@@ -40,11 +43,12 @@ export async function POST(req: Request) {
     let emailError = null;
 
     if (targetEmail) {
-      try {
-        const baseAppUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://tripdm.com').replace(/\/$/, '');
-        const portalUrl = `${baseAppUrl}/agencytripdm`;
-        
-        const emailHtml = `
+      if (!resendApiKey) {
+        console.error('RESEND_API_KEY is not configured in environment variables.');
+        emailError = 'RESEND_API_KEY is missing in production environment (apphosting.yaml / Cloud Run).';
+      } else {
+        try {
+          const emailHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -153,12 +157,10 @@ export async function POST(req: Request) {
 </html>
         `;
 
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'TripDM <onboarding@resend.dev>';
-        
         let resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Authorization': `Bearer ${resendApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -178,7 +180,7 @@ export async function POST(req: Request) {
           console.warn(`Resend API returned warning (${resendRes.status}):`, errData);
           emailError = errData.message || JSON.stringify(errData);
 
-          // If Resend blocked because onboarding@resend.dev only allows sending to registered Resend account email:
+          // If Resend blocked because test domain only allows sending to registered Resend account email:
           // Fallback to sending testing preview to the account owner email
           if (resendRes.status === 403 && errData.message?.includes('You can only send testing emails to your own email address')) {
             const fallbackEmail = 'phitanshu962@gmail.com';
@@ -187,7 +189,7 @@ export async function POST(req: Request) {
             const fallbackRes = await fetch('https://api.resend.com/emails', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${RESEND_API_KEY}`,
+                'Authorization': `Bearer ${resendApiKey}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -209,6 +211,7 @@ export async function POST(req: Request) {
         emailError = err.message;
       }
     }
+  }
 
     return NextResponse.json({
       success: true,
