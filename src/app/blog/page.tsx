@@ -54,6 +54,19 @@ async function getPublishedBlogs(): Promise<Blog[]> {
             value: { booleanValue: true },
           },
         },
+        select: {
+          fields: [
+            { fieldPath: 'title' },
+            { fieldPath: 'slug' },
+            { fieldPath: 'excerpt' },
+            { fieldPath: 'coverImage' },
+            { fieldPath: 'category' },
+            { fieldPath: 'tags' },
+            { fieldPath: 'author' },
+            { fieldPath: 'publishedAt' },
+            { fieldPath: 'readTime' },
+          ],
+        },
         limit: 10000,
       },
     };
