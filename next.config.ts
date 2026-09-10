@@ -11,9 +11,7 @@ const nextConfig: NextConfig = {
   },
   // Exclude Firebase Admin SDK from bundling
   serverExternalPackages: ['firebase-admin'],
-  // Removed trailingSlash: true — it contradicted skipTrailingSlashRedirect
-  // and was causing 180 "Page with redirect" entries in Google Search Console.
-  // URLs are now served without trailing slashes, eliminating the redirect chain.
+  trailingSlash: true,
   skipTrailingSlashRedirect: true,
   images: {
     unoptimized: true

@@ -4,7 +4,7 @@ import { parseFirestoreDocument } from '@/lib/firestoreParser';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 async function getApprovedListings() {
   try {
@@ -28,7 +28,7 @@ async function getApprovedListings() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query),
-      cache: 'no-store'
+      next: { revalidate: 30 } // Cache for 30 seconds
     });
 
     if (!res.ok) {
@@ -52,43 +52,7 @@ async function getApprovedListings() {
 
 export const metadata: Metadata = {
   title: "TripDM: Direct Message. Better Travel.",
-  description:
-    "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top India travel packages, get personalised itineraries and book with confidence.",
-  keywords: [
-    'travel agents India',
-    'travel packages',
-    'book travel online',
-    'TripDM',
-    'direct message travel',
-    'India tour packages',
-    'verified travel agents',
-  ],
-  alternates: {
-    canonical: 'https://tripdm.com',
-  },
-  openGraph: {
-    title: 'TripDM: Direct Message. Better Travel.',
-    description:
-      'Connect directly with trusted travel agents. Browse curated India travel packages and book your dream trip with TripDM.',
-    type: 'website',
-    url: 'https://tripdm.com',
-    siteName: 'TripDM',
-    images: [
-      {
-        url: 'https://tripdm.com/homepage-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'TripDM – Direct Message. Better Travel.',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'TripDM: Direct Message. Better Travel.',
-    description:
-      'Connect directly with trusted travel agents. Browse curated India travel packages.',
-    images: ['https://tripdm.com/homepage-image.png'],
-  },
+  description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
 };
 
 import { Suspense } from 'react';

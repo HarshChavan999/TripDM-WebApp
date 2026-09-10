@@ -6,9 +6,6 @@ import BlogViewTracker from '@/components/BlogViewTracker';
 import BlogShareBar from '@/components/BlogShareBar';
 import BlogComments from '@/components/BlogComments';
 
-// ISR: revalidate blog pages every hour — improves crawlability vs. fully dynamic SSR
-export const revalidate = 3600;
-
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
 export async function generateStaticParams() {
@@ -80,8 +77,7 @@ function parseBlogDoc(doc: any): Blog {
 async function getBlogBySlug(slug: string): Promise<Blog | null> {
   try {
     const directUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs/${slug}`;
-    // Use ISR caching (1 hour) instead of no-store — improves crawlability and TTFB
-    const directRes = await fetch(directUrl, { next: { revalidate: 3600 } });
+    const directRes = await fetch(directUrl, { cache: 'no-store' });
     if (directRes.ok) {
       const doc = await directRes.json();
       if (doc && doc.fields) return parseBlogDoc(doc);
@@ -94,7 +90,7 @@ async function getBlogBySlug(slug: string): Promise<Blog | null> {
         limit: 1,
       },
     };
-    const res = await fetch(queryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), next: { revalidate: 3600 } });
+    const res = await fetch(queryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();
     const item = data.find((d: any) => d.document);
@@ -111,19 +107,6 @@ async function getRecommendedBlogs(currentBlog: Blog): Promise<Blog[]> {
         from: [{ collectionId: 'blogs' }],
         where: {
           fieldFilter: { field: { fieldPath: 'published' }, op: 'EQUAL', value: { booleanValue: true } }
-        },
-        select: {
-          fields: [
-            { fieldPath: 'title' },
-            { fieldPath: 'slug' },
-            { fieldPath: 'excerpt' },
-            { fieldPath: 'coverImage' },
-            { fieldPath: 'category' },
-            { fieldPath: 'tags' },
-            { fieldPath: 'author' },
-            { fieldPath: 'publishedAt' },
-            { fieldPath: 'readTime' },
-          ],
         },
         limit: 50,
       },

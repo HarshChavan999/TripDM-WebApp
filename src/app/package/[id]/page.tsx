@@ -79,23 +79,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${title} | TripDM`,
     description,
-    alternates: {
-      canonical: `https://tripdm.com/package/${resolvedParams.id}`,
-    },
     openGraph: {
       title,
       description,
-      type: 'website',
-      url: `https://tripdm.com/package/${resolvedParams.id}`,
-      siteName: 'TripDM',
-      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: title }] : [],
+      images: imageUrl ? [{ url: imageUrl }] : [],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
       images: imageUrl ? [imageUrl] : [],
-    },
+    }
   };
 }
 
@@ -115,45 +109,5 @@ export default async function PackagePage({ params }: { params: Promise<{ id: st
     );
   }
 
-  // Build JSON-LD structured data for TouristTrip / TravelProduct
-  const title = listing.title || 'Travel Package';
-  const description = listing.description || `Discover this amazing travel package.`;
-  let imageUrl = '';
-  if (listing.itinerary && Array.isArray(listing.itinerary)) {
-    for (const day of listing.itinerary) {
-      if (day?.imageUrls?.length > 0 && day.imageUrls[0]) { imageUrl = day.imageUrls[0]; break; }
-      else if (day?.imageUrl) { imageUrl = day.imageUrl; break; }
-    }
-  }
-  if (!imageUrl && listing.photos?.length > 0) imageUrl = listing.photos[0];
-
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: title,
-    description,
-    url: `https://tripdm.com/package/${resolvedParams.id}`,
-    ...(imageUrl ? { image: imageUrl } : {}),
-    brand: {
-      '@type': 'Brand',
-      name: 'TripDM',
-    },
-    offers: {
-      '@type': 'Offer',
-      priceCurrency: 'INR',
-      ...(listing.price ? { price: String(listing.price) } : {}),
-      availability: 'https://schema.org/InStock',
-      url: `https://tripdm.com/package/${resolvedParams.id}`,
-    },
-  };
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <PackageClientView listing={listing} />
-    </>
-  );
+  return <PackageClientView listing={listing} />;
 }
