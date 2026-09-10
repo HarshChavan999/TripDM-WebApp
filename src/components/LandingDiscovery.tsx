@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ListingCard from '@/components/ListingCard';
+import LandingPhoneChatSection from '@/components/LandingPhoneChatSection';
 import { event } from '@/lib/gtag';
 import {
   PackageListing,
@@ -1047,6 +1048,15 @@ export default function LandingDiscovery({
           </div>
         </section>
       )}
+
+      {/* ==========================================
+          SECTION 6.5 — Interactive TripDM AI & Direct Agent Chat Simulation
+          ========================================== */}
+      <LandingPhoneChatSection
+        onChat={onChat}
+        onView={onView}
+        listings={listings}
+      />
 
       {/* ==========================================
           SECTION 7 — How TripDM Works & Why Book Direct (Clean Travel Marketplace Style)
