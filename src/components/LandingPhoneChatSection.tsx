@@ -8,9 +8,7 @@ import {
   Smile,
   Building2,
   ChevronLeft,
-  Phone,
-  Video,
-  MoreVertical,
+  Search,
   Paperclip,
 } from 'lucide-react';
 
@@ -26,13 +24,17 @@ export default function LandingPhoneChatSection({
   const [visibleStep, setVisibleStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [interactiveInput, setInteractiveInput] = useState('');
+  const [showInChatSearch, setShowInChatSearch] = useState(false);
+  const [inChatSearchQuery, setInChatSearchQuery] = useState('');
   const [customMessages, setCustomMessages] = useState<
     { id: string; text: string; sender: 'user' | 'agency'; time: string }[]
   >([]);
 
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef, { once: false, amount: 0.25 });
+  const phoneRef = useRef<HTMLDivElement>(null);
+  const isPhoneInView = useInView(phoneRef, { once: false, amount: 0.3 });
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const hasCompletedAnimation = useRef(false);
 
   const scrollToBottom = () => {
     if (chatScrollRef.current) {
@@ -43,64 +45,81 @@ export default function LandingPhoneChatSection({
     }
   };
 
-  // Run the 4-step conversation animation
+  const clearAllTimeouts = () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+  };
+
+  const addTimeout = (fn: () => void, delay: number) => {
+    const timer = setTimeout(fn, delay);
+    timeoutsRef.current.push(timer);
+    return timer;
+  };
+
+  // Run the 4-step conversation animation cleanly without leaks
   const runChatSequence = () => {
+    clearAllTimeouts();
     setVisibleStep(0);
     setIsTyping(false);
     setCustomMessages([]);
 
     // Step 1: User inquires about package
-    const t1 = setTimeout(() => {
+    addTimeout(() => {
       setVisibleStep(1);
       scrollToBottom();
 
       // Step 2: Agency typing indicator
-      const t2 = setTimeout(() => {
+      addTimeout(() => {
         setIsTyping(true);
         scrollToBottom();
 
         // Step 3: Agency replies with package details & standard price
-        const t3 = setTimeout(() => {
+        addTimeout(() => {
           setIsTyping(false);
           setVisibleStep(2);
           scrollToBottom();
 
           // Step 4: User bargains with price for their group
-          const t4 = setTimeout(() => {
+          addTimeout(() => {
             setVisibleStep(3);
             scrollToBottom();
 
             // Step 5: Agency typing indicator
-            const t5 = setTimeout(() => {
+            addTimeout(() => {
               setIsTyping(true);
               scrollToBottom();
 
               // Step 6: Agency helps with a special discounted rate
-              const t6 = setTimeout(() => {
+              addTimeout(() => {
                 setIsTyping(false);
                 setVisibleStep(4);
                 scrollToBottom();
-              }, 1400);
-              return () => clearTimeout(t6);
-            }, 800);
-            return () => clearTimeout(t5);
-          }, 1800);
-          return () => clearTimeout(t4);
-        }, 1200);
-        return () => clearTimeout(t3);
-      }, 700);
-      return () => clearTimeout(t2);
-    }, 400);
-
-    return () => clearTimeout(t1);
+                hasCompletedAnimation.current = true;
+              }, 800);
+            }, 400);
+          }, 850);
+        }, 750);
+      }, 350);
+    }, 250);
   };
 
   useEffect(() => {
-    if (isInView) {
-      const cleanup = runChatSequence();
-      return cleanup;
+    if (isPhoneInView) {
+      if (!hasCompletedAnimation.current) {
+        runChatSequence();
+      }
+    } else {
+      // Scrolled away from phone: reset so it starts from first message when scrolled back
+      clearAllTimeouts();
+      setIsTyping(false);
+      hasCompletedAnimation.current = false;
+      setVisibleStep(0);
     }
-  }, [isInView]);
+
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [isPhoneInView]);
 
   useEffect(() => {
     scrollToBottom();
@@ -138,13 +157,12 @@ export default function LandingPhoneChatSection({
           },
         ]);
         scrollToBottom();
-      }, 1100);
-    }, 500);
+      }, 650);
+    }, 250);
   };
 
   return (
     <section
-      ref={sectionRef}
       className="py-14 sm:py-20 px-4 sm:px-8 lg:px-12 w-full max-w-[1400px] mx-auto bg-white overflow-hidden"
     >
       {/* ========================================================
@@ -164,81 +182,80 @@ export default function LandingPhoneChatSection({
       </div>
 
       {/* ========================================================
-          CENTERED AUTHENTIC IPHONE 17 PRO MAX HARDWARE MOCKUP
+          CENTERED AUTHENTIC NOTHING PHONE (3A) HARDWARE MOCKUP
           ======================================================== */}
-      <div className="flex justify-center items-center w-full">
-        {/* iPhone 17 Pro Max Titanium Chassis */}
-        <div className="relative w-full max-w-[340px] sm:max-w-[370px] h-[630px] sm:h-[675px] bg-[#1a1c24] rounded-[54px] p-[10px] shadow-[0_35px_95px_-20px_rgba(15,23,42,0.48),0_0_0_1px_rgba(255,255,255,0.18),0_0_0_4px_rgba(30,34,44,0.95)] border-[2.5px] border-[#383d4a] select-none">
+      <div className="relative flex justify-center items-center w-full py-3">
+        {/* Soft Studio Ambient Glow behind phone */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[410px] h-[580px] bg-gradient-to-b from-orange-500/5 via-emerald-500/6 to-transparent blur-3xl rounded-full pointer-events-none" />
+
+        {/* Nothing Phone (3a) Midnight Slate Matte Chassis */}
+        <div ref={phoneRef} className="relative w-full max-w-[340px] sm:max-w-[370px] h-[630px] sm:h-[675px] bg-[#0c121b] rounded-[52px] p-[10px] shadow-[0_20px_42px_-12px_rgba(15,23,42,0.2),0_8px_18px_-6px_rgba(15,23,42,0.12),0_0_0_1.5px_#233044,inset_0_1px_1px_rgba(255,255,255,0.18)] border-[2.5px] border-[#182333] select-none">
           
-          {/* Top Speaker Earpiece Slit */}
-          <div className="absolute top-[5px] left-1/2 -translate-x-1/2 w-12 h-[2.5px] bg-slate-800 rounded-full z-40 border border-slate-700/60" />
+          {/* Calibrated 3D Floor Shadow at base of phone (Smooth dual-layer depth) */}
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[82%] h-7 bg-slate-950/16 blur-xl rounded-full pointer-events-none -z-10" />
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[56%] h-3.5 bg-slate-950/25 blur-md rounded-full pointer-events-none -z-10" />
 
-          {/* Precision Titanium Hardware Buttons */}
-          {/* Action Button (Left Upper) */}
-          <div className="absolute -left-[5px] top-[105px] w-[3px] h-[22px] bg-gradient-to-r from-[#424754] to-[#252830] rounded-l-xs shadow-xs" />
-          {/* Volume Up (Left Middle) */}
-          <div className="absolute -left-[5px] top-[140px] w-[3px] h-[42px] bg-gradient-to-r from-[#424754] to-[#252830] rounded-l-xs shadow-xs" />
-          {/* Volume Down (Left Lower) */}
-          <div className="absolute -left-[5px] top-[192px] w-[3px] h-[42px] bg-gradient-to-r from-[#424754] to-[#252830] rounded-l-xs shadow-xs" />
-          {/* Power / Siri Key (Right Upper) */}
-          <div className="absolute -right-[5px] top-[145px] w-[3px] h-[58px] bg-gradient-to-l from-[#424754] to-[#252830] rounded-r-xs shadow-xs" />
-          {/* Camera Control Button (Right Lower) */}
-          <div className="absolute -right-[4px] top-[225px] w-[2px] h-[36px] bg-[#333742] rounded-r-xs shadow-xs" />
+          {/* Top Speaker Micro-Slit */}
+          <div className="absolute top-[4.5px] left-1/2 -translate-x-1/2 w-12 h-[2px] bg-[#1e2a3c] rounded-full z-40 border-b border-[#2a3a52]/40" />
 
-          {/* Antenna Breaks */}
-          <div className="absolute -left-[10px] top-[80px] w-[2px] h-[3px] bg-slate-600/70" />
-          <div className="absolute -right-[10px] top-[80px] w-[2px] h-[3px] bg-slate-600/70" />
-          <div className="absolute -left-[10px] bottom-[80px] w-[2px] h-[3px] bg-slate-600/70" />
-          <div className="absolute -right-[10px] bottom-[80px] w-[2px] h-[3px] bg-slate-600/70" />
+          {/* Nothing Phone (3a) Hardware Buttons (Exact replica of reference) */}
+          {/* Left Side: Single Power / Sleep Button */}
+          <div className="absolute -left-[4.5px] top-[180px] w-[3.5px] h-[48px] bg-gradient-to-r from-[#2a384e] to-[#141d2c] rounded-l-xs shadow-xs border-l border-t border-b border-[#364964]" />
 
-          {/* Super Retina XDR OLED Display Container */}
-          <div className="relative w-full h-full bg-[#efeae2] rounded-[45px] overflow-hidden flex flex-col font-sans border border-slate-400/40 shadow-inner">
+          {/* Right Side: Two Discrete Volume Buttons */}
+          {/* Volume Up */}
+          <div className="absolute -right-[4.5px] top-[148px] w-[3.5px] h-[36px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
+          {/* Volume Down */}
+          <div className="absolute -right-[4.5px] top-[230px] w-[3.5px] h-[36px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
+
+          {/* Symmetrical OLED Display Container */}
+          <div className="relative w-full h-full bg-[#efeae2] rounded-[42px] overflow-hidden flex flex-col font-sans border border-[#16202e]/60 shadow-inner">
             
-            {/* Glossy Screen Glare Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.08] pointer-events-none z-30 rounded-[45px]" />
+            {/* Subtle Screen Glare Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none z-30 rounded-[42px]" />
 
-            {/* iOS Status Bar with Exact iPhone 17 Pro Max Alignment */}
+            {/* Nothing OS Status Bar (1:1 Replica with user reference) */}
             <div className="bg-[#075e54] text-white pt-2.5 pb-2 px-5 flex items-center justify-between relative z-40 shrink-0 select-none border-b border-[#054c44]/40">
               
-              {/* Left: Time in SF Pro Style */}
+              {/* Left: Time in Clean Nothing OS Sans */}
               <div className="w-16 flex items-center">
-                <span className="text-[13px] font-semibold tracking-tight text-white/95 font-sans">
-                  9:41
+                <span className="text-[13px] font-medium tracking-tight text-white/95 font-sans">
+                  09:41
                 </span>
               </div>
 
-              {/* Center: Dynamic Island (iPhone 17 Pro Max Dimensions) */}
-              <div className="w-26 h-[22px] bg-black rounded-full flex items-center justify-between px-2.5 shadow-md">
-                {/* Camera / TrueDepth Sensor */}
-                <div className="w-2.5 h-2.5 rounded-full bg-[#080b12] border border-[#1a202c] flex items-center justify-center">
-                  <div className="w-1 h-1 rounded-full bg-[#1e2a44]" />
+              {/* Center: Nothing Phone (3a) Centered Single Punch-Hole Camera */}
+              <div className="w-3.5 h-3.5 bg-[#070b10] rounded-full flex items-center justify-center border border-[#1b2536] shadow-inner">
+                {/* Camera Lens Reflection */}
+                <div className="w-1.5 h-1.5 rounded-full bg-[#121c2b] flex items-center justify-center">
+                  <div className="w-0.5 h-0.5 rounded-full bg-[#2a3d5e]/90" />
                 </div>
-                {/* Active Sensor Green Indicator */}
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </div>
 
-              {/* Right: Cellular Signal + WiFi + iOS Battery Icon */}
-              <div className="w-16 flex items-center justify-end gap-1.5 text-white">
+              {/* Right: Exact Status Icons in Reference Order: [WiFi] [Cellular] [Battery] */}
+              <div className="w-16 flex items-center justify-end gap-2 text-white/95">
                 
-                {/* 4-Bar iOS Cellular Signal */}
-                <svg className="w-3.5 h-3" viewBox="0 0 17 12" fill="currentColor">
-                  <rect x="0" y="8" width="2.5" height="4" rx="0.5" />
-                  <rect x="4.5" y="5.5" width="2.5" height="6.5" rx="0.5" />
-                  <rect x="9" y="3" width="2.5" height="9" rx="0.5" />
-                  <rect x="13.5" y="0" width="2.5" height="12" rx="0.5" />
+                {/* Nothing OS Wi-Fi Icon (Clean 3-tier wave, all lines sharp & visible) */}
+                <svg className="w-3.5 h-3.5 text-white/95 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 8.5c4.6-4 11.4-4 16 0" />
+                  <path d="M7.5 12.5c2.6-2.2 6.4-2.2 9 0" />
+                  <circle cx="12" cy="17.5" r="1.3" fill="currentColor" stroke="none" />
                 </svg>
 
-                {/* iOS WiFi Icon */}
-                <svg className="w-3.5 h-3" viewBox="0 0 16 12" fill="currentColor">
-                  <path d="M8 10.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-4.2-3.8a6 6 0 0 1 8.4 0 .8.8 0 0 0 1.1-1.1 7.6 7.6 0 0 0-10.6 0 .8.8 0 0 0 1.1 1.1zm-2.8-2.8a10 10 0 0 1 14 0 .8.8 0 0 0 1.1-1.1 11.6 11.6 0 0 0-16.2 0 .8.8 0 1 0 1.1 1.1z" />
+                {/* 4-Bar Ascending Cellular Signal */}
+                <svg className="w-3.5 h-3 text-white/95 shrink-0" viewBox="0 0 16 12" fill="currentColor">
+                  <rect x="0.5" y="8.5" width="2.4" height="3.5" rx="0.6" />
+                  <rect x="4.4" y="5.8" width="2.4" height="6.2" rx="0.6" />
+                  <rect x="8.3" y="3.2" width="2.4" height="8.8" rx="0.6" />
+                  <rect x="12.2" y="0.5" width="2.4" height="11.5" rx="0.6" />
                 </svg>
 
-                {/* Authentic iOS Battery Glyph */}
-                <div className="flex items-center">
-                  <div className="w-[20px] h-[10.5px] border-[1.2px] border-white/90 rounded-[3.5px] p-[1.5px] flex items-center">
-                    <div className="w-[90%] h-full bg-white rounded-[1.5px]" />
+                {/* Nothing OS Solid Battery Glyph with Terminal Nub */}
+                <div className="flex items-center shrink-0">
+                  <div className="w-[19px] h-[10px] border-[1.2px] border-white/95 rounded-[3px] p-[1.5px] flex items-center">
+                    <div className="w-full h-full bg-white rounded-[1.2px]" />
                   </div>
-                  <div className="w-[1.5px] h-[3.5px] bg-white/90 rounded-r-[1px] ml-[0.5px]" />
+                  <div className="w-[1.2px] h-[3.5px] bg-white/95 rounded-r-[1px] ml-[0.5px]" />
                 </div>
 
               </div>
@@ -267,13 +284,50 @@ export default function LandingPhoneChatSection({
                 </div>
               </div>
 
-              {/* Right Header Action Icons */}
-              <div className="flex items-center gap-3 text-white/90 pr-1">
-                <Video className="w-4 h-4 cursor-pointer hover:opacity-80 transition-opacity" />
-                <Phone className="w-4 h-4 cursor-pointer hover:opacity-80 transition-opacity" />
-                <MoreVertical className="w-4 h-4 cursor-pointer hover:opacity-80 transition-opacity" />
+              {/* Right Header Action: Search Button from Original Chat System */}
+              <div className="flex items-center pr-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInChatSearch((prev) => !prev);
+                    if (showInChatSearch) setInChatSearchQuery('');
+                  }}
+                  className={`p-1.5 rounded-full transition-all flex items-center justify-center cursor-pointer ${
+                    showInChatSearch
+                      ? 'bg-emerald-800 text-white shadow-xs'
+                      : 'text-white/90 hover:text-white hover:bg-white/10'
+                  }`}
+                  title="Search in chat"
+                  aria-label="Search messages"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
               </div>
             </div>
+
+            {/* In-Chat Search Input Bar (Slides down under header) */}
+            {showInChatSearch && (
+              <div className="px-3 py-1.5 bg-[#054c44] border-b border-[#043d36] flex items-center gap-2 z-30 shrink-0">
+                <Search className="w-3.5 h-3.5 text-emerald-200 shrink-0 pointer-events-none" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={inChatSearchQuery}
+                  onChange={(e) => setInChatSearchQuery(e.target.value)}
+                  placeholder="Search in conversation..."
+                  className="flex-1 bg-transparent text-white placeholder-emerald-200/60 text-xs focus:outline-none"
+                />
+                {inChatSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setInChatSearchQuery('')}
+                    className="text-[10px] text-emerald-200 hover:text-white cursor-pointer px-1 py-0.5 rounded"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Chat Conversation Scroll Area with Travel Doodle Background */}
             <div
@@ -284,9 +338,9 @@ export default function LandingPhoneChatSection({
               <AnimatePresence>
                 {visibleStep >= 1 && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
                     className="flex justify-end"
                   >
                     <div className="max-w-[85%] bg-[#d9fdd3] text-slate-900 px-3.5 py-2 rounded-2xl rounded-tr-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-[#c4ebb8]/70">
@@ -306,9 +360,9 @@ export default function LandingPhoneChatSection({
               <AnimatePresence>
                 {visibleStep >= 2 && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
                     className="flex justify-start"
                   >
                     <div className="max-w-[88%] bg-white text-slate-900 px-3.5 py-2.5 rounded-2xl rounded-tl-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-slate-200/90">
@@ -327,9 +381,9 @@ export default function LandingPhoneChatSection({
               <AnimatePresence>
                 {visibleStep >= 3 && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
                     className="flex justify-end"
                   >
                     <div className="max-w-[85%] bg-[#d9fdd3] text-slate-900 px-3.5 py-2 rounded-2xl rounded-tr-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-[#c4ebb8]/70">
@@ -349,9 +403,9 @@ export default function LandingPhoneChatSection({
               <AnimatePresence>
                 {visibleStep >= 4 && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
                     className="flex justify-start"
                   >
                     <div className="max-w-[88%] bg-white text-slate-900 px-3.5 py-2.5 rounded-2xl rounded-tl-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-slate-200/90">
@@ -452,9 +506,9 @@ export default function LandingPhoneChatSection({
               </button>
             </form>
 
-            {/* iOS Home Indicator Bar */}
-            <div className="py-1 bg-[#f0f2f5] flex justify-center shrink-0 z-30">
-              <div className="w-28 h-1 bg-slate-400/60 rounded-full" />
+            {/* Nothing OS / Android Navigation Pill */}
+            <div className="py-1.5 bg-[#f0f2f5] flex justify-center shrink-0 z-30">
+              <div className="w-20 h-[3px] bg-slate-400/70 rounded-full" />
             </div>
 
           </div>
