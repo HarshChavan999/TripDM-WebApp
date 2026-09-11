@@ -703,22 +703,22 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4 sm:space-y-6">
       {/* Modern Header */}
-      <div className="flex flex-col gap-2 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-          <div className="p-2.5 bg-amber-50 text-orange-600 rounded-md shadow-xs border border-orange-100" style={{ borderRadius: '6px' }}>
-            <ClipboardList className="h-6 w-6" />
+      <div className="flex flex-col gap-1.5 sm:gap-2 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2 sm:p-2.5 bg-amber-50 text-orange-600 rounded-md shadow-xs border border-orange-100" style={{ borderRadius: '6px' }}>
+            <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          {initialData ? 'Edit Travel Package' : 'Create New Travel Package'}
+          <span className="truncate">{initialData ? 'Edit Travel Package' : 'Create New Travel Package'}</span>
         </h1>
-        <p className="text-slate-500 text-sm sm:text-base">
+        <p className="text-slate-500 text-xs sm:text-sm md:text-base">
           Fill in all the details below to configure your travel package listing.
         </p>
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit(onSubmit)} className="w-full bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-10 space-y-12" style={{ borderRadius: '8px' }}>
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 md:p-10 space-y-8 sm:space-y-12" style={{ borderRadius: '8px' }}>
 
             {/* 1. Package Title */}
             <div className="space-y-4">
@@ -1239,8 +1239,8 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
 
             {/* 6. Itinerary Builder */}
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4 sm:mb-6">
+                <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-50 text-orange-600 font-bold text-sm shadow-xs border border-orange-100" style={{ borderRadius: '6px' }}>
                     6
                   </div>
@@ -1249,7 +1249,7 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
                 <button
                   type="button"
                   onClick={addItineraryDay}
-                  className="px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 shrink-0 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02]"
+                  className="px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02] w-full sm:w-auto"
                   style={{ borderRadius: '6px' }}
                 >
                   <Plus className="h-4 w-4" />
@@ -1645,8 +1645,8 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-between items-center pt-6 border-t">
-              <div className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 pt-6 border-t">
+              <div className="text-xs sm:text-sm text-gray-600">
                 {Object.keys(uploadProgress).length > 0 && (
                   <div className="space-y-1">
                     {Object.entries(uploadProgress).map(([fileName, progress]) => (
@@ -1659,7 +1659,7 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
                 )}
               </div>
               
-              <div className="flex gap-4">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => {
@@ -1669,7 +1669,7 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
                       window.history.back();
                     }
                   }}
-                  className="px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer bg-white/90 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]"
                   style={{ borderRadius: '6px' }}
                 >
                   Cancel
@@ -1677,7 +1677,7 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
                   style={{ borderRadius: '6px' }}
                 >
                   {isSubmitting ? 'Submitting...' : initialData ? 'Update Listing' : 'Submit for Approval'}
