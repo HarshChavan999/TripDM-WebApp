@@ -337,100 +337,133 @@ export default function LandingDiscovery({
                   </p>
                 </div>
 
-                {/* Mobile: Elegant Slightly Faded Package Image Banner with Big Region Text & Navigation Arrow */}
-                <div className="sm:hidden relative w-full rounded-2xl overflow-hidden mb-6 shadow-md border border-slate-200/80 bg-slate-950 transition-all duration-500">
-                  {/* Package background photo */}
-                  {bannerImage ? (
-                    <img
-                      src={bannerImage}
-                      alt={activeGroup.label}
-                      className="absolute inset-0 w-full h-full object-cover opacity-75 transition-all duration-700"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950" />
-                  )}
+                {/* Mobile View: Render all regional destination sections stacked vertically */}
+                <div className="sm:hidden space-y-10 mb-8">
+                  {regionalDestinations.map((group) => {
+                    const destinations = group.destinations || [];
+                    if (destinations.length === 0) return null;
+                    const heroDest = destinations[0];
+                    const otherDests = destinations.slice(1);
 
-                  {/* Elegant fade gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/40 backdrop-blur-[1px]" />
+                    return (
+                      <div key={group.id} className="pt-4 border-t border-slate-100 first:border-t-0 first:pt-0">
+                        {/* Mobile Region Header (Center Aligned) */}
+                        <div className="text-center mb-4">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <span className="text-xl">{group.icon}</span>
+                            <h3
+                              className="text-xl font-black text-slate-900 tracking-tight"
+                              style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
+                            >
+                              {group.label}
+                            </h3>
+                          </div>
+                          {group.subtitle && (
+                            <p className="text-[11px] text-slate-500 font-medium">{group.subtitle}</p>
+                          )}
+                        </div>
 
-                  {/* Banner Content */}
-                  <div className="relative z-10 p-5 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-sm">{activeGroup.icon}</span>
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400">
-                          Region
-                        </span>
-                      </div>
-                      <h3
-                        className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight"
-                        style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
-                      >
-                        {activeGroup.label}
-                      </h3>
-                      <p className="text-[11px] text-slate-300/90 font-medium mt-0.5 truncate max-w-[210px]">
-                        {activeGroup.subtitle || 'Handpicked holiday destinations'}
-                      </p>
-                    </div>
+                        {/* Region Destinations */}
+                        <div className="space-y-3">
+                          {/* Hero Card */}
+                          {heroDest && (
+                            <div
+                              onClick={() => setSearchTerm(heroDest.name)}
+                              className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm min-h-[260px] flex flex-col justify-end p-5"
+                            >
+                              {heroDest.coverImage ? (
+                                <img
+                                  src={heroDest.coverImage}
+                                  alt={heroDest.name}
+                                  className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
+                                  <MapPin className="w-10 h-10" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/40 to-transparent opacity-90" />
 
-                    {/* Navigation: Right arrow (and left) with boundary checks (no left on 1st, no right on last) */}
-                    {regionalDestinations.length > 1 && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {hasPrev && prevRegion && (
-                          <button
-                            onClick={() => setActiveRegionId(prevRegion.id)}
-                            aria-label={`Previous region: ${prevRegion.label}`}
-                            className={!hasNext
-                              ? "flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full bg-white/25 hover:bg-white/35 active:scale-95 text-white backdrop-blur-md border border-white/30 font-bold text-xs shadow-md transition-all cursor-pointer group"
-                              : "w-8 h-8 rounded-full bg-black/35 hover:bg-black/55 active:scale-90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all cursor-pointer shadow-xs"
-                            }
-                          >
-                            <div className={!hasNext ? "w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-xs group-hover:-translate-x-0.5 transition-transform" : ""}>
-                              <ChevronLeft className="w-3.5 h-3.5 stroke-[3]" />
+                              <div className="relative z-10">
+                                <h4 className="text-2xl font-black text-white tracking-tight drop-shadow-sm mb-1">
+                                  {heroDest.name}
+                                </h4>
+
+                                {heroDest.discoveredPlaces && heroDest.discoveredPlaces.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {heroDest.discoveredPlaces.slice(0, 3).map((place) => (
+                                      <span
+                                        key={place}
+                                        className="text-[10px] font-bold bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-md border border-white/10"
+                                      >
+                                        {place}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-between pt-2 border-t border-white/15">
+                                  {heroDest.startingPrice ? (
+                                    <div>
+                                      <p className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">Starting from</p>
+                                      <p className="text-base font-black text-amber-300">
+                                        ₹{heroDest.startingPrice.toLocaleString('en-IN')}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-slate-300 font-bold">Verified Packages</span>
+                                  )}
+                                  <span className="text-xs font-black text-white bg-orange-500 px-3.5 py-1.5 rounded-full flex items-center gap-1 shadow-xs">
+                                    <span>Explore</span>
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            {!hasNext && (
-                              <span className="text-[11px] font-bold text-white tracking-wide max-w-[130px] truncate">
-                                {prevRegion.label}
-                              </span>
-                            )}
-                          </button>
-                        )}
+                          )}
 
-                        {hasNext && nextRegion && (
-                          <button
-                            onClick={() => setActiveRegionId(nextRegion.id)}
-                            aria-label={`Next region: ${nextRegion.label}`}
-                            className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white/25 hover:bg-white/35 active:scale-95 text-white backdrop-blur-md border border-white/30 font-bold text-xs shadow-md transition-all cursor-pointer group"
-                          >
-                            <span className="text-[11px] font-bold text-white tracking-wide max-w-[130px] truncate">
-                              {nextRegion.label}
-                            </span>
-                            <div className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform">
-                              <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+                          {/* Secondary destinations in this region */}
+                          {otherDests.length > 0 && (
+                            <div className="grid grid-cols-2 gap-3">
+                              {otherDests.slice(0, 4).map((dest) => (
+                                <div
+                                  key={dest.name}
+                                  onClick={() => setSearchTerm(dest.name)}
+                                  className="group cursor-pointer relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs h-36 flex flex-col justify-end p-3.5"
+                                >
+                                  {dest.coverImage ? (
+                                    <img
+                                      src={dest.coverImage}
+                                      alt={dest.name}
+                                      className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
+                                      <MapPin className="w-6 h-6" />
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/35 to-transparent opacity-85" />
+
+                                  <div className="relative z-10">
+                                    <h5 className="text-sm font-black text-white tracking-tight drop-shadow-sm line-clamp-1 mb-0.5">
+                                      {dest.name}
+                                    </h5>
+                                    {dest.startingPrice ? (
+                                      <p className="text-[11px] font-bold text-amber-300">
+                                        From ₹{dest.startingPrice.toLocaleString('en-IN')}
+                                      </p>
+                                    ) : (
+                                      <span className="text-[10px] text-slate-300">Verified</span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Region Progress Indicator Dots */}
-                  {regionalDestinations.length > 1 && (
-                    <div className="relative z-10 px-5 pb-3 flex items-center gap-1.5">
-                      {regionalDestinations.map((r, idx) => (
-                        <button
-                          key={r.id}
-                          onClick={() => setActiveRegionId(r.id)}
-                          className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                            idx === currentRegionIndex
-                              ? 'w-6 bg-orange-400'
-                              : 'w-1.5 bg-white/30 hover:bg-white/50'
-                          }`}
-                          aria-label={`Go to ${r.label}`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
 
                 {/* Desktop: Classic Underlined Text Tabs */}
@@ -457,9 +490,9 @@ export default function LandingDiscovery({
                   })}
                 </div>
 
-                {/* Active Region Showcase Grid */}
+                {/* Active Region Showcase Grid (Desktop Only) */}
                 {destinations.length > 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                  <div className="hidden sm:grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                     {/* Hero Spotlight Card (Left side: 5 cols on desktop, or full if only 1 destination) */}
                     {heroDest && (
                       <div
@@ -580,9 +613,9 @@ export default function LandingDiscovery({
                   </div>
                 )}
 
-                {/* If more than 5 destinations in this region, show an extra horizontal rail below */}
+                {/* If more than 5 destinations in this region, show an extra horizontal rail below (Desktop only) */}
                 {otherDests.length > 4 && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
+                  <div className="hidden sm:block mt-6 pt-6 border-t border-slate-100">
                     <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
                       More Destinations in {activeGroup.label}
                     </p>
