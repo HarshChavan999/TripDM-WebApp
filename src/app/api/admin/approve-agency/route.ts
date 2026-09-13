@@ -4,8 +4,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-
 export async function POST(req: Request) {
   try {
     const { agencyId, email, companyName, name } = await req.json();
@@ -13,6 +11,11 @@ export async function POST(req: Request) {
     if (!agencyId) {
       return NextResponse.json({ error: 'Agency ID is required' }, { status: 400 });
     }
+
+    const resendApiKey = process.env.RESEND_API_KEY?.trim() || '';
+    const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || 'TripDM <support@tripdm.com>';
+    const baseAppUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || 'https://tripdm.com').replace(/\/$/, '');
+    const portalUrl = `${baseAppUrl}/agencytripdm`;
 
     initializeFirebase();
     const db = getFirestore();
@@ -37,14 +40,17 @@ export async function POST(req: Request) {
 
     // 2. Send email via Resend if email is available
     let emailSent = false;
+    let isDirectDelivery = false;
+    let isFallback = false;
     let emailError = null;
 
     if (targetEmail) {
-      try {
-        const baseAppUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://tripdm.com').replace(/\/$/, '');
-        const portalUrl = `${baseAppUrl}/agencytripdm`;
-        
-        const emailHtml = `
+      if (!resendApiKey) {
+        console.error('RESEND_API_KEY is not configured in environment variables.');
+        emailError = 'RESEND_API_KEY is missing in production environment (apphosting.yaml / Cloud Run).';
+      } else {
+        try {
+          const emailHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -153,12 +159,10 @@ export async function POST(req: Request) {
 </html>
         `;
 
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'TripDM <onboarding@resend.dev>';
-        
         let resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Authorization': `Bearer ${resendApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -171,35 +175,36 @@ export async function POST(req: Request) {
 
         if (resendRes.ok) {
           const resendData = await resendRes.json();
-          console.log(`Resend email sent successfully to ${targetEmail}:`, resendData);
+          console.log(`Resend email sent directly to ${targetEmail}:`, resendData);
           emailSent = true;
+          isDirectDelivery = true;
         } else {
           const errData = await resendRes.json().catch(() => ({}));
           console.warn(`Resend API returned warning (${resendRes.status}):`, errData);
           emailError = errData.message || JSON.stringify(errData);
 
-          // If Resend blocked because onboarding@resend.dev only allows sending to registered Resend account email:
-          // Fallback to sending testing preview to the account owner email
-          if (resendRes.status === 403 && errData.message?.includes('You can only send testing emails to your own email address')) {
+          // If Resend blocked because domain not verified (only allows sending to registered Resend account email):
+          if (resendRes.status === 403 && (errData.message?.includes('You can only send testing emails to your own email address') || errData.message?.includes('domain is not verified'))) {
             const fallbackEmail = 'phitanshu962@gmail.com';
             console.log(`Sending approval preview copy to registered account email (${fallbackEmail})...`);
             
             const fallbackRes = await fetch('https://api.resend.com/emails', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${RESEND_API_KEY}`,
+                'Authorization': `Bearer ${resendApiKey}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
                 from: 'TripDM <onboarding@resend.dev>',
                 to: [fallbackEmail],
-                subject: `[Approval Preview for ${targetEmail}] 🎉 Agency "${targetCompanyName}" Approved on TripDM`,
+                subject: `[Sandbox Preview for ${targetEmail}] 🎉 Agency "${targetCompanyName}" Approved on TripDM`,
                 html: emailHtml,
               }),
             });
 
             if (fallbackRes.ok) {
               emailSent = true;
+              isFallback = true;
               console.log(`Approval preview sent successfully to ${fallbackEmail}`);
             }
           }
@@ -209,11 +214,15 @@ export async function POST(req: Request) {
         emailError = err.message;
       }
     }
+  }
 
     return NextResponse.json({
       success: true,
       message: 'Agency approved successfully',
       emailSent,
+      isDirectDelivery,
+      isFallback,
+      targetEmail,
       emailError,
     });
   } catch (error: any) {

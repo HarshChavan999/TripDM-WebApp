@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ListingCard from '@/components/ListingCard';
+import LandingPhoneChatSection from '@/components/LandingPhoneChatSection';
 import { event } from '@/lib/gtag';
 import {
   PackageListing,
@@ -69,6 +70,8 @@ export default function LandingDiscovery({
     initialPackageTypeTab || 'all'
   );
 
+  const effectivePackageTypeTab = initialPackageTypeTab || packageTypeTab || 'all';
+
   React.useEffect(() => {
     if (initialPackageTypeTab) {
       setPackageTypeTab(initialPackageTypeTab);
@@ -101,8 +104,8 @@ export default function LandingDiscovery({
   }, []);
 
   // Dynamic auto-created destination sections & navigation pills
-  const destinationSections = getDynamicDestinationSections(listings, packageTypeTab);
-  const destinationPills = getDiscoveredDestinationPills(listings, packageTypeTab);
+  const destinationSections = getDynamicDestinationSections(listings, effectivePackageTypeTab);
+  const destinationPills = getDiscoveredDestinationPills(listings, effectivePackageTypeTab);
 
   // Data collections
   const popularDestinations = getPopularDestinations(listings, 1);
@@ -1078,6 +1081,15 @@ export default function LandingDiscovery({
           </div>
         </section>
       )}
+
+      {/* ==========================================
+          SECTION 6.5 — Interactive TripDM AI & Direct Agent Chat Simulation
+          ========================================== */}
+      <LandingPhoneChatSection
+        onChat={onChat}
+        onView={onView}
+        listings={listings}
+      />
 
       {/* ==========================================
           SECTION 7 — How TripDM Works & Why Book Direct (Clean Travel Marketplace Style)

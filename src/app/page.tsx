@@ -4,7 +4,7 @@ import { parseFirestoreDocument } from '@/lib/firestoreParser';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 async function getApprovedListings() {
   try {
@@ -28,7 +28,7 @@ async function getApprovedListings() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query),
-      cache: 'no-store'
+      next: { revalidate: 30 } // Cache for 30 seconds
     });
 
     if (!res.ok) {

@@ -387,13 +387,13 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
   const validCount = parsedListings.filter(l => l.isValid).length;
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-4 sm:space-y-6 w-full">
       <Card className="border border-slate-200/80 shadow-xs rounded-md overflow-hidden bg-white w-full" style={{ borderRadius: '8px' }}>
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <FileSpreadsheet className="h-6 w-6 text-amber-600" />
+              <CardTitle className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                 Bulk Import Packages
               </CardTitle>
               <CardDescription className="text-gray-500 text-xs mt-1">
@@ -404,7 +404,7 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
             <button
               type="button"
               onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 border border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 font-semibold rounded-md py-2.5 px-4 shadow-xs transition-all duration-200 hover:scale-[1.02] text-xs sm:text-sm cursor-pointer"
+              className="flex items-center justify-center gap-2 border border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 font-semibold rounded-md py-2.5 px-4 shadow-xs transition-all duration-200 hover:scale-[1.02] text-xs sm:text-sm cursor-pointer w-full sm:w-auto"
               style={{ borderRadius: '6px' }}
             >
               <FileDown className="h-4 w-4 text-amber-600" />
@@ -413,7 +413,7 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
           </div>
         </CardHeader>
         
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {errorMessage && (
             <Alert variant="destructive" className="rounded-md border-red-200 bg-red-50 text-red-900" style={{ borderRadius: '6px' }}>
               <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -423,7 +423,7 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
           )}
 
           {/* Upload Area */}
-          <div className="border-2 border-dashed border-slate-300 hover:border-amber-400 rounded-md p-8 text-center transition-colors bg-slate-50/50 flex flex-col items-center justify-center gap-4 relative" style={{ borderRadius: '8px' }}>
+          <div className="border-2 border-dashed border-slate-300 hover:border-amber-400 rounded-md p-5 sm:p-8 text-center transition-colors bg-slate-50/50 flex flex-col items-center justify-center gap-3 sm:gap-4 relative" style={{ borderRadius: '8px' }}>
             <input
               type="file"
               accept=".csv"
@@ -432,19 +432,19 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
               disabled={isParsing || isUploading}
             />
             
-            <div className="p-3.5 bg-white rounded-md shadow-xs border border-slate-200/80" style={{ borderRadius: '6px' }}>
+            <div className="p-3 sm:p-3.5 bg-white rounded-md shadow-xs border border-slate-200/80" style={{ borderRadius: '6px' }}>
               {isParsing ? (
-                <Loader2 className="h-7 w-7 text-amber-600 animate-spin" />
+                <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 text-amber-600 animate-spin" />
               ) : (
-                <Upload className="h-7 w-7 text-amber-600" />
+                <Upload className="h-6 w-6 sm:h-7 sm:w-7 text-amber-600" />
               )}
             </div>
             
             <div>
-              <p className="font-bold text-gray-800 text-sm">
+              <p className="font-bold text-gray-800 text-xs sm:text-sm truncate max-w-[280px] sm:max-w-md mx-auto">
                 {fileName ? fileName : 'Choose a CSV file or drag it here'}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">
                 Only CSV files exported from Excel or Google Sheets are accepted
               </p>
             </div>
@@ -452,8 +452,8 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
 
           {/* Upload Progress */}
           {isUploading && (
-            <div className="space-y-3 bg-amber-50/40 border border-amber-200/60 rounded-md p-5 shadow-xs" style={{ borderRadius: '6px' }}>
-              <div className="flex justify-between items-center text-sm font-bold text-slate-800">
+            <div className="space-y-3 bg-amber-50/40 border border-amber-200/60 rounded-md p-4 sm:p-5 shadow-xs" style={{ borderRadius: '6px' }}>
+              <div className="flex justify-between items-center text-xs sm:text-sm font-bold text-slate-800">
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
                   Uploading packages to database...
@@ -471,7 +471,7 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
 
           {/* Summary stats after parsing */}
           {parsedListings.length > 0 && !isUploading && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="p-4 rounded-md bg-slate-50/80 border border-slate-200/80 flex flex-col shadow-xs" style={{ borderRadius: '6px' }}>
                 <span className="text-xs font-semibold text-gray-500">Total Packages Found</span>
                 <span className="text-2xl font-extrabold text-gray-950 mt-1">{parsedListings.length}</span>
@@ -490,13 +490,13 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
           {/* Listing Rows Preview */}
           {parsedListings.length > 0 && !isUploading && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-extrabold text-gray-800 text-base">Packages Preview</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="font-extrabold text-gray-800 text-sm sm:text-base">Packages Preview</h3>
                 {validCount > 0 && (
                   <button
                     type="button"
                     onClick={handleBulkUpload}
-                    className="px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02]"
+                    className="w-full sm:w-auto justify-center px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 hover:scale-[1.02]"
                     style={{ borderRadius: '6px' }}
                   >
                     <CheckCircle className="h-4 w-4" />
@@ -505,9 +505,9 @@ export default function BulkUploadForm({ agencyId, onSuccess }: BulkUploadFormPr
                 )}
               </div>
 
-              <div className="border border-slate-200/80 rounded-md overflow-hidden shadow-xs" style={{ borderRadius: '6px' }}>
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full text-left border-collapse">
+              <div className="border border-slate-200/80 rounded-md overflow-hidden shadow-xs w-full" style={{ borderRadius: '6px' }}>
+                <div className="max-h-96 overflow-y-auto overflow-x-auto w-full">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
                       <tr className="bg-slate-50 text-xs font-bold text-gray-500 border-b border-slate-200/80">
                         <th className="p-3.5 w-12 text-center">Row</th>
