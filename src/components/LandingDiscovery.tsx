@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ListingCard from '@/components/ListingCard';
 import LandingPhoneChatSection from '@/components/LandingPhoneChatSection';
+import DestinationStoryDetail from '@/components/DestinationStoryDetail';
 import { event } from '@/lib/gtag';
 import {
   PackageListing,
@@ -36,6 +37,10 @@ import {
   BadgePercent,
   ShieldCheck,
   CheckCircle2,
+  Snowflake,
+  Waves,
+  Sun,
+  Tent,
 } from 'lucide-react';
 
 interface LandingDiscoveryProps {
@@ -50,6 +55,8 @@ interface LandingDiscoveryProps {
   allDestinations: string[];
   onSelectCategoryFilter: (filter: { category: string; subcategory?: string; title: string }) => void;
   initialPackageTypeTab?: 'all' | 'domestic' | 'international';
+  selectedStory?: any | null;
+  onSelectStory?: (story: any | null) => void;
 }
 
 export default function LandingDiscovery({
@@ -64,6 +71,8 @@ export default function LandingDiscovery({
   allDestinations,
   onSelectCategoryFilter,
   initialPackageTypeTab,
+  selectedStory: controlledSelectedStory,
+  onSelectStory,
 }: LandingDiscoveryProps) {
   // Tab state for Domestic vs International
   const [packageTypeTab, setPackageTypeTab] = useState<'all' | 'domestic' | 'international'>(
@@ -84,6 +93,17 @@ export default function LandingDiscovery({
   const intlCount = approvedListings.filter((l) => l.packageType === 'international').length;
 
   const [aiStories, setAiStories] = useState<any[]>([]);
+  const [internalSelectedStory, setInternalSelectedStory] = useState<any | null>(null);
+  const activeStory = controlledSelectedStory !== undefined ? controlledSelectedStory : internalSelectedStory;
+
+  const handleSelectStory = (story: any | null) => {
+    if (onSelectStory) {
+      onSelectStory(story);
+    } else {
+      setInternalSelectedStory(story);
+    }
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   React.useEffect(() => {
     async function loadPublishedStories() {
@@ -149,8 +169,26 @@ export default function LandingDiscovery({
     return `₹${num.toLocaleString('en-IN')}`;
   };
 
+  // If a story is selected, display the full dedicated story experience
+  if (activeStory) {
+    return (
+      <DestinationStoryDetail
+        story={activeStory}
+        listings={listings}
+        onBack={() => {
+          handleSelectStory(null);
+        }}
+        onView={onView}
+        onBook={onBook}
+        onChat={onChat}
+        onWishlist={onWishlist}
+        wishlist={wishlist}
+      />
+    );
+  }
+
   return (
-    <div className="w-full bg-white text-slate-900 font-sans pb-16 pt-2">
+    <div className="w-full bg-white text-slate-900 font-sans pb-16 pt-0">
       {/* ==========================================
           TOP DESTINATION PILLS STRIP (THRILLOPHILIA STYLE)
           ========================================== */}
@@ -329,7 +367,7 @@ export default function LandingDiscovery({
               null;
 
             return (
-              <section className="py-10 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
+              <section className="pt-1 sm:pt-2 pb-10 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
                 {/* Section Header */}
                 <div className="text-center max-w-3xl mx-auto mb-6">
                   <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-2">
@@ -661,283 +699,248 @@ export default function LandingDiscovery({
           />
 
           <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
-            <div className="text-center max-w-3xl mx-auto mb-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-                Destination Stories
-              </h2>
-            </div>
-
-            <div className="space-y-12">
-            {displayStories.map((story: any, index: number) => (
-              <div
-                key={story.id || story.stateName || index}
-                className="py-4"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                  {/* Left Column: Visual Photography */}
-                  <div className="lg:col-span-5 relative aspect-[16/10] sm:aspect-[4/3] rounded-md overflow-hidden bg-slate-200 border border-slate-200/80 shadow-inner group">
-                    {story.coverImage ? (
-                      <img
-                        src={story.coverImage}
-                        alt={story.title || story.stateName}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400">
-                        <Compass className="w-12 h-12" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column: State Story Details */}
-                  <div className="lg:col-span-7 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mb-4">
-                        {story.title || story.stateName}
-                      </h3>
-
-                      <div className="text-xs sm:text-sm text-slate-600 font-medium mb-6 leading-relaxed space-y-2">
-                        {(story.narrative || story.description || `Explore verified itineraries across ${story.stateName} covering major cultural landmarks, scenic routes, and local experiences.`)
-                          .split('\n\n')
-                          .map((paragraph: string, pIdx: number) => (
-                            <p key={pIdx}>{paragraph}</p>
-                          ))}
-                      </div>
-                    </div>
-
-                    {/* CTA Button */}
-                    <div>
-                      <button
-                        onClick={() => {
-                          setSearchTerm(story.stateName);
-                          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="px-6 py-3 rounded-md bg-slate-900 hover:bg-orange-600 text-white text-xs font-extrabold transition-all shadow-sm flex items-center gap-2 group/btn"
-                      >
-                        <span>Explore {story.stateName} Packages</span>
-                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            {/* Centered Header with Title & Absolute Positioned Scroll Controls */}
+            <div className="relative flex items-center justify-center mb-8">
+              <div className="text-center max-w-2xl mx-auto px-4">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                  Destination Stories
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                  Immersive narratives and verified itineraries across India&apos;s most captivating states.
+                </p>
               </div>
-            ))}
-          </div>
-        </section>
-      </>
-    )}
 
-      {/* ==========================================
-          SECTION 3 — Unified Experience & Theme Explorer (Asymmetric Bento Grid)
-          ========================================== */}
-      {dynamicExperiences.length > 0 && (() => {
-        const topTwo = dynamicExperiences.slice(0, 2);
-        const middleThree = dynamicExperiences.slice(2, 5);
-        const bottomRemaining = dynamicExperiences.slice(5, 8);
-
-        const getExperienceIcon = (name: string) => {
-          switch (name) {
-            case 'Family Vacations':
-              return <Users className="w-3.5 h-3.5 text-amber-400" />;
-            case 'Friends':
-              return <Users className="w-3.5 h-3.5 text-sky-400" />;
-            case 'Honeymoon & Couples':
-              return <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400/40" />;
-            case 'Spiritual & Heritage':
-              return <Landmark className="w-3.5 h-3.5 text-amber-400" />;
-            case 'Adventure & Outdoors':
-              return <Mountain className="w-3.5 h-3.5 text-emerald-400" />;
-            case 'Nature & Wildlife':
-              return <Trees className="w-3.5 h-3.5 text-emerald-400" />;
-            case 'Weekend Escapes':
-              return <Car className="w-3.5 h-3.5 text-indigo-400" />;
-            case 'Sightseeing & Local Tours':
-              return <Camera className="w-3.5 h-3.5 text-cyan-400" />;
-            case 'Group Departures':
-              return <Compass className="w-3.5 h-3.5 text-orange-400" />;
-            default:
-              return <Sparkles className="w-3.5 h-3.5 text-amber-400" />;
-          }
-        };
-
-        return (
-          <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
-            {/* Centered Section Header */}
-            <div className="text-center max-w-3xl mx-auto mb-10">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Find Trips by Experience
-              </h2>
+              {/* Scroll Arrows positioned on the right */}
+              <div className="hidden sm:flex items-center gap-2 absolute right-0 top-1/2 -translate-y-1/2">
+                <button
+                  type="button"
+                  onClick={() => scrollRail('rail-destination-stories', 'left')}
+                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-orange-50 hover:border-orange-300 text-slate-700 hover:text-orange-600 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
+                  aria-label="Scroll stories left"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollRail('rail-destination-stories', 'right')}
+                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-orange-50 hover:border-orange-300 text-slate-700 hover:text-orange-600 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
+                  aria-label="Scroll stories right"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Row 1: Top 2 Hero Spotlight Cards (50% / 50%) */}
-            {topTwo.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
-                {topTwo.map((exp) => (
-                  <div
-                    key={exp.name}
-                    onClick={() => setSearchTerm(exp.name)}
-                    className="md:col-span-6 group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 h-64 sm:h-72 lg:h-80 flex flex-col justify-end p-6 sm:p-8"
-                  >
-                    {exp.coverImage ? (
-                      <img
-                        src={exp.coverImage}
-                        alt={exp.name}
-                        className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
-                        <Compass className="w-12 h-12" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/40 to-transparent opacity-85 group-hover:opacity-75 transition-opacity" />
+            {/* Horizontal Scroll Rail of TripDM White Editorial Magazine Cards */}
+            <div
+              id="rail-destination-stories"
+              className="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 pt-1 -mx-4 px-4 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12"
+            >
+              {displayStories.map((story: any, index: number) => {
+                const placesList: string[] = Array.isArray(story.places)
+                  ? story.places.map((p: any) => p?.name || p).filter(Boolean)
+                  : (Array.isArray(story.discoveredPlaces) ? story.discoveredPlaces.filter(Boolean) : []);
 
-                    {/* Tag Badge */}
-                    <div className="absolute top-5 left-5 z-10">
-                      <span className="bg-slate-900/85 backdrop-blur-md text-white text-xs font-black px-3.5 py-1.5 rounded-full border border-white/20 shadow-xs flex items-center gap-2">
-                        {getExperienceIcon(exp.name)}
-                        <span>{exp.name}</span>
-                      </span>
+                const cleanNarrative = story.narrative
+                  ? story.narrative.split('\n\n')[0].replace(/^Paragraph \d+:\s*/gi, '').trim()
+                  : '';
+
+                return (
+                  <div
+                    key={story.id || story.stateName || index}
+                    onClick={() => {
+                      handleSelectStory(story);
+                    }}
+                    className="w-[285px] sm:w-[320px] lg:w-[335px] shrink-0 h-[420px] sm:h-[440px] relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.11)] hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer flex flex-col select-none"
+                  >
+                    {/* Top Image Visual Banner (~75-80% of card) */}
+                    <div className="relative w-full h-[310px] sm:h-[330px] shrink-0 overflow-hidden bg-slate-100">
+                      {story.coverImage ? (
+                        <img
+                          src={story.coverImage}
+                          alt={story.title || story.stateName}
+                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
+                          <Compass className="w-12 h-12" />
+                        </div>
+                      )}
                     </div>
 
-                    {/* Content */}
-                    <div className="relative z-10">
-                      <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm mb-1">
-                        {exp.name}
+                    {/* Bottom White Information Section (~20-25% of card) */}
+                    <div className="p-4 sm:p-4.5 flex flex-col justify-between flex-1 bg-white">
+                      {/* Title */}
+                      <h3 className="text-[15px] sm:text-[16px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">
+                        {story.title || `${story.stateName} Odyssey`}
                       </h3>
-                      <p className="text-xs sm:text-sm text-slate-200/90 line-clamp-1 mb-3">
-                        {EXPERIENCE_TAGLINES[exp.name] || 'Curated packages tailored for this travel style'}
-                      </p>
-                      <div className="flex items-center justify-between pt-2.5 border-t border-white/10">
-                        {exp.startingPrice ? (
-                          <p className="text-sm font-bold text-amber-300">
-                            From ₹{exp.startingPrice.toLocaleString('en-IN')}
-                          </p>
-                        ) : (
-                          <span className="text-xs text-slate-300">Verified Itineraries</span>
-                        )}
-                        <span className="text-xs font-extrabold text-white bg-white/20 group-hover:bg-orange-500 px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-xs">
-                          <span>Explore</span>
+
+                      {/* Bottom Quick Bar: Key Place & Read Story CTA */}
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 mt-2">
+                        <div className="flex items-center text-xs text-slate-500 font-medium truncate max-w-[160px] sm:max-w-[180px]">
+                          <span className="truncate">
+                            {placesList.length > 0 ? placesList.slice(0, 2).join(' • ') : story.stateName}
+                          </span>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 group-hover:text-orange-700 transition-all shrink-0">
+                          <span>Read Story</span>
                           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                         </span>
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+          </section>
+      </>
+    )}
+
+      {/* ==========================================
+          SECTION 3 — Unified Experience & Theme Explorer (Portrait Carousel with Alternating Stagger)
+          ========================================== */}
+      {dynamicExperiences.length > 0 && (() => {
+        const getExperienceIcon = (name: string) => {
+          const lower = name.toLowerCase();
+          if (lower.includes('family') || lower.includes('group') || lower.includes('friend')) return <Users className="w-3.5 h-3.5 text-amber-400" />;
+          if (lower.includes('honey') || lower.includes('couple') || lower.includes('romantic')) return <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400/40" />;
+          if (lower.includes('spirit') || lower.includes('temple') || lower.includes('pilgrim') || lower.includes('heritage') || lower.includes('cultur')) return <Landmark className="w-3.5 h-3.5 text-amber-400" />;
+          if (lower.includes('trek') || lower.includes('hike') || lower.includes('mountain') || lower.includes('adventure') || lower.includes('hill') || lower.includes('valley')) return <Mountain className="w-3.5 h-3.5 text-emerald-400" />;
+          if (lower.includes('wild') || lower.includes('safari') || lower.includes('nature')) return <Trees className="w-3.5 h-3.5 text-emerald-400" />;
+          if (lower.includes('snow') || lower.includes('winter') || lower.includes('ski')) return <Snowflake className="w-3.5 h-3.5 text-sky-300" />;
+          if (lower.includes('water') || lower.includes('beach') || lower.includes('island') || lower.includes('scuba') || lower.includes('sea') || lower.includes('lake') || lower.includes('backwater') || lower.includes('boat')) return <Waves className="w-3.5 h-3.5 text-cyan-400" />;
+          if (lower.includes('camp')) return <Tent className="w-3.5 h-3.5 text-amber-500" />;
+          if (lower.includes('desert') || lower.includes('sun') || lower.includes('dune')) return <Sun className="w-3.5 h-3.5 text-orange-400" />;
+          if (lower.includes('weekend') || lower.includes('road') || lower.includes('bike') || lower.includes('drive') || lower.includes('scenic')) return <Car className="w-3.5 h-3.5 text-indigo-400" />;
+          if (lower.includes('sight') || lower.includes('city') || lower.includes('photo')) return <Camera className="w-3.5 h-3.5 text-cyan-400" />;
+          return <Sparkles className="w-3.5 h-3.5 text-amber-400" />;
+        };
+
+        return (
+          <section className="pt-16 pb-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100 scroll-mt-32">
+            {/* Section Header Centered in the Middle with Right Controls */}
+            <div className="relative flex items-center justify-center mb-8">
+              <div className="text-center max-w-2xl mx-auto px-4">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Find Trips by Experience
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Discover curated journeys designed for your preferred travel style
+                </p>
               </div>
-            )}
 
-            {/* Row 2: Middle 3 Medium Cards (33% / 33% / 33%) */}
-            {middleThree.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 mb-6">
-                {middleThree.map((exp) => (
-                  <div
-                    key={exp.name}
-                    onClick={() => setSearchTerm(exp.name)}
-                    className="lg:col-span-4 group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 h-56 sm:h-64 flex flex-col justify-end p-5 sm:p-6"
-                  >
-                    {exp.coverImage ? (
-                      <img
-                        src={exp.coverImage}
-                        alt={exp.name}
-                        className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
-                        <Compass className="w-10 h-10" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/40 to-transparent opacity-85 group-hover:opacity-75 transition-opacity" />
-
-                    <div className="absolute top-4 left-4 z-10">
-                      <span className="bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-extrabold px-3 py-1 rounded-full border border-white/20 shadow-xs flex items-center gap-1.5">
-                        {getExperienceIcon(exp.name)}
-                        <span>{exp.name}</span>
-                      </span>
-                    </div>
-
-                    <div className="relative z-10">
-                      <h3 className="text-xl font-black text-white tracking-tight drop-shadow-sm mb-0.5">
-                        {exp.name}
-                      </h3>
-                      <p className="text-xs text-slate-200/90 line-clamp-1 mb-2.5">
-                        {EXPERIENCE_TAGLINES[exp.name] || 'Curated packages tailored for this travel style'}
-                      </p>
-                      <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                        {exp.startingPrice ? (
-                          <p className="text-xs font-bold text-amber-300">
-                            From ₹{exp.startingPrice.toLocaleString('en-IN')}
-                          </p>
-                        ) : (
-                          <span className="text-xs text-slate-300">Verified Itineraries</span>
-                        )}
-                        <span className="text-[11px] font-extrabold text-white bg-white/20 group-hover:bg-orange-500 px-3 py-1 rounded-full transition-all flex items-center gap-1 shadow-xs">
-                          <span>Explore</span>
-                          <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              {/* Prev / Next Navigation Arrows positioned on the right */}
+              <div className="hidden sm:flex items-center gap-2 absolute right-0 top-1/2 -translate-y-1/2">
+                <button
+                  onClick={() => scrollRail('rail-experiences', 'left')}
+                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-orange-600 hover:border-orange-300 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => scrollRail('rail-experiences', 'right')}
+                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-orange-600 hover:border-orange-300 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
-            )}
+            </div>
 
-            {/* Row 3: Bottom Panoramic / Balanced Row (1 to 3 cards) */}
-            {bottomRemaining.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6">
-                {bottomRemaining.map((exp) => {
-                  const colSpan = bottomRemaining.length === 1 ? 'lg:col-span-12' : bottomRemaining.length === 2 ? 'lg:col-span-6' : 'lg:col-span-4';
+            {/* Horizontal Scroll Rail with Staggered Portrait Cards */}
+            <div className="relative group/rail">
+              {/* Floating Side Arrows for Desktop */}
+              <button
+                onClick={() => scrollRail('rail-experiences', 'left')}
+                className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => scrollRail('rail-experiences', 'right')}
+                className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              <div
+                id="rail-experiences"
+                className="flex items-start gap-4 sm:gap-6 overflow-x-auto pt-2 pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth w-full px-1"
+              >
+                {dynamicExperiences
+                  .filter((exp) => !/\b(photography|photo|shopping|shop|fort|palace|waterfall|monument|temple)\b/i.test(exp.name))
+                  .map((exp) => {
                   return (
                     <div
                       key={exp.name}
-                      onClick={() => setSearchTerm(exp.name)}
-                      className={`${colSpan} group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 h-56 sm:h-64 flex flex-col justify-end p-5 sm:p-6`}
+                      className="snap-start shrink-0"
                     >
-                      {exp.coverImage ? (
-                        <img
-                          src={exp.coverImage}
-                          alt={exp.name}
-                          className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
-                          <Compass className="w-10 h-10" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/40 to-transparent opacity-85 group-hover:opacity-75 transition-opacity" />
+                      <div
+                        onClick={() => {
+                          setSearchTerm(exp.name);
+                          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="w-[260px] sm:w-[290px] lg:w-[310px] h-[410px] sm:h-[450px] lg:h-[470px] group cursor-pointer relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-xs hover:shadow-2xl transition-all duration-500 flex flex-col justify-end p-5 sm:p-6 select-none"
+                      >
+                        {/* Background Cover Photography */}
+                        {exp.coverImage ? (
+                          <img
+                            src={exp.coverImage}
+                            alt={exp.name}
+                            className="absolute inset-0 w-full h-full object-cover opacity-95 group-hover:scale-108 transition-transform duration-700 ease-out"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-slate-500">
+                            <Compass className="w-14 h-14" />
+                          </div>
+                        )}
 
-                      <div className="absolute top-4 left-4 z-10">
-                        <span className="bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-extrabold px-3 py-1 rounded-full border border-white/20 shadow-xs flex items-center gap-1.5">
-                          {getExperienceIcon(exp.name)}
-                          <span>{exp.name}</span>
-                        </span>
-                      </div>
+                        {/* Smooth Bottom Gradient Scrim for Flawless Text Legibility */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent opacity-90 group-hover:opacity-80 transition-opacity duration-500" />
 
-                      <div className="relative z-10">
-                        <h3 className="text-lg sm:text-xl font-black text-white tracking-tight drop-shadow-sm mb-0.5 line-clamp-1">
-                          {exp.name}
-                        </h3>
-                        <p className="text-xs text-slate-200/90 line-clamp-1 mb-2.5">
-                          {EXPERIENCE_TAGLINES[exp.name] || 'Curated packages tailored for this travel style'}
-                        </p>
-                        <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                          {exp.startingPrice ? (
-                            <p className="text-xs sm:text-sm font-bold text-amber-300">
-                              From ₹{exp.startingPrice.toLocaleString('en-IN')}
-                            </p>
-                          ) : (
-                            <span className="text-xs text-slate-300">Verified Itineraries</span>
-                          )}
-                          <span className="text-[11px] sm:text-xs font-extrabold text-white bg-white/20 group-hover:bg-orange-500 px-3 py-1 rounded-full transition-all flex items-center gap-1 shadow-xs">
-                            <span>Explore</span>
-                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                          </span>
+                        {/* Bottom Information */}
+                        <div className="relative z-10">
+                          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug drop-shadow-md group-hover:text-amber-300 transition-colors mb-1.5">
+                            {exp.name}
+                          </h3>
+                          <p className="text-xs sm:text-[13px] text-slate-200/90 font-normal line-clamp-2 leading-relaxed mb-4 drop-shadow-xs">
+                            {exp.tagline || EXPERIENCE_TAGLINES[exp.name] || 'Curated packages tailored for this travel style'}
+                          </p>
+
+                          <div className="flex items-center justify-between pt-3 border-t border-white/15">
+                            <div>
+                              {exp.startingPrice ? (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-300/90 block">
+                                    From
+                                  </span>
+                                  <p className="text-sm sm:text-base font-extrabold text-amber-300 drop-shadow-xs">
+                                    ₹{exp.startingPrice.toLocaleString('en-IN')}
+                                  </p>
+                                </div>
+                              ) : (
+                                <span className="text-xs font-semibold text-slate-200">
+                                  Verified Packages
+                                </span>
+                              )}
+                            </div>
+
+                            <span className="text-xs font-extrabold text-white bg-white/20 backdrop-blur-md group-hover:bg-orange-500 px-3.5 py-2 rounded-full transition-all flex items-center gap-1.5 shadow-md">
+                              <span>Explore</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </div>
           </section>
         );
       })()}
@@ -996,17 +999,26 @@ export default function LandingDiscovery({
       ))}
 
       {/* ==========================================
-          SECTION 6 — "Recently Added Packages" Rail
+          SECTION 6 — Interactive TripDM AI & Direct Agent Chat Simulation
+          ========================================== */}
+      <div className="border-b border-slate-100">
+        <LandingPhoneChatSection
+          onChat={onChat}
+          onView={onView}
+          listings={listings}
+        />
+      </div>
+
+      {/* ==========================================
+          SECTION 6.5 — "Recently Added Packages" Rail
           ========================================== */}
       {recentlyAdded.length > 0 && (
         <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
           <div className="flex items-end justify-between mb-6">
             <div>
-              
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
                 Recently Added Packages
               </h2>
-            
             </div>
             {recentlyAdded.length > 3 && (
               <div className="flex items-center gap-2">
@@ -1048,15 +1060,6 @@ export default function LandingDiscovery({
           </div>
         </section>
       )}
-
-      {/* ==========================================
-          SECTION 6.5 — Interactive TripDM AI & Direct Agent Chat Simulation
-          ========================================== */}
-      <LandingPhoneChatSection
-        onChat={onChat}
-        onView={onView}
-        listings={listings}
-      />
 
       {/* ==========================================
           SECTION 7 — How TripDM Works & Why Book Direct (Clean Travel Marketplace Style)

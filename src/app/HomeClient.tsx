@@ -27,8 +27,10 @@ import AdminCouponManagement from '@/components/AdminCouponManagement';
 
 import AdminItineraryPhotoManager from '@/components/AdminItineraryPhotoManager';
 import AdminBlogPhotoManager from '@/components/AdminBlogPhotoManager';
+import AdminDestinationStories from '@/components/AdminDestinationStories';
 import CheckoutModal from '@/components/CheckoutModal';
 import LandingDiscovery from '@/components/LandingDiscovery';
+import { normalizeExperienceName } from '@/lib/discoveryEngine';
 import { useComparison } from '@/contexts/ComparisonContext';
 import { 
   User, 
@@ -497,6 +499,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const [agencyInChatSearchQuery, setAgencyInChatSearchQuery] = useState<string>('');
   const [agencyInChatSearchIndex, setAgencyInChatSearchIndex] = useState<number>(0);
   const [listings, setListings] = useState<any[]>(initialListings);
+
+  useEffect(() => {
+    if (initialListings && initialListings.length > 0) {
+      setListings(initialListings);
+    }
+  }, [initialListings]);
 
   // ─── Admin Photo Manager helpers (merged from stash) ────────────────
   const adminMissingItineraryPhotosCount = useMemo(() => {
@@ -1014,6 +1022,13 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<{ category: string; subcategory?: string; title: string } | null>(null);
   const [dashboardViewMode, setDashboardViewMode] = useState<'categories' | 'all'>('categories');
+  const [selectedStory, setSelectedStory] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (userActiveSection !== 'listings' || viewingListing || showBookingForm || showComparison || searchTerm) {
+      setSelectedStory(null);
+    }
+  }, [userActiveSection, viewingListing, showBookingForm, showComparison, searchTerm]);
 
   const getFilteredListingsForSubcategory = (category: string, subcategory: string) => {
     return listings.filter((listing) => {
@@ -1090,6 +1105,13 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         if (subcategory === 'Snow Enjoyment') return expArray.includes('snow') || expArray.includes('snow enjoyment');
         if (subcategory === 'Adventure') return expArray.includes('adventure');
         if (subcategory === 'Water Sports') return expArray.includes('water-sports') || expArray.includes('water sports');
+
+        if (subcategory) {
+          const normalizedExpArray = expArray.map((e) => (normalizeExperienceName(e) || '').toLowerCase());
+          const subLower = subcategory.toLowerCase();
+          const normSub = (normalizeExperienceName(subcategory) || '').toLowerCase();
+          return expArray.includes(subLower) || normalizedExpArray.includes(subLower) || (normSub ? normalizedExpArray.includes(normSub) : false);
+        }
       }
 
       return false;
@@ -3208,6 +3230,15 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 >
                   <Tag className="h-4 w-4 text-orange-500" /> Coupons &amp; Discounts
                 </button>
+                <button
+                  onClick={() => setActiveSection('destination_stories')}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-3 ${activeSection === 'destination_stories'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                >
+                  <Compass className="h-4 w-4 text-orange-500" /> Destination Stories
+                </button>
 
                 <div className="pt-2 mt-2 border-t border-gray-100">
                   <a
@@ -3238,6 +3269,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 {activeSection === 'itinerary_photos' && 'Itinerary Photo Manager'}
                 {activeSection === 'blog_photos' && 'Blog Photo Manager'}
                 {activeSection === 'coupons' && 'Coupon & Discount Management'}
+                {activeSection === 'destination_stories' && 'Destination Stories Generator & Manager'}
 
               </h1>
               <div className="flex items-center space-x-4">
@@ -4277,6 +4309,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 />
               )}
               {activeSection === 'coupons' && <AdminCouponManagement />}
+              {activeSection === 'destination_stories' && (
+                <AdminDestinationStories packages={listings} />
+              )}
 
               {activeSection === 'settings' && (
                 <div className="space-y-6">
@@ -4465,6 +4500,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       setShowBookingForm(false);
                       setShowComparison(false);
                       setMobileMenuOpen(false);
+                      setSelectedStory(null);
                     }}
                   >
                     <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 w-auto object-contain" />
@@ -4706,13 +4742,6 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     <ChevronRight className="h-4 w-4 text-slate-300" />
                   </button>
 
-                  {/* Location Display */}
-                  <div className="pt-2 px-1">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-150">
-                      <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                      <span className="font-medium truncate">Delivery Pincode: <strong>{pincode}</strong></span>
-                    </div>
-                  </div>
 
                   <div className="pt-4">
                     <p className="text-[10px] uppercase font-bold text-slate-400 px-3 pb-1 tracking-wider">Explore More</p>
@@ -4774,54 +4803,47 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           {/* Top Navigation Bar */}
           <header className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
             {/* Desktop Header Layout */}
-            <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 px-4 h-16 w-full">
-              {/* Logo & Search */}
-              <div className="flex items-center gap-4 flex-1">
-                <div
-                  className="flex items-center gap-1 sm:gap-2 font-extrabold tracking-tight cursor-pointer shrink-0"
-                  onClick={() => {
-                    setUserActiveSection('listings');
-                    setViewingListing(null);
-                    setSelectedCategoryFilter(null);
-                    setDashboardViewMode('categories');
-                    setSearchTerm('');
-                    setAdvancedFilters({
-                      styles: [],
-                      duration: null,
-                    });
-                    setShowBookingForm(false);
-                    setShowComparison(false);
+            <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-6 px-4 h-16 w-full">
+              {/* Logo */}
+              <div
+                className="flex items-center gap-1 sm:gap-2 font-extrabold tracking-tight cursor-pointer shrink-0"
+                onClick={() => {
+                  setUserActiveSection('listings');
+                  setViewingListing(null);
+                  setSelectedCategoryFilter(null);
+                  setDashboardViewMode('categories');
+                  setSearchTerm('');
+                  setAdvancedFilters({
+                    styles: [],
+                    duration: null,
+                  });
+                  setShowBookingForm(false);
+                  setShowComparison(false);
+                  setSelectedStory(null);
+                }}
+              >
+                <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain py-1" />
+              </div>
+
+              {/* Search Bar - Center balanced to fill space */}
+              <div className="flex-1 max-w-2xl mx-2 lg:mx-6">
+                <AutocompleteSearch
+                  placeholder="Search for destination"
+                  typewriterPrefix="Search for "
+                  typewriter={["Rajasthan", "Kerala", "Kashmir", "Goa", "Himachal Pradesh", "Dubai", "Assam", "Thailand"]}
+                  value={searchTerm}
+                  onChange={(val) => setSearchTerm(val)}
+                  onSelect={(val) => {
+                    setSearchTerm(val);
                   }}
-                >
-                  <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain py-1" />
-                </div>
-                <div className="relative w-full max-w-xl">
-                  <AutocompleteSearch
-                    placeholder="Search for destination"
-                    typewriterPrefix="Search for "
-                    typewriter={["Rajasthan", "Kerala", "Kashmir", "Goa", "Himachal Pradesh", "Dubai", "Assam", "Thailand"]}
-                    value={searchTerm}
-                    onChange={(val) => setSearchTerm(val)}
-                    onSelect={(val) => {
-                      setSearchTerm(val);
-                    }}
-                    suggestions={allDestinations}
-                    inputClassName="w-full pl-10 pr-4 py-2 rounded-full text-slate-900 bg-slate-50/90 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200/90 text-sm h-10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-slate-300 transition-all font-medium"
-                    iconClassName="left-3.5 top-3 text-slate-400"
-                  />
-                </div>
+                  suggestions={allDestinations}
+                  inputClassName="w-full pl-10 pr-4 py-2 rounded-full text-slate-900 bg-slate-50/90 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200/90 text-sm h-10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-slate-300 transition-all font-medium"
+                  iconClassName="left-3.5 top-3 text-slate-400"
+                />
               </div>
 
               {/* Right Links */}
-              <div className="flex items-center gap-5 shrink-0 pl-4">
-                {/* Location */}
-                <div className="flex items-center gap-1.5 text-slate-700 select-none mr-1">
-                  <MapPin className="h-4 w-4 text-slate-600" />
-                  <div className="flex flex-col leading-[1.1]">
-                    <span className="font-semibold text-gray-900 text-[13px]">{pincode}</span>
-                  </div>
-                </div>
-
+              <div className="flex items-center gap-4 lg:gap-6 shrink-0">
                 {/* Compare */}
                 <span
                   className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
@@ -4962,6 +4984,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     setSearchTerm('');
                     setShowBookingForm(false);
                     setShowComparison(false);
+                    setSelectedStory(null);
                   }}
                 >
                   <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 sm:h-12 w-auto object-contain py-1" />
@@ -5134,10 +5157,10 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
               )}
 
               {userActiveSection === 'listings' && !viewingListing && !showBookingForm && !showComparison && (
-                <div className="relative z-10 w-full pt-4">
+                <div className={`relative z-10 w-full ${selectedStory ? 'pt-0' : 'pt-4'}`}>
 
-                  {/* Compute active filter count & summary for mobile button */}
-                  {(() => {
+                  {/* Compute active filter count & summary for mobile button (Hidden when story is open) */}
+                  {!selectedStory && (() => {
                     const activeFilterCount = (
                       (selectedCategoryFilter ? 1 : 0) +
                       (advancedFilters.styles.length + (advancedFilters.duration ? 1 : 0))
@@ -5160,7 +5183,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         </button>
 
                         {/* Desktop View: Classic Category Nav Strip */}
-                        <div id="category-nav-strip" className="hidden sm:flex w-fit max-w-full mx-auto bg-white/85 border border-white/80 rounded-xl p-2.5 mb-8 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.05)] items-center justify-center gap-3 sm:gap-4 py-2.5 sticky top-16 z-[90] backdrop-blur-xl relative transition-all duration-300">
+                        <div id="category-nav-strip" className="hidden sm:flex w-fit max-w-full mx-auto bg-white/85 border border-white/80 rounded-xl p-2.5 mb-2 sm:mb-3 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.05)] items-center justify-center gap-3 sm:gap-4 py-2.5 sticky top-16 z-[90] backdrop-blur-xl relative transition-all duration-300">
                           <div className="flex gap-2 sm:gap-3.5 items-center justify-center px-2 overflow-x-auto horizontal-scroll-nav scrollbar-hide max-w-full">
                             {[
                               { id: 'all_categories', label: 'Categories', type: 'categories', filter: null },
@@ -5274,6 +5297,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           ? 'international'
                           : 'all'
                       }
+                      selectedStory={selectedStory}
+                      onSelectStory={setSelectedStory}
                     />
                   ) : (
                     /* Filtered Listings Grid - Matching original 3-column card dimensions */
@@ -5393,6 +5418,13 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                   if (subcategory === 'Snow Enjoyment' && !expArray.includes('snow') && !expArray.includes('snow enjoyment')) return false;
                                   if (subcategory === 'Adventure' && !expArray.includes('adventure')) return false;
                                   if (subcategory === 'Water Sports' && !expArray.includes('water-sports') && !expArray.includes('water sports')) return false;
+
+                                  const normalizedExpArray = expArray.map((e) => (normalizeExperienceName(e) || '').toLowerCase());
+                                  const subLower = subcategory.toLowerCase();
+                                  const normSub = (normalizeExperienceName(subcategory) || '').toLowerCase();
+                                  if (!expArray.includes(subLower) && !normalizedExpArray.includes(subLower) && (!normSub || !normalizedExpArray.includes(normSub))) {
+                                    return false;
+                                  }
                                 }
                               }
                             }
@@ -5419,6 +5451,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                               const code = (listing.id ? listing.id.slice(-4) : '1045').toLowerCase();
                               const tourCats = (Array.isArray(listing.tourCategories) ? listing.tourCategories : typeof listing.tourCategories === 'string' ? [listing.tourCategories] : [])
                                 .map((c: any) => String(c).toLowerCase()).join(' ');
+                              const rawExp = (Array.isArray(listing.experienceType) ? listing.experienceType : typeof listing.experienceType === 'string' ? [listing.experienceType] : []);
+                              const normalizedExp = rawExp.map((e: any) => normalizeExperienceName(String(e))).filter(Boolean);
+                              const expTypesCombined = [...rawExp, ...normalizedExp].map((e: any) => String(e).toLowerCase()).join(' ');
                               const inclusions = (Array.isArray(listing.inclusions) ? listing.inclusions : typeof listing.inclusions === 'string' ? [listing.inclusions] : [])
                                 .map((i: any) => String(i).toLowerCase()).join(' ');
                               const agencyName = (listing.agencyName || '').toLowerCase();
@@ -5444,6 +5479,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                 isFuzzySearchMatch(searchLower, drop) ||
                                 code.includes(searchLower) ||
                                 isFuzzySearchMatch(searchLower, tourCats) ||
+                                isFuzzySearchMatch(searchLower, expTypesCombined) ||
                                 isFuzzySearchMatch(searchLower, inclusions) ||
                                 isFuzzySearchMatch(searchLower, agencyName) ||
                                 isFuzzySearchMatch(searchLower, places) ||

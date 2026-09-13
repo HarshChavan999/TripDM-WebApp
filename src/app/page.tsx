@@ -20,7 +20,7 @@ async function getApprovedListings() {
             value: { booleanValue: true }
           }
         },
-        limit: 50
+        limit: 1000
       }
     };
 

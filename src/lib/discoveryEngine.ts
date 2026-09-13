@@ -618,27 +618,31 @@ export function getCategoryCollections(listings: PackageListing[]): CategoryColl
  * Scans real listings for experience attributes and returns only experience groups supported by real package data.
  */
 export const EXPERIENCE_THEME_IMAGES: Record<string, string> = {
-  'Family Vacations': 'https://images.unsplash.com/photo-1543039625-14cbd3802e7d?auto=format&fit=crop&q=80&w=1200', // Joyful family on beach/nature holiday
-  'Friends': 'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?auto=format&fit=crop&q=80&w=1200', // Group of friends on scenic mountain trail
-  'Honeymoon & Couples': 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&q=80&w=1200', // Romantic couple in tropical paradise
-  'Spiritual & Heritage': 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&q=80&w=1200', // Grand Indian heritage temple / ghat
-  'Adventure & Outdoors': 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1200', // High mountain trekking & adventure
-  'Nature & Wildlife': 'https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&q=80&w=1200', // Wildlife & pristine jungle safari
-  'Weekend Escapes': 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&q=80&w=1200', // Scenic road trip getaway
-  'Sightseeing & Local Tours': 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&q=80&w=1200', // Iconic monuments & culture
-  'Group Departures': 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200', // Group tour travelers
+  'Heritage & Culture': 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&q=80&w=1200', // Iconic Amber Fort & Rajasthan royal palace architecture
+  'Nature & Wildlife': 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=1200', // Majestic safari elephants in wild natural sanctuary
+  'Trekking & Mountains': 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1200', // High mountain ridge trekking & panoramic alpine trail
+  'Spiritual & Pilgrimage': 'https://images.unsplash.com/photo-1545129139-1beb780cf337?auto=format&fit=crop&q=80&w=1200', // Sacred Golden Temple & holy sarovar waters illuminated at night
+  'Honeymoon & Couples': 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&q=80&w=1200', // Romantic couple sunset escape
+  'Snow & Winter': 'https://images.unsplash.com/photo-1482862549707-f63cb32c5fd9?auto=format&fit=crop&q=80&w=1200', // Pristine snow-blanketed alpine pine trees & winter mountains
+  'Beach & Coastal': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200', // Turquoise ocean waves, tropical sandy shores & backwaters
+  'Adventure & Outdoors': 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=1200', // Starlit outdoor campfire & camping under pine forest
+  'Sightseeing & Local Tours': 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&q=80&w=1200', // Iconic city landmarks & cultural sightseeing
+  'Desert Safari': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&q=80&w=1200', // Golden sand dunes & sunset camel safari
+  'Weekend Escapes': 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&q=80&w=1200', // Quick scenic road trip getaway
 };
 
 export const EXPERIENCE_TAGLINES: Record<string, string> = {
-  'Family Vacations': 'Kid-friendly resorts, scenic sightseeing & relaxed family fun',
-  'Honeymoon & Couples': 'Private retreats, candlelight moments & romantic getaways',
-  'Adventure & Outdoors': 'Thrilling treks, water sports & high altitude trails',
-  'Spiritual & Heritage': 'Sacred pilgrimage circuits, ancient temples & royal heritage',
-  'Nature & Wildlife': 'Jungle safaris, tea valleys & pristine natural landscapes',
-  'Weekend Escapes': 'Quick 2 to 4-day short recharge trips with easy departures',
+  'Heritage & Culture': 'Centuries of royal palaces, historic forts, timeless art & architecture',
+  'Nature & Wildlife': 'Jungle safaris, national parks & pristine natural landscapes',
+  'Trekking & Mountains': 'High-altitude Himalayan passes, scenic pine valleys & breathtaking alpine trails',
+  'Spiritual & Pilgrimage': 'Sacred pilgrimage circuits, ancient temple darshans & holy waters',
+  'Honeymoon & Couples': 'Private candlelit retreats, scenic hideaways & romantic getaways',
+  'Snow & Winter': 'Snow-blanketed alpine valleys, frozen lakes & winter wonderland adventures',
+  'Beach & Coastal': 'Pristine shores, turquoise ocean waves, tranquil backwaters & tropical bliss',
+  'Adventure & Outdoors': 'Thrilling outdoor expeditions, camping, rafting & rugged trails',
   'Sightseeing & Local Tours': 'City highlights, cultural landmarks & hidden scenic gems',
-  'Group Departures': 'Fixed departure group journeys with like-minded travelers',
-  'Friends': 'Group-friendly trips, road tours & fun party escapes',
+  'Desert Safari': 'Golden dune bashing, starlit desert camps & royal camel safaris',
+  'Weekend Escapes': 'Quick 2 to 4-day short recharge trips with easy departures',
 };
 
 export interface DynamicExperience {
@@ -647,71 +651,280 @@ export interface DynamicExperience {
   packageCount: number;
   startingPrice?: number | null;
   coverImage: string | null;
+  tagline: string;
   listings: PackageListing[];
+}
+
+// Unwanted structural filters or non-experience noise
+const EXCLUDED_EXPERIENCE_TAGS = new Set([
+  'domestic',
+  'international',
+  'budget',
+  'deluxe',
+  'standard',
+  'luxury',
+  '50-off',
+  '10-off',
+  '50% off',
+  '10% off',
+  'flash-deals',
+  'flash deals',
+  'packages under 10k',
+  'none',
+  'n/a',
+  'all',
+  'general',
+  'other',
+  'flight',
+  'hotel',
+  'cab',
+  'meal',
+  'breakfast',
+  'dinner',
+  'undefined',
+  'null',
+  'photography',
+  'photo',
+  'shopping',
+  'shop',
+  'pickup',
+  'drop',
+  'arrival',
+  'departure',
+  'transfer',
+  'taxi',
+  'station',
+  'airport',
+  'fort',
+  'forts',
+  'palace',
+  'palaces',
+  'waterfall',
+  'waterfalls',
+  'monument',
+  'monuments',
+  'castle',
+  'museum',
+  'temple',
+  'temples',
+  'ghat',
+  'ghats',
+]);
+
+/**
+ * Normalizes an experience tag string into a clean Display Name.
+ * Strictly excludes sights, places, and non-travel noise (fort, waterfall, shopping, photography).
+ * Combines lakes & backwaters with beach & coastal as water experiences.
+ */
+export function normalizeExperienceName(tag: string): string | null {
+  if (!tag) return null;
+  const raw = tag.trim();
+  if (raw.length < 2) return null;
+
+  const lower = raw.toLowerCase();
+  if (EXCLUDED_EXPERIENCE_TAGS.has(lower)) return null;
+
+  // Strictly exclude places, stops, sights and non-experience activities per user request
+  if (/\b(forts?|palaces?|monuments?|castles?|museums?|waterfalls?|shopping|shop|photography|photo|airports?|stations?|pickups?|drops?|arrivals?|departures?|transfers?|hotels?|resorts?|cabs?|taxis?|temples?|ghats?)\b/i.test(lower)) {
+    return null;
+  }
+
+  // 1. Honeymoon & Couples
+  if (/honeymoon|couple|romantic|romance|candlelight/i.test(lower)) {
+    return 'Honeymoon & Couples';
+  }
+
+  // 2. Snow & Winter
+  if (/snow|winter|ski|skiing|glacier|ice/i.test(lower)) {
+    return 'Snow & Winter';
+  }
+
+  // 3. Beach & Coastal (includes lakes, backwaters, houseboat, shikara, water sports as water experiences)
+  if (/beach|coastal|island|sea|ocean|scuba|snorkeling|houseboat|shikara|backwater|lakes?(\s*side)?|boating|river\s*cruise|water[\s-]?sports?/i.test(lower)) {
+    return 'Beach & Coastal';
+  }
+
+  // 4. Heritage & Culture (Culture, Cultural, Heritage, History)
+  if (/heritage|cultur(e|al)?|historic(al)?|tradition/i.test(lower)) {
+    return 'Heritage & Culture';
+  }
+
+  // 5. Nature & Wildlife (Wildlife, Safari, Jungle, National Park, Nature, Flora, Fauna, Forest)
+  if (/wildlife|safari|jungle|national\s*park|nature|flora|fauna|forest|sanctuary|biosphere/i.test(lower)) {
+    return 'Nature & Wildlife';
+  }
+
+  // 6. Trekking & Mountains (Trek, Trekking, Hike, Hiking, Mountains, Hill Station, Valleys, Hills)
+  if (/trek|trekking|hike|hiking|mountain(s|ous)?|hill\s*station|valleys?|highland|hills?\b/i.test(lower)) {
+    return 'Trekking & Mountains';
+  }
+
+  // 7. Spiritual & Pilgrimage (Pilgrimage, Darshan, Char Dham, Spiritual, Holy)
+  if (/spiritual|pilgrimage|religious|darshan|char\s*dham|jyotirlinga|tirtha|holy|ashram/i.test(lower)) {
+    return 'Spiritual & Pilgrimage';
+  }
+
+  // 8. Desert Safari (Desert, Dunes, Camel Safari, Sam Dunes)
+  if (/desert|dunes?|camel\s*safari|sam\s*dunes|thar/i.test(lower)) {
+    return 'Desert Safari';
+  }
+
+  // 9. Adventure & Outdoors (Adventure, Camping, Glamping, Rafting, Paragliding)
+  if (/adventure|outdoors?|camping|glamping|paraglid|rock\s*climb|rafting|bungee/i.test(lower)) {
+    return 'Adventure & Outdoors';
+  }
+
+  // 10. Sightseeing & Local Tours (Sightseeing, City Tours, Scenic Drives, Road Trips)
+  if (/sightseeing|city[\s-]?tour|local[\s-]?tour|scenic(\s*drives?|\s*routes?|\s*tours?)?|road[\s-]?trip|drive/i.test(lower)) {
+    return 'Sightseeing & Local Tours';
+  }
+
+  // 11. Weekend Escapes
+  if (/weekend|short[\s-]?trip/i.test(lower)) {
+    return 'Weekend Escapes';
+  }
+
+  // ANY OTHER DYNAMIC EXPERIENCE FROM PACKAGES:
+  let cleaned = raw
+    .replace(/^(tour|package|trip)\s+/i, '')
+    .replace(/\s+(tour|package|trip|holiday)s?$/i, '')
+    .trim();
+
+  if (!cleaned || cleaned.length < 3) return null;
+
+  // If the custom tag is a known place or sight, do NOT make a card
+  const cleanedLower = cleaned.toLowerCase();
+  if (/\b(fort|palace|waterfall|shopping|shop|photo|photography|airport|station|pickup|drop|hotel|resort|cab|taxi|temple|ghat|monument|museum)\b/i.test(cleanedLower)) {
+    return null;
+  }
+
+  // Normalize plurals (e.g. "Drives" -> "Drive")
+  if (cleaned.endsWith('s') && !cleaned.endsWith('ss') && cleaned.length > 4) {
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  // Convert to clean Title Case
+  const words = cleaned.split(/\s+/).map((word) => {
+    const wLower = word.toLowerCase();
+    if (['and', '&', 'of', 'the', 'in'].includes(wLower)) return wLower === '&' ? '&' : wLower;
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  });
+
+  return words.join(' ');
 }
 
 export function getDynamicExperiences(listings: PackageListing[]): DynamicExperience[] {
   const approvedListings = listings.filter((l) => l.approved !== false);
-  const expMap = new Map<string, PackageListing[]>();
-
-  const normalizeTag = (tag: string): string => {
-    let t = tag.trim();
-    if (/family/i.test(t)) return 'Family Vacations';
-    if (/honeymoon|couple/i.test(t)) return 'Honeymoon & Couples';
-    if (/adventure|trek|outdoors/i.test(t)) return 'Adventure & Outdoors';
-    if (/spiritual|heritage|temple|religious|pilgrimage/i.test(t)) return 'Spiritual & Heritage';
-    if (/nature|wildlife|safari/i.test(t)) return 'Nature & Wildlife';
-    if (/weekend|short/i.test(t)) return 'Weekend Escapes';
-    if (/group|departure/i.test(t)) return 'Group Departures';
-    if (/holiday|tour|local|sightseeing/i.test(t)) return 'Sightseeing & Local Tours';
-    return t.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  };
+  const expMap = new Map<string, { name: string; packages: PackageListing[] }>();
 
   approvedListings.forEach((pkg) => {
-    const rawTags = new Set<string>();
+    const rawTagCandidates: string[] = [];
 
-    if (pkg.experienceType) {
-      const exps = Array.isArray(pkg.experienceType) ? pkg.experienceType : [pkg.experienceType];
-      exps.forEach((e) => e && rawTags.add(String(e).trim()));
-    }
-    if (Array.isArray(pkg.tourCategories)) {
-      pkg.tourCategories.forEach((c) => c && rawTags.add(c.trim()));
-    }
-    if (pkg.eventType) {
-      rawTags.add(pkg.eventType.trim());
-    }
+    const collectTags = (val: any) => {
+      if (!val) return;
+      if (Array.isArray(val)) {
+        val.forEach(collectTags);
+        return;
+      }
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (!trimmed) return;
+        if (/[,;|/\n]/.test(trimmed)) {
+          trimmed.split(/[,;|/\n]+/).forEach((part) => collectTags(part));
+          return;
+        }
+        rawTagCandidates.push(trimmed);
+      }
+    };
 
-    rawTags.forEach((rawTag) => {
-      const normalized = normalizeTag(rawTag);
-      if (!expMap.has(normalized)) expMap.set(normalized, []);
-      if (!expMap.get(normalized)!.some((p) => p.id === pkg.id)) {
-        expMap.get(normalized)!.push(pkg);
+    // STRICTLY extract experience tags ONLY from the package's experienceType field.
+    collectTags(pkg.experienceType);
+
+    // Track matched canonical keys for THIS package to prevent duplicate assignment to the same experience
+    const packageMatchedKeys = new Set<string>();
+
+    rawTagCandidates.forEach((rawTag) => {
+      const normalizedName = normalizeExperienceName(rawTag);
+      if (!normalizedName) return;
+
+      const canonicalKey = normalizedName.toLowerCase();
+      if (packageMatchedKeys.has(canonicalKey)) return;
+      packageMatchedKeys.add(canonicalKey);
+
+      if (!expMap.has(canonicalKey)) {
+        expMap.set(canonicalKey, { name: normalizedName, packages: [] });
+      }
+
+      const entry = expMap.get(canonicalKey)!;
+      if (!entry.packages.some((p) => p.id === pkg.id)) {
+        entry.packages.push(pkg);
       }
     });
   });
 
   const experiences: DynamicExperience[] = [];
 
-  // Sort experience groups by packageCount descending
-  const sortedExpEntries = Array.from(expMap.entries()).sort((a, b) => b[1].length - a[1].length);
+  // Sort experience groups by packageCount descending (most packages first)
+  const sortedEntries = Array.from(expMap.values()).sort(
+    (a, b) => b.packages.length - a.packages.length
+  );
 
-  sortedExpEntries.forEach(([name, pkgList]) => {
+  // Track assigned cover images to prevent repetition across cards
+  const usedImages = new Set<string>();
+
+  sortedEntries.forEach(({ name, packages: pkgList }) => {
+    // Strictly skip any experience that has 0 packages (NO fake / static cards)
     if (pkgList.length === 0) return;
 
-    // Use authentic curated photography tailored for each experience category
-    let coverImage: string | null = EXPERIENCE_THEME_IMAGES[name] || null;
-    let minPrice: number | null = null;
+    // Canonical themes show if they have >= 1 verified package.
+    // Custom non-canonical tags require >= 2 packages to prevent 1-package clutter.
+    const isCanonical = Boolean(EXPERIENCE_THEME_IMAGES[name] || EXPERIENCE_TAGLINES[name]);
+    if (!isCanonical && pkgList.length < 2) return;
 
+    // 1. Cover Image:
+    // For canonical themes, prioritize the curated high-resolution theme hero image
+    // so themes like "Snow & Winter", "Lakes & Backwaters", "Nature & Wildlife" ALWAYS have
+    // spectacular, 100% theme-accurate photography, avoiding summer fountains or airport photos!
+    let coverImage: string | null = EXPERIENCE_THEME_IMAGES[name] || null;
+
+    // If it's a custom experience without a curated theme image, find a real photo from packages
     if (!coverImage) {
       for (const pkg of pkgList) {
-        if (pkg.itinerary?.[0]?.imageUrls?.[0]) coverImage = pkg.itinerary[0].imageUrls[0];
-        else if (pkg.itinerary?.[0]?.imageUrl) coverImage = pkg.itinerary[0].imageUrl;
-        else if (pkg.placesCovered?.[0]?.imageUrls?.[0]) coverImage = pkg.placesCovered[0].imageUrls[0];
-        else if (pkg.photos?.[0]) coverImage = pkg.photos[0];
+        const candidatePhotos: string[] = [];
+        if (Array.isArray(pkg.placesCovered)) {
+          for (const pl of pkg.placesCovered) {
+            const plName = (pl?.name || '').toLowerCase();
+            if (plName.includes('airport') || plName.includes('station') || plName.includes('pickup')) continue;
+            if (pl.imageUrls?.[0]) candidatePhotos.push(pl.imageUrls[0]);
+            else if (pl.image) candidatePhotos.push(pl.image);
+          }
+        }
+        if (Array.isArray(pkg.photos)) candidatePhotos.push(...pkg.photos);
+        if (Array.isArray(pkg.itinerary)) {
+          for (const it of pkg.itinerary) {
+            if (it.imageUrls?.[0]) candidatePhotos.push(it.imageUrls[0]);
+            else if (it.imageUrl) candidatePhotos.push(it.imageUrl);
+          }
+        }
+        if (Array.isArray(pkg.imageUrls)) candidatePhotos.push(...pkg.imageUrls);
+
+        for (const url of candidatePhotos) {
+          if (!url || typeof url !== 'string') continue;
+          if (usedImages.has(url)) continue;
+          if (url.toLowerCase().includes('airport')) continue;
+          coverImage = url;
+          break;
+        }
         if (coverImage) break;
       }
     }
 
+    if (coverImage) {
+      usedImages.add(coverImage);
+    }
+
+    // 2. Starting Price: calculated strictly from actual packages
+    let minPrice: number | null = null;
     pkgList.forEach((pkg) => {
       const rawCost = pkg.cost || pkg.price;
       if (rawCost) {
@@ -722,17 +935,51 @@ export function getDynamicExperiences(listings: PackageListing[]): DynamicExperi
       }
     });
 
+    // 3. Tagline: Use curated tagline or generate clean destination string
+    let tagline = EXPERIENCE_TAGLINES[name] || '';
+    if (!tagline) {
+      const destinations = new Set<string>();
+      const destLowerSet = new Set<string>();
+
+      const addDest = (val?: string) => {
+        if (!val) return;
+        const trimmed = val.trim();
+        const lower = trimmed.toLowerCase();
+        if (trimmed.length > 2 && !destLowerSet.has(lower) && !['india', 'domestic', 'international'].includes(lower)) {
+          destLowerSet.add(lower);
+          destinations.add(trimmed);
+        }
+      };
+
+      pkgList.forEach((p) => {
+        addDest(p.stateName);
+        addDest(p.destination);
+        if (Array.isArray(p.placesCovered)) {
+          p.placesCovered.forEach((place) => addDest(place?.name));
+        }
+      });
+
+      const destList = Array.from(destinations).slice(0, 3);
+      if (destList.length > 0) {
+        tagline = `Curated itineraries covering ${destList.join(', ')}`;
+      } else {
+        tagline = `Curated ${name.toLowerCase()} journeys from verified ground operators`;
+      }
+    }
+
     experiences.push({
       name,
       tagKey: name.toLowerCase(),
       packageCount: pkgList.length,
       startingPrice: minPrice,
       coverImage: coverImage || null,
+      tagline,
       listings: pkgList,
     });
   });
 
-  return experiences.slice(0, 8);
+  // Return all experiences that actually exist in packages (up to 20 for carousel)
+  return experiences.slice(0, 20);
 }
 
 /**

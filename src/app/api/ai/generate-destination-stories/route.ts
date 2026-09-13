@@ -124,12 +124,13 @@ ${JSON.stringify(packageSummaries, null, 2)}
 STRICT RULES FOR PROSE & CONTENT:
 1. Each story must focus on a key State/Region represented in the live packages (e.g. Kashmir, Kerala, Himachal Pradesh, Rajasthan, Goa, Ladakh, Sikkim, Meghalaya, etc.).
 2. Title ("title"): An irresistible, click-worthy SEO headline (50-75 chars) tailored for Google search intent.
-3. Narrative ("narrative"): Must be an AUTHENTIC, IMMERSIVE 2-3 PARAGRAPH TRAVEL STORY (approx 150-250 words total).
-   - Paragraph 1: Authentic traveler's opening hook introducing the landscape, atmosphere, and signature experience.
-   - Paragraph 2: Real travel highlights, specific place names, local food, culture, and key activities.
-   - Paragraph 3: Practical travel advice, best season/months to visit, airport/station connectivity, and a natural call to action.
-   - STRICT PROSE CONSTRAINT: Write grounded, human, expert travel prose. DO NOT use overly poetic or AI clichés ("breathes softly", "nestled", "tapestry", "delve", "vibrant", "bustling", "symphony", "serenade").
-   - Separate paragraphs cleanly using "\\n\\n".
+3. Narrative ("narrative"): Must be an AUTHENTIC, IMMERSIVE, WELL-ORGANIZED 4-PARAGRAPH TRAVEL GUIDE STORY (approx 280-380 words total).
+   - Paragraph 1 (Atmospheric Hook & Soul): Vivid, grounded opening setting the scene—introducing geographical terrain, climate transitions, and distinct spirit of the state.
+   - Paragraph 2 (Circuit & Iconic Sights): The signature travel route connecting key towns, historic forts/temples, nature reserves, or mountain passes with specific landmark mentions from the packages.
+   - Paragraph 3 (Local Culture, Flavors & Street Life): Regional culinary specialties to taste, traditional crafts, cultural rituals, and authentic ground experiences.
+   - Paragraph 4 (Planning Intel, Best Seasons & Transport): Essential traveler logistics—best months to visit for pleasant weather, temperature realities, primary airport/train transit hubs, and a natural recommendation to book verified itineraries.
+   - STRICT PROSE CONSTRAINT: Write grounded, human, expert travel journalism. DO NOT use overly poetic or robotic AI clichés ("breathes softly", "nestled", "tapestry", "delve", "vibrant", "bustling", "symphony", "serenade", "testament").
+   - Separate all 4 paragraphs cleanly using "\\n\\n".
 4. "seoKeywords": Provide 4-6 clean search keyword phrases in plain text (no # hashtags) for backend indexing.
 5. "discoveredPlaces": 4-6 specific places extracted from the package data.
 6. "experienceTags": 3-5 experience badges.
@@ -142,7 +143,7 @@ Return ONLY a valid JSON array of ${storiesCount} story objects with this EXACT 
     "id": "story-${today}-state-slug",
     "stateName": "State or Destination Name",
     "title": "SEO Optimized Catchy Headline",
-    "narrative": "Paragraph 1: Immersive opening story hook...\\n\\nParagraph 2: Key places, activities, and local experiences...\\n\\nParagraph 3: Practical travel advice and booking recommendation.",
+    "narrative": "Paragraph 1: Atmospheric Hook & Soul...\\n\\nParagraph 2: Circuit & Iconic Sights...\\n\\nParagraph 3: Local Culture, Flavors & Street Life...\\n\\nParagraph 4: Planning Intel, Best Seasons & Transport.",
     "seoKeywords": ["destination tour packages", "best places to visit", "family vacation guide"],
     "discoveredPlaces": ["Place 1", "Place 2", "Place 3"],
     "experienceTags": ["Boating", "Trekking", "Heritage Walk"],

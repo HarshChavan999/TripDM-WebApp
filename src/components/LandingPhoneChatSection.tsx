@@ -170,10 +170,7 @@ export default function LandingPhoneChatSection({
           ======================================================== */}
       <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15] mb-4">
-          Chat Directly with{' '}
-          <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">
-            Travel Agencies
-          </span>
+          Chat Directly with Travel Agencies
         </h2>
 
         <p className="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
@@ -220,7 +217,7 @@ export default function LandingPhoneChatSection({
               {/* Left: Time in Clean Nothing OS Sans */}
               <div className="w-16 flex items-center">
                 <span className="text-[13px] font-medium tracking-tight text-white/95 font-sans">
-                  09:41
+                  4:00
                 </span>
               </div>
 
