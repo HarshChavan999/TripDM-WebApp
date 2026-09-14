@@ -88,6 +88,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // FCM push notification tokens - users/agencies can read and write their own token
+    match /fcm_tokens/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
     // Settings collection - any user can read, admins can write
     match /settings/{settingId} {
       allow read: if true;
