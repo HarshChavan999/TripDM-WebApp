@@ -19,7 +19,7 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
           <div>
             <h3 className="text-base font-bold mb-4 text-white">Get to Know us</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition-colors">About us</Link></li>
+              <li><Link href="/policies/about" className="hover:text-white transition-colors">About us</Link></li>
               <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               {/* <li><Link href="#" className="hover:text-white transition-colors">Career</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Press Release</Link></li> */}
@@ -32,8 +32,26 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
             <ul className="space-y-2.5 text-sm text-gray-400">
               <li><Link href="#" className="hover:text-white transition-colors">Facebook</Link></li>
               {/* <li><Link href="#" className="hover:text-white transition-colors">Twitter</Link></li> */}
-              <li><Link href="#" className="hover:text-white transition-colors">Instagram</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">YouTube</Link></li>
+              <li>
+                <a
+                  href="https://www.instagram.com/tripdm_official/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Instagram
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.youtube.com/@TripDm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  YouTube
+                </a>
+              </li>
               <li><Link href="#" className="hover:text-white transition-colors">Contact us</Link></li>
             </ul>
           </div>
@@ -81,6 +99,7 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
               <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-14 sm:h-16 w-auto object-contain brightness-125" />
             </div>
             <div className="md:col-span-2 flex flex-wrap md:pl-32 gap-4 text-xs text-gray-400">
+              <Link href="/policies/about" className="hover:text-orange-400 transition-colors">About Us</Link>
               <Link href="/policies/conditions-of-use" className="hover:text-orange-400 transition-colors">Condition of Use and Sale</Link>
               <Link href="/policies/privacy-notice" className="hover:text-orange-400 transition-colors">Privacy Notice</Link>
               <Link href="/policies/internet-based-policy" className="hover:text-orange-400 transition-colors">Internet-Based Policy</Link>

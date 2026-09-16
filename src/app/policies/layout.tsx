@@ -40,10 +40,16 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
   };
 
   const tabs = [
+    { name: 'About Us', href: '/policies/about' },
     { name: 'Terms & Conditions', href: '/policies/conditions-of-use' },
     { name: 'Privacy Policy', href: '/policies/privacy-notice' },
     { name: 'Copyright Policies', href: '/policies/internet-based-policy' },
   ];
+
+  const isTabActive = (href: string) => {
+    if (!pathname) return false;
+    return pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -211,7 +217,7 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
                     href={tab.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                      pathname === tab.href
+                      isTabActive(tab.href)
                         ? 'bg-orange-50 text-orange-600 font-bold'
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
@@ -411,7 +417,7 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-10 overflow-x-auto hide-scrollbar" aria-label="Tabs">
             {tabs.map((tab) => {
-              const isActive = pathname === tab.href;
+              const isActive = isTabActive(tab.href);
               return (
                 <Link
                   key={tab.name}

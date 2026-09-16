@@ -212,6 +212,85 @@ export function getRegionForDestination(name: string, sampleListings: PackageLis
 }
 
 /**
+ * Normalizes destination / state names, combining synonyms and canonicalizing
+ * names like "Kashmir", "Jammu and Kashmir", "Jammu & Kashmir", "J&K" -> "Jammu & Kashmir".
+ */
+export function normalizeDestinationName(raw: string): string {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
+
+  // Jammu & Kashmir / Kashmir normalization
+  if (
+    lower === 'kashmir' ||
+    lower === 'jammu' ||
+    lower === 'jammu & kashmir' ||
+    lower === 'jammu and kashmir' ||
+    lower === 'j&k' ||
+    lower === 'j & k'
+  ) {
+    return 'Jammu & Kashmir';
+  }
+
+  // Andaman & Nicobar
+  if (
+    lower === 'andaman' ||
+    lower === 'nicobar' ||
+    lower === 'andaman & nicobar' ||
+    lower === 'andaman and nicobar' ||
+    lower === 'andaman and nicobar islands' ||
+    lower === 'andaman & nicobar islands'
+  ) {
+    return 'Andaman & Nicobar';
+  }
+
+  // Daman & Diu
+  if (
+    lower === 'daman' ||
+    lower === 'diu' ||
+    lower === 'daman and diu' ||
+    lower === 'daman & diu'
+  ) {
+    return 'Daman & Diu';
+  }
+
+  // Uttarakhand / Uttaranchal
+  if (lower === 'uttaranchal') {
+    return 'Uttarakhand';
+  }
+
+  // Odisha / Orissa
+  if (lower === 'orissa') {
+    return 'Odisha';
+  }
+
+  // Proper Title Case
+  return trimmed
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Splits raw destination/state strings safely without breaking compound names like "Jammu and Kashmir" or "Andaman and Nicobar"
+ */
+export function splitDestinationTokens(raw: string): string[] {
+  if (!raw) return [];
+  // Mask compound names with 'and' or '&' so splitting on 'and' doesn't break them apart
+  const safeStr = raw
+    .replace(/\bjammu\s+(?:and|&)\s+kashmir\b/gi, 'Jammu & Kashmir')
+    .replace(/\bandaman\s+(?:and|&)\s+nicobar(?:\s+islands)?\b/gi, 'Andaman & Nicobar')
+    .replace(/\bdaman\s+(?:and|&)\s+diu\b/gi, 'Daman & Diu')
+    .replace(/\btrinidad\s+(?:and|&)\s+tobago\b/gi, 'Trinidad and Tobago')
+    .replace(/\bbosnia\s+(?:and|&)\s+herzegovina\b/gi, 'Bosnia and Herzegovina');
+
+  // Split by commas, slashes, or standalone 'and'
+  const parts = safeStr.split(/,|\/|(?:\s+and\s+)/i).map((p) => p.trim());
+  return parts.filter(Boolean);
+}
+
+/**
  * Extracts and calculates popular destinations dynamically from real database listings.
  */
 export interface DestinationCard {
@@ -227,7 +306,7 @@ export interface DestinationCard {
 }
 
 export function getPopularDestinations(listings: PackageListing[], minCount = 1): DestinationCard[] {
-  const destMap = new Map<string, PackageListing[]>();
+  const destMap = new Map<string, { displayName: string; listings: PackageListing[] }>();
 
   listings.forEach((listing) => {
     if (listing.approved === false) return;
@@ -236,14 +315,15 @@ export function getPopularDestinations(listings: PackageListing[], minCount = 1)
 
     const addCleanName = (raw: string, isCountry = false) => {
       if (!raw) return;
-      const parts = raw.split(/,|\/|\band\b/i).map((p) => p.trim());
+      const parts = splitDestinationTokens(raw);
       parts.forEach((p) => {
         if (p.length > 2 && !/package|tour|trip|holiday/i.test(p)) {
           // If it's domestic and the name is "India", skip it as a destination card to avoid redundant country-level card
           if (isCountry && /^india$/i.test(p) && listing.packageType !== 'international') {
             return;
           }
-          names.add(p);
+          const normalized = normalizeDestinationName(p);
+          names.add(normalized);
         }
       });
     };
@@ -257,20 +337,22 @@ export function getPopularDestinations(listings: PackageListing[], minCount = 1)
     names.forEach((name) => {
       const key = name.toLowerCase();
       if (!destMap.has(key)) {
-        destMap.set(key, []);
+        destMap.set(key, { displayName: name, listings: [] });
       }
-      if (!destMap.get(key)!.some((p) => p.id === listing.id)) {
-        destMap.get(key)!.push(listing);
+      const entry = destMap.get(key)!;
+      if (!entry.listings.some((p) => p.id === listing.id)) {
+        entry.listings.push(listing);
       }
     });
   });
 
   const destinations: DestinationCard[] = [];
 
-  destMap.forEach((pkgList, key) => {
+  destMap.forEach((entry) => {
+    const pkgList = entry.listings;
     if (pkgList.length < minCount) return;
 
-    const displayName = key.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const displayName = entry.displayName;
 
     let coverImage: string | null = null;
     let minPrice: number | null = null;
@@ -395,32 +477,36 @@ export interface StateStory {
 }
 
 export function getStateStories(listings: PackageListing[]): StateStory[] {
-  const stateMap = new Map<string, PackageListing[]>();
+  const stateMap = new Map<string, { displayName: string; listings: PackageListing[] }>();
 
   listings.forEach((listing) => {
     if (listing.approved === false) return;
 
     const states = new Set<string>();
-    if (listing.stateName && listing.stateName.trim()) states.add(listing.stateName.trim());
+    if (listing.stateName && listing.stateName.trim()) {
+      splitDestinationTokens(listing.stateName).forEach((s) => states.add(normalizeDestinationName(s)));
+    }
     if (Array.isArray(listing.stateNames)) {
-      listing.stateNames.forEach((s) => s && states.add(s.trim()));
+      listing.stateNames.forEach((s) => s && splitDestinationTokens(s).forEach((sub) => states.add(normalizeDestinationName(sub))));
     }
 
     states.forEach((state) => {
       const key = state.toLowerCase();
-      if (!stateMap.has(key)) stateMap.set(key, []);
-      if (!stateMap.get(key)!.some((p) => p.id === listing.id)) {
-        stateMap.get(key)!.push(listing);
+      if (!stateMap.has(key)) stateMap.set(key, { displayName: state, listings: [] });
+      const entry = stateMap.get(key)!;
+      if (!entry.listings.some((p) => p.id === listing.id)) {
+        entry.listings.push(listing);
       }
     });
   });
 
   const stories: StateStory[] = [];
 
-  stateMap.forEach((pkgList, key) => {
+  stateMap.forEach((entry) => {
+    const pkgList = entry.listings;
     if (pkgList.length === 0) return;
 
-    const stateName = key.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const stateName = entry.displayName;
 
     let coverImage: string | null = null;
     let minPrice: number | null = null;
@@ -1076,11 +1162,10 @@ export function getDynamicDestinationSections(
 
     const cleanAndAdd = (raw: string) => {
       if (!raw) return;
-      const parts = raw.split(/,|\/|\band\b/i).map((p) => p.trim());
+      const parts = splitDestinationTokens(raw);
       parts.forEach((p) => {
         if (p.length > 2 && !/package|tour|trip|holiday|deal|special/i.test(p)) {
-          // Capitalize title case
-          const formatted = p.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          const formatted = normalizeDestinationName(p);
           locationNames.add(formatted);
         }
       });
@@ -1089,12 +1174,12 @@ export function getDynamicDestinationSections(
     // Check if package covers multiple states or countries
     const isMultiState = !isIntl && (
       (Array.isArray(listing.stateNames) && listing.stateNames.filter(Boolean).length > 1) ||
-      (typeof listing.stateName === 'string' && /,|\/|\band\b/i.test(listing.stateName))
+      (typeof listing.stateName === 'string' && splitDestinationTokens(listing.stateName).length > 1)
     );
 
     const isMultiCountry = isIntl && (
       (Array.isArray(listing.countryNames) && listing.countryNames.filter(Boolean).length > 1) ||
-      (typeof listing.countryName === 'string' && /,|\/|\band\b/i.test(listing.countryName))
+      (typeof listing.countryName === 'string' && splitDestinationTokens(listing.countryName).length > 1)
     );
 
     if (isMultiState) {

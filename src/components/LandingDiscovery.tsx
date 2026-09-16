@@ -621,45 +621,6 @@ export default function LandingDiscovery({
                   </div>
                 )}
 
-                {/* If more than 5 destinations in this region, show an extra horizontal rail below */}
-                {otherDests.length > 4 && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
-                      More Destinations in {activeGroup.label}
-                    </p>
-                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x scroll-smooth w-full">
-                      {otherDests.slice(4).map((dest) => (
-                        <div
-                          key={dest.name}
-                          onClick={() => setSearchTerm(dest.name)}
-                          className="min-w-[220px] max-w-[240px] snap-start shrink-0 group cursor-pointer relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs hover:shadow-md transition-all duration-300 h-36 flex flex-col justify-end p-4"
-                        >
-                          {dest.coverImage ? (
-                            <img
-                              src={dest.coverImage}
-                              alt={dest.name}
-                              className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
-                              <MapPin className="w-6 h-6" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/30 to-transparent opacity-85 group-hover:opacity-75 transition-opacity" />
-
-                          <div className="relative z-10">
-                            <h5 className="text-sm font-black text-white line-clamp-1">{dest.name}</h5>
-                            {dest.startingPrice && (
-                              <p className="text-[11px] font-bold text-amber-300 mt-0.5">
-                                From ₹{dest.startingPrice.toLocaleString('en-IN')}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </section>
             );
           })()}
@@ -699,8 +660,8 @@ export default function LandingDiscovery({
           />
 
           <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
-            {/* Centered Header with Title & Absolute Positioned Scroll Controls */}
-            <div className="relative flex items-center justify-center mb-8">
+            {/* Centered Header with Title */}
+            <div className="flex items-center justify-center mb-8">
               <div className="text-center max-w-2xl mx-auto px-4">
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
                   Destination Stories
@@ -708,26 +669,6 @@ export default function LandingDiscovery({
                 <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                   Immersive narratives and verified itineraries across India&apos;s most captivating states.
                 </p>
-              </div>
-
-              {/* Scroll Arrows positioned on the right */}
-              <div className="hidden sm:flex items-center gap-2 absolute right-0 top-1/2 -translate-y-1/2">
-                <button
-                  type="button"
-                  onClick={() => scrollRail('rail-destination-stories', 'left')}
-                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-orange-50 hover:border-orange-300 text-slate-700 hover:text-orange-600 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
-                  aria-label="Scroll stories left"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollRail('rail-destination-stories', 'right')}
-                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-orange-50 hover:border-orange-300 text-slate-700 hover:text-orange-600 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
-                  aria-label="Scroll stories right"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
               </div>
             </div>
 
@@ -819,8 +760,8 @@ export default function LandingDiscovery({
 
         return (
           <section className="pt-16 pb-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100 scroll-mt-32">
-            {/* Section Header Centered in the Middle with Right Controls */}
-            <div className="relative flex items-center justify-center mb-8">
+            {/* Section Header Centered in the Middle */}
+            <div className="flex items-center justify-center mb-8">
               <div className="text-center max-w-2xl mx-auto px-4">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   Find Trips by Experience
@@ -828,24 +769,6 @@ export default function LandingDiscovery({
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   Discover curated journeys designed for your preferred travel style
                 </p>
-              </div>
-
-              {/* Prev / Next Navigation Arrows positioned on the right */}
-              <div className="hidden sm:flex items-center gap-2 absolute right-0 top-1/2 -translate-y-1/2">
-                <button
-                  onClick={() => scrollRail('rail-experiences', 'left')}
-                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-orange-600 hover:border-orange-300 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => scrollRail('rail-experiences', 'right')}
-                  className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-orange-600 hover:border-orange-300 flex items-center justify-center transition-all shadow-xs active:scale-95 cursor-pointer"
-                  aria-label="Scroll right"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
               </div>
             </div>
 
@@ -950,31 +873,10 @@ export default function LandingDiscovery({
           ========================================== */}
       {intentRails.map((rail) => (
         <section key={rail.id} className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
-          <div className="flex items-end justify-between mb-6">
-            <div>
-             
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
-                {rail.title}
-              </h2>
-            </div>
-            {rail.listings.length > 3 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => scrollRail(`rail-${rail.id}`, 'left')}
-                  className="w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-colors shadow-xs hover:border-orange-300"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => scrollRail(`rail-${rail.id}`, 'right')}
-                  className="w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-colors shadow-xs hover:border-orange-300"
-                  aria-label="Scroll right"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+          <div className="mb-6">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
+              {rail.title}
+            </h2>
           </div>
 
           <div
@@ -1014,30 +916,10 @@ export default function LandingDiscovery({
           ========================================== */}
       {recentlyAdded.length > 0 && (
         <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
-                Recently Added Packages
-              </h2>
-            </div>
-            {recentlyAdded.length > 3 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => scrollRail('rail-recently-added', 'left')}
-                  className="w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-colors shadow-xs hover:border-orange-300"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => scrollRail('rail-recently-added', 'right')}
-                  className="w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-colors shadow-xs hover:border-orange-300"
-                  aria-label="Scroll right"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+          <div className="mb-6">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
+              Recently Added Packages
+            </h2>
           </div>
 
           <div

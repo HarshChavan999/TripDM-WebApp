@@ -17,6 +17,7 @@ import PackageDetailView from '@/components/PackageDetailView';
 import PackageComparison from '@/components/PackageComparison';
 import AdminLoginView from '@/components/AdminLoginView';
 import AgencyLoginView from '@/components/AgencyLoginView';
+import PageLoader from '@/components/PageLoader';
 import Footer from '@/components/Footer';
 import AutocompleteSearch from '@/components/AutocompleteSearch';
 import WishlistView from '@/components/WishlistView';
@@ -3080,32 +3081,32 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     await register(emailArg, passwordArg, role, data);
   };
 
-  if (loading || (routeMode !== 'agency' && user && !userData)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs text-slate-500 font-medium">Loading Agency Portal...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // For admin routes, force login immediately if not authenticated
-  if (routeMode === 'admin') {
-    if (!user || (!loading && userData?.role !== 'admin')) {
-      return <AdminLoginView />;
-    }
-  }
-  
-  // For agency routes, force login immediately if not authenticated or not registered as agency
+  // For agency routes, handle loading and auth verification
   if (routeMode === 'agency') {
-    if (!user || (!loading && (!userData || userData.role !== 'agency'))) {
+    if (loading || (user && !userData)) {
+      return <PageLoader text="Loading Agency Portal..." />;
+    }
+    if (!user || (!userData || userData.role !== 'agency')) {
       return <AgencyLoginView />;
     }
     if (userData && userData.role === 'agency' && !userData.approved) {
       return <AgencyLoginView pendingApproval={true} pendingEmail={userData.email || user?.email || ''} />;
     }
+  }
+
+  // For admin routes, handle loading and auth verification
+  if (routeMode === 'admin') {
+    if (loading || (user && !userData)) {
+      return <PageLoader text="Loading Admin Console..." />;
+    }
+    if (!user || userData?.role !== 'admin') {
+      return <AdminLoginView />;
+    }
+  }
+
+  // For user routes (landing page), only show centered loader if authenticated user is waiting for profile data
+  if (user && !userData && loading) {
+    return <PageLoader text="Fetching details..." />;
   }
 
   if (user && userData) {
@@ -7925,7 +7926,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         >
                           <Plus className="h-4 w-4" /> New Listing
                         </button>
-                        <button
+                        {/* Bulk Import CSV button hidden as requested */}
+                        {/* <button
                           onClick={() => {
                             setShowBulkUpload(true);
                             setShowListingForm(false);
@@ -7940,7 +7942,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           style={{ borderRadius: '6px' }}
                         >
                           <Upload className="h-4 w-4" /> Bulk Import CSV
-                        </button>
+                        </button> */}
                       </div>
 
                       {/* New Listing Form */}

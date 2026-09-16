@@ -56,6 +56,7 @@ export const metadata: Metadata = {
 };
 
 import { Suspense } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 export default async function HomePage() {
   // Fetch initial data on the server for pure HTML SSR
@@ -63,7 +64,7 @@ export default async function HomePage() {
 
   // Render the client component monolith, passing the server-fetched data as initial state
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<PageLoader text="Fetching details..." />}>
       <HomeClient initialListings={initialListings} routeMode="user" />
     </Suspense>
   );
