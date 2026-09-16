@@ -30,7 +30,16 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
           <div>
             <h3 className="text-base font-bold mb-4 text-white">Get in touch with us</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition-colors">Facebook</Link></li>
+              <li>
+                <a
+                  href="https://www.facebook.com/profile.php?id=61594024299870"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Facebook
+                </a>
+              </li>
               {/* <li><Link href="#" className="hover:text-white transition-colors">Twitter</Link></li> */}
               <li>
                 <a
