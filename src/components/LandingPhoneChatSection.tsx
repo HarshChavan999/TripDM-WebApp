@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
   CheckCheck,
@@ -23,17 +23,12 @@ export default function LandingPhoneChatSection({
 } = {}) {
   const [visibleStep, setVisibleStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [interactiveInput, setInteractiveInput] = useState('');
-  const [showInChatSearch, setShowInChatSearch] = useState(false);
-  const [inChatSearchQuery, setInChatSearchQuery] = useState('');
-  const [customMessages, setCustomMessages] = useState<
-    { id: string; text: string; sender: 'user' | 'agency'; time: string }[]
-  >([]);
 
   const phoneRef = useRef<HTMLDivElement>(null);
-  const isPhoneInView = useInView(phoneRef, { once: false, amount: 0.3 });
+  const sectionRef = useRef<HTMLElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const wasInViewRef = useRef(false);
   const hasCompletedAnimation = useRef(false);
 
   const scrollToBottom = () => {
@@ -56,458 +51,396 @@ export default function LandingPhoneChatSection({
     return timer;
   };
 
-  // Run the 4-step conversation animation cleanly without leaks
+  // Run the 4-step conversation animation with snappy, fast timing
   const runChatSequence = () => {
     clearAllTimeouts();
     setVisibleStep(0);
     setIsTyping(false);
-    setCustomMessages([]);
+    hasCompletedAnimation.current = false;
 
-    // Step 1: User inquires about package
+    // Step 1: User inquires about package (immediate after 120ms)
     addTimeout(() => {
       setVisibleStep(1);
       scrollToBottom();
 
-      // Step 2: Agency typing indicator
+      // Step 2: Agency typing indicator starts after 350ms
       addTimeout(() => {
         setIsTyping(true);
         scrollToBottom();
 
-        // Step 3: Agency replies with package details & standard price
+        // Step 3: Agency replies with package details & standard price after 600ms typing
         addTimeout(() => {
           setIsTyping(false);
           setVisibleStep(2);
           scrollToBottom();
 
-          // Step 4: User bargains with price for their group
+          // Step 4: User bargains with price for their group after 450ms
           addTimeout(() => {
             setVisibleStep(3);
             scrollToBottom();
 
-            // Step 5: Agency typing indicator
+            // Step 5: Agency typing indicator starts after 350ms
             addTimeout(() => {
               setIsTyping(true);
               scrollToBottom();
 
-              // Step 6: Agency helps with a special discounted rate
+              // Step 6: Agency helps with special discounted rate after 650ms typing
               addTimeout(() => {
                 setIsTyping(false);
                 setVisibleStep(4);
                 scrollToBottom();
                 hasCompletedAnimation.current = true;
-              }, 800);
-            }, 400);
-          }, 850);
-        }, 750);
+              }, 650);
+            }, 350);
+          }, 450);
+        }, 600);
       }, 350);
-    }, 250);
+    }, 120);
+  };
+
+  // Detect whether the phone or section is currently inside the user's viewport
+  const isElementVisible = () => {
+    const el = phoneRef.current || sectionRef.current;
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    // Considered in view when at least 80px is within viewport bounds
+    return rect.top < windowHeight - 80 && rect.bottom > 80;
   };
 
   useEffect(() => {
-    if (isPhoneInView) {
-      if (!hasCompletedAnimation.current) {
+    let ticking = false;
+
+    const checkVisibility = () => {
+      const currentlyInView = isElementVisible();
+
+      if (currentlyInView && !wasInViewRef.current) {
+        // Just entered viewport (whether scrolling down from top OR scrolling up from bottom)
+        wasInViewRef.current = true;
         runChatSequence();
+      } else if (!currentlyInView && wasInViewRef.current) {
+        // Just exited viewport (scrolled away above or below)
+        wasInViewRef.current = false;
+        clearAllTimeouts();
+        setIsTyping(false);
+        setVisibleStep(0); // Reset so it replays from step 1 upon return!
       }
-    } else {
-      // Scrolled away from phone: reset so it starts from first message when scrolled back
-      clearAllTimeouts();
-      setIsTyping(false);
-      hasCompletedAnimation.current = false;
-      setVisibleStep(0);
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          checkVisibility();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    // Also monitor inner dashboard scroll container if present
+    const scrollContainer = document.getElementById('user-dashboard-scroll-container');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     }
+
+    // Native IntersectionObserver for instant response
+    let observer: IntersectionObserver | null = null;
+    if (typeof window !== 'undefined' && 'IntersectionObserver' in window && phoneRef.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry) {
+            if (entry.isIntersecting && !wasInViewRef.current) {
+              wasInViewRef.current = true;
+              runChatSequence();
+            } else if (!entry.isIntersecting && wasInViewRef.current) {
+              wasInViewRef.current = false;
+              clearAllTimeouts();
+              setIsTyping(false);
+              setVisibleStep(0);
+            }
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(phoneRef.current);
+    }
+
+    // Initial check on mount
+    const timer = setTimeout(() => {
+      checkVisibility();
+    }, 150);
 
     return () => {
       clearAllTimeouts();
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
+      if (observer) {
+        observer.disconnect();
+      }
     };
-  }, [isPhoneInView]);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [visibleStep, isTyping, customMessages]);
-
-  const handleSendMessage = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!interactiveInput.trim()) return;
-
-    const text = interactiveInput.trim();
-    setInteractiveInput('');
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    setCustomMessages((prev) => [
-      ...prev,
-      {
-        id: `user-${Date.now()}`,
-        text: text,
-        sender: 'user',
-        time: nowTime,
-      },
-    ]);
-
-    setTimeout(() => {
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        setCustomMessages((prev) => [
-          ...prev,
-          {
-            id: `agency-${Date.now()}`,
-            text: 'Yes! We can arrange this according to your budget and preferences. Feel free to ask any other questions.',
-            sender: 'agency',
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-        scrollToBottom();
-      }, 650);
-    }, 250);
-  };
+  }, [visibleStep, isTyping]);
 
   return (
-    <section
-      className="py-14 sm:py-20 px-4 sm:px-8 lg:px-12 w-full max-w-[1400px] mx-auto bg-white overflow-hidden"
-    >
-      {/* ========================================================
-          CENTERED HEADER (Headline & Subtitle above the phone)
-          ======================================================== */}
-      <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15] mb-4">
-          Chat Directly with Travel Agencies
-        </h2>
+    <section ref={sectionRef} className="py-8 sm:py-12 lg:py-14 px-4 sm:px-8 lg:px-12 w-full max-w-[1240px] mx-auto bg-white overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        {/* ========================================================
+            LEFT COLUMN: Copy & Title
+            ======================================================== */}
+        <div className="lg:col-span-7 flex flex-col justify-center text-left">
+          {/* Heading */}
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.2] mb-3.5">
+            Chat Directly with Travel Agencies
+          </h2>
 
-        <p className="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
-          Ask questions, get instant package pricing, and customize your itinerary directly with verified local travel agencies.
-        </p>
-      </div>
+          {/* Subtitle */}
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal max-w-xl">
+            Ask questions, get instant package pricing, and customize your itinerary directly with verified local travel agencies.
+          </p>
+        </div>
 
-      {/* ========================================================
-          CENTERED AUTHENTIC NOTHING PHONE (3A) HARDWARE MOCKUP
-          ======================================================== */}
-      <div className="relative flex justify-center items-center w-full py-3">
-        {/* Soft Studio Ambient Glow behind phone */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[410px] h-[580px] bg-gradient-to-b from-orange-500/5 via-emerald-500/6 to-transparent blur-3xl rounded-full pointer-events-none" />
+        {/* ========================================================
+            RIGHT COLUMN: Sleek Compact Nothing Phone Mockup
+            ======================================================== */}
+        <div className="lg:col-span-5 flex justify-center lg:justify-end items-center relative py-2">
+          {/* Ambient Glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[310px] h-[480px] bg-gradient-to-b from-orange-500/5 via-emerald-500/8 to-transparent blur-2xl rounded-full pointer-events-none" />
 
-        {/* Nothing Phone (3a) Midnight Slate Matte Chassis */}
-        <div ref={phoneRef} className="relative w-full max-w-[340px] sm:max-w-[370px] h-[630px] sm:h-[675px] bg-[#0c121b] rounded-[52px] p-[10px] shadow-[0_20px_42px_-12px_rgba(15,23,42,0.2),0_8px_18px_-6px_rgba(15,23,42,0.12),0_0_0_1.5px_#233044,inset_0_1px_1px_rgba(255,255,255,0.18)] border-[2.5px] border-[#182333] select-none">
-          
-          {/* Calibrated 3D Floor Shadow at base of phone (Smooth dual-layer depth) */}
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[82%] h-7 bg-slate-950/16 blur-xl rounded-full pointer-events-none -z-10" />
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[56%] h-3.5 bg-slate-950/25 blur-md rounded-full pointer-events-none -z-10" />
+          {/* Phone Chassis */}
+          <div
+            ref={phoneRef}
+            className="relative w-full max-w-[290px] sm:max-w-[310px] h-[500px] sm:h-[530px] bg-[#0c121b] rounded-[46px] p-[8px] shadow-[0_16px_36px_-10px_rgba(15,23,42,0.22),0_6px_14px_-4px_rgba(15,23,42,0.12),0_0_0_1.5px_#233044,inset_0_1px_1px_rgba(255,255,255,0.18)] border-[2.5px] border-[#182333] select-none"
+          >
+            {/* 3D Floor Shadow */}
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-[80%] h-5 bg-slate-950/16 blur-lg rounded-full pointer-events-none -z-10" />
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-[50%] h-2.5 bg-slate-950/25 blur-sm rounded-full pointer-events-none -z-10" />
 
-          {/* Top Speaker Micro-Slit */}
-          <div className="absolute top-[4.5px] left-1/2 -translate-x-1/2 w-12 h-[2px] bg-[#1e2a3c] rounded-full z-40 border-b border-[#2a3a52]/40" />
+            {/* Top Speaker Micro-Slit */}
+            <div className="absolute top-[4px] left-1/2 -translate-x-1/2 w-10 h-[2px] bg-[#1e2a3c] rounded-full z-40 border-b border-[#2a3a52]/40" />
 
-          {/* Nothing Phone (3a) Hardware Buttons (Exact replica of reference) */}
-          {/* Left Side: Single Power / Sleep Button */}
-          <div className="absolute -left-[4.5px] top-[180px] w-[3.5px] h-[48px] bg-gradient-to-r from-[#2a384e] to-[#141d2c] rounded-l-xs shadow-xs border-l border-t border-b border-[#364964]" />
+            {/* Left Button (Power/Sleep) */}
+            <div className="absolute -left-[4px] top-[140px] w-[3px] h-[38px] bg-gradient-to-r from-[#2a384e] to-[#141d2c] rounded-l-xs shadow-xs border-l border-t border-b border-[#364964]" />
 
-          {/* Right Side: Two Discrete Volume Buttons */}
-          {/* Volume Up */}
-          <div className="absolute -right-[4.5px] top-[148px] w-[3.5px] h-[36px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
-          {/* Volume Down */}
-          <div className="absolute -right-[4.5px] top-[230px] w-[3.5px] h-[36px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
+            {/* Right Buttons (Volume) */}
+            <div className="absolute -right-[4px] top-[118px] w-[3px] h-[28px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
+            <div className="absolute -right-[4px] top-[180px] w-[3px] h-[28px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
 
-          {/* Symmetrical OLED Display Container */}
-          <div className="relative w-full h-full bg-[#efeae2] rounded-[42px] overflow-hidden flex flex-col font-sans border border-[#16202e]/60 shadow-inner">
-            
-            {/* Subtle Screen Glare Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none z-30 rounded-[42px]" />
+            {/* Symmetrical OLED Display Container */}
+            <div className="relative w-full h-full bg-[#efeae2] rounded-[38px] overflow-hidden flex flex-col font-sans border border-[#16202e]/60 shadow-inner">
+              {/* Screen Glare Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none z-30 rounded-[38px]" />
 
-            {/* Nothing OS Status Bar (1:1 Replica with user reference) */}
-            <div className="bg-[#075e54] text-white pt-2.5 pb-2 px-5 flex items-center justify-between relative z-40 shrink-0 select-none border-b border-[#054c44]/40">
-              
-              {/* Left: Time in Clean Nothing OS Sans */}
-              <div className="w-16 flex items-center">
-                <span className="text-[13px] font-medium tracking-tight text-white/95 font-sans">
-                  4:00
+              {/* Status Bar */}
+              <div className="bg-[#075e54] text-white pt-2 pb-1.5 px-4 flex items-center justify-between relative z-40 shrink-0 select-none border-b border-[#054c44]/40">
+                <div className="w-12 flex items-center">
+                  <span className="text-[11px] font-medium tracking-tight text-white/95 font-sans">
+                    4:00
+                  </span>
+                </div>
+
+                {/* Punch-Hole Camera */}
+                <div className="w-3 h-3 bg-[#070b10] rounded-full flex items-center justify-center border border-[#1b2536] shadow-inner">
+                  <div className="w-1 h-1 rounded-full bg-[#121c2b] flex items-center justify-center">
+                    <div className="w-0.5 h-0.5 rounded-full bg-[#2a3d5e]/90" />
+                  </div>
+                </div>
+
+                {/* Status Icons */}
+                <div className="w-12 flex items-center justify-end gap-1.5 text-white/95">
+                  <svg className="w-3 h-3 text-white/95 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 8.5c4.6-4 11.4-4 16 0" />
+                    <path d="M7.5 12.5c2.6-2.2 6.4-2.2 9 0" />
+                    <circle cx="12" cy="17.5" r="1.3" fill="currentColor" stroke="none" />
+                  </svg>
+                  <svg className="w-3 h-2.5 text-white/95 shrink-0" viewBox="0 0 16 12" fill="currentColor">
+                    <rect x="0.5" y="8.5" width="2.4" height="3.5" rx="0.6" />
+                    <rect x="4.4" y="5.8" width="2.4" height="6.2" rx="0.6" />
+                    <rect x="8.3" y="3.2" width="2.4" height="8.8" rx="0.6" />
+                    <rect x="12.2" y="0.5" width="2.4" height="11.5" rx="0.6" />
+                  </svg>
+                  <div className="flex items-center shrink-0">
+                    <div className="w-[16px] h-[9px] border-[1.2px] border-white/95 rounded-[2.5px] p-[1px] flex items-center">
+                      <div className="w-full h-full bg-white rounded-[1px]" />
+                    </div>
+                    <div className="w-[1px] h-[3px] bg-white/95 rounded-r-[1px] ml-[0.5px]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat Top Nav */}
+              <div className="bg-[#075e54] text-white px-2.5 py-1.5 flex items-center justify-between shadow-md z-30 shrink-0 select-none">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <ChevronLeft className="w-4 h-4 text-white -ml-0.5 pointer-events-none" />
+                  <div className="relative w-7 h-7 rounded-full bg-emerald-800 border-[1.5px] border-white/40 flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <Building2 className="w-3.5 h-3.5 text-white" />
+                    <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 border-2 border-[#075e54] rounded-full" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-[11.5px] text-white truncate leading-tight">
+                      Travel Agency
+                    </h4>
+                    <span className="text-[9px] text-emerald-200 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      online
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center text-white/80 pointer-events-none pr-1">
+                  <Search className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Chat Conversation Scroll Area */}
+              <div
+                ref={chatScrollRef}
+                className="chat-travel-bg flex-1 p-2.5 space-y-2 overflow-y-auto overflow-x-hidden scroll-smooth text-slate-800 text-xs relative"
+              >
+                {/* Step 1: User says "I am interested in this package" */}
+                <AnimatePresence>
+                  {visibleStep >= 1 && (
+                    <motion.div
+                      key="step-msg-1"
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="flex justify-end"
+                    >
+                      <div className="max-w-[88%] bg-[#d9fdd3] text-slate-900 px-3 py-1.5 rounded-2xl rounded-tr-xs shadow-[0_1px_1px_rgba(11,20,26,0.12)] border border-[#c4ebb8]/70">
+                        <p className="text-[11.5px] leading-snug select-text font-normal">
+                          Hi! I am interested in this 5D/4N Kashmir Highlights package.
+                        </p>
+                        <div className="flex items-center justify-end gap-1 mt-0.5 text-[8.5px] text-slate-500 font-medium">
+                          <span>09:41 AM</span>
+                          <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Step 2: Travel Agency replies */}
+                <AnimatePresence>
+                  {visibleStep >= 2 && (
+                    <motion.div
+                      key="step-msg-2"
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="flex justify-start"
+                    >
+                      <div className="max-w-[88%] bg-white text-slate-900 px-3 py-1.5 rounded-2xl rounded-tl-xs shadow-[0_1px_1px_rgba(11,20,26,0.12)] border border-slate-200/90">
+                        <p className="text-[11.5px] leading-snug text-slate-800">
+                          Hello! Great choice. This package is ₹14,999 per person, including 4-star hotel stay, Dal Lake luxury houseboat, private cab transfers, and daily meals.
+                        </p>
+                        <div className="flex items-center justify-end text-[8.5px] text-slate-400 mt-0.5">
+                          <span>09:41 AM</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Step 3: User bargains on price */}
+                <AnimatePresence>
+                  {visibleStep >= 3 && (
+                    <motion.div
+                      key="step-msg-3"
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="flex justify-end"
+                    >
+                      <div className="max-w-[88%] bg-[#d9fdd3] text-slate-900 px-3 py-1.5 rounded-2xl rounded-tr-xs shadow-[0_1px_1px_rgba(11,20,26,0.12)] border border-[#c4ebb8]/70">
+                        <p className="text-[11.5px] leading-snug select-text font-normal">
+                          We are 4 people travelling. Can you give us some discount or best price?
+                        </p>
+                        <div className="flex items-center justify-end gap-1 mt-0.5 text-[8.5px] text-slate-500 font-medium">
+                          <span>09:42 AM</span>
+                          <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Step 4: Travel Agency helps with discount */}
+                <AnimatePresence>
+                  {visibleStep >= 4 && (
+                    <motion.div
+                      key="step-msg-4"
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="flex justify-start"
+                    >
+                      <div className="max-w-[88%] bg-white text-slate-900 px-3 py-1.5 rounded-2xl rounded-tl-xs shadow-[0_1px_1px_rgba(11,20,26,0.12)] border border-slate-200/90">
+                        <p className="text-[11.5px] leading-snug text-slate-800">
+                          Sure! For a group of 4, we can offer our special direct rate of ₹13,500 per person.
+                        </p>
+                        <div className="flex items-center justify-end text-[8.5px] text-slate-400 mt-0.5">
+                          <span>09:42 AM</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Typing Indicator */}
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-1.5 bg-white text-slate-600 px-2.5 py-1 rounded-2xl rounded-tl-xs border border-slate-200 shadow-2xs w-fit"
+                  >
+                    <span className="text-[9.5px] text-slate-500 font-medium">
+                      Travel Agency is typing
+                    </span>
+                    <span className="flex gap-0.5 ml-0.5">
+                      <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce" />
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Bottom WhatsApp Bar (Static mockup - new chat cannot be entered) */}
+              <div className="px-2 py-1.5 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-1.5 shrink-0 z-30 select-none">
+                <span className="text-slate-400 p-0.5 rounded-full shrink-0 cursor-default">
+                  <Smile className="w-4 h-4" />
                 </span>
-              </div>
 
-              {/* Center: Nothing Phone (3a) Centered Single Punch-Hole Camera */}
-              <div className="w-3.5 h-3.5 bg-[#070b10] rounded-full flex items-center justify-center border border-[#1b2536] shadow-inner">
-                {/* Camera Lens Reflection */}
-                <div className="w-1.5 h-1.5 rounded-full bg-[#121c2b] flex items-center justify-center">
-                  <div className="w-0.5 h-0.5 rounded-full bg-[#2a3d5e]/90" />
+                <span className="text-slate-400 p-0.5 rounded-full shrink-0 cursor-default">
+                  <Paperclip className="w-4 h-4" />
+                </span>
+
+                <div className="flex-1 rounded-full border border-slate-300 px-3 py-1 bg-white text-slate-400 text-[11px] shadow-2xs min-w-0 select-none cursor-default truncate">
+                  Type a message...
+                </div>
+
+                <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#00a884] text-white shadow-xs shrink-0 select-none cursor-default">
+                  <Send className="w-3 h-3 ml-0.5" />
                 </div>
               </div>
 
-              {/* Right: Exact Status Icons in Reference Order: [WiFi] [Cellular] [Battery] */}
-              <div className="w-16 flex items-center justify-end gap-2 text-white/95">
-                
-                {/* Nothing OS Wi-Fi Icon (Clean 3-tier wave, all lines sharp & visible) */}
-                <svg className="w-3.5 h-3.5 text-white/95 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 8.5c4.6-4 11.4-4 16 0" />
-                  <path d="M7.5 12.5c2.6-2.2 6.4-2.2 9 0" />
-                  <circle cx="12" cy="17.5" r="1.3" fill="currentColor" stroke="none" />
-                </svg>
-
-                {/* 4-Bar Ascending Cellular Signal */}
-                <svg className="w-3.5 h-3 text-white/95 shrink-0" viewBox="0 0 16 12" fill="currentColor">
-                  <rect x="0.5" y="8.5" width="2.4" height="3.5" rx="0.6" />
-                  <rect x="4.4" y="5.8" width="2.4" height="6.2" rx="0.6" />
-                  <rect x="8.3" y="3.2" width="2.4" height="8.8" rx="0.6" />
-                  <rect x="12.2" y="0.5" width="2.4" height="11.5" rx="0.6" />
-                </svg>
-
-                {/* Nothing OS Solid Battery Glyph with Terminal Nub */}
-                <div className="flex items-center shrink-0">
-                  <div className="w-[19px] h-[10px] border-[1.2px] border-white/95 rounded-[3px] p-[1.5px] flex items-center">
-                    <div className="w-full h-full bg-white rounded-[1.2px]" />
-                  </div>
-                  <div className="w-[1.2px] h-[3.5px] bg-white/95 rounded-r-[1px] ml-[0.5px]" />
-                </div>
-
+              {/* Bottom Android Navigation Pill */}
+              <div className="py-1 bg-[#f0f2f5] flex justify-center shrink-0 z-30">
+                <div className="w-16 h-[2.5px] bg-slate-400/70 rounded-full" />
               </div>
             </div>
-
-            {/* WhatsApp / TripDM Top Navigation Bar */}
-            <div className="bg-[#075e54] text-white px-3 py-2 flex items-center justify-between shadow-md z-30 shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <ChevronLeft className="w-5 h-5 text-white -ml-1 cursor-pointer hover:opacity-80 transition-opacity" />
-                
-                {/* Travel Agency Avatar */}
-                <div className="relative w-9 h-9 rounded-full bg-emerald-800 border-2 border-white/40 flex items-center justify-center text-white shrink-0 shadow-sm">
-                  <Building2 className="w-4.5 h-4.5 text-white" />
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#075e54] rounded-full" />
-                </div>
-
-                {/* Title & Online Status */}
-                <div className="min-w-0">
-                  <h4 className="font-bold text-[13px] text-white truncate leading-tight">
-                    Travel Agency
-                  </h4>
-                  <span className="text-[10px] text-emerald-200 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    online
-                  </span>
-                </div>
-              </div>
-
-              {/* Right Header Action: Search Button from Original Chat System */}
-              <div className="flex items-center pr-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowInChatSearch((prev) => !prev);
-                    if (showInChatSearch) setInChatSearchQuery('');
-                  }}
-                  className={`p-1.5 rounded-full transition-all flex items-center justify-center cursor-pointer ${
-                    showInChatSearch
-                      ? 'bg-emerald-800 text-white shadow-xs'
-                      : 'text-white/90 hover:text-white hover:bg-white/10'
-                  }`}
-                  title="Search in chat"
-                  aria-label="Search messages"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* In-Chat Search Input Bar (Slides down under header) */}
-            {showInChatSearch && (
-              <div className="px-3 py-1.5 bg-[#054c44] border-b border-[#043d36] flex items-center gap-2 z-30 shrink-0">
-                <Search className="w-3.5 h-3.5 text-emerald-200 shrink-0 pointer-events-none" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={inChatSearchQuery}
-                  onChange={(e) => setInChatSearchQuery(e.target.value)}
-                  placeholder="Search in conversation..."
-                  className="flex-1 bg-transparent text-white placeholder-emerald-200/60 text-xs focus:outline-none"
-                />
-                {inChatSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setInChatSearchQuery('')}
-                    className="text-[10px] text-emerald-200 hover:text-white cursor-pointer px-1 py-0.5 rounded"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Chat Conversation Scroll Area with Travel Doodle Background */}
-            <div
-              ref={chatScrollRef}
-              className="chat-travel-bg flex-1 p-3.5 space-y-3 overflow-y-auto overflow-x-hidden scroll-smooth text-slate-800 text-xs relative"
-            >
-              {/* Step 1: User says "I am interested in this package" */}
-              <AnimatePresence>
-                {visibleStep >= 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="flex justify-end"
-                  >
-                    <div className="max-w-[85%] bg-[#d9fdd3] text-slate-900 px-3.5 py-2 rounded-2xl rounded-tr-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-[#c4ebb8]/70">
-                      <p className="text-[12.5px] leading-relaxed select-text font-normal">
-                        Hi! I am interested in this 5D/4N Kashmir Highlights package.
-                      </p>
-                      <div className="flex items-center justify-end gap-1 mt-0.5 text-[9px] text-slate-500 font-medium">
-                        <span>09:41 AM</span>
-                        <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Step 2: Travel Agency replies with package details & price in simple text */}
-              <AnimatePresence>
-                {visibleStep >= 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="flex justify-start"
-                  >
-                    <div className="max-w-[88%] bg-white text-slate-900 px-3.5 py-2.5 rounded-2xl rounded-tl-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-slate-200/90">
-                      <p className="text-[12.5px] leading-relaxed text-slate-800">
-                        Hello! Great choice. This package is ₹14,999 per person, including 4-star hotel stay, Dal Lake luxury houseboat, private cab transfers, and daily meals.
-                      </p>
-                      <div className="flex items-center justify-end text-[9px] text-slate-400 mt-1">
-                        <span>09:41 AM</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Step 3: User bargains on price */}
-              <AnimatePresence>
-                {visibleStep >= 3 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="flex justify-end"
-                  >
-                    <div className="max-w-[85%] bg-[#d9fdd3] text-slate-900 px-3.5 py-2 rounded-2xl rounded-tr-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-[#c4ebb8]/70">
-                      <p className="text-[12.5px] leading-relaxed select-text font-normal">
-                        We are 4 people travelling. Can you give us some discount or best price?
-                      </p>
-                      <div className="flex items-center justify-end gap-1 mt-0.5 text-[9px] text-slate-500 font-medium">
-                        <span>09:42 AM</span>
-                        <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Step 4: Travel Agency helps with discount in simple text */}
-              <AnimatePresence>
-                {visibleStep >= 4 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="flex justify-start"
-                  >
-                    <div className="max-w-[88%] bg-white text-slate-900 px-3.5 py-2.5 rounded-2xl rounded-tl-xs shadow-[0_1px_1px_rgba(11,20,26,0.15)] border border-slate-200/90">
-                      <p className="text-[12.5px] leading-relaxed text-slate-800">
-                        Sure! For a group of 4, we can offer our special direct rate of ₹13,500 per person.
-                      </p>
-                      <div className="flex items-center justify-end text-[9px] text-slate-400 mt-1">
-                        <span>09:42 AM</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Custom User Messages */}
-              {customMessages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] px-3.5 py-2 rounded-2xl shadow-2xs border ${
-                      msg.sender === 'user'
-                        ? 'bg-[#d9fdd3] text-slate-900 rounded-tr-xs border-[#c4ebb8]'
-                        : 'bg-white text-slate-900 rounded-tl-xs border-slate-200'
-                    }`}
-                  >
-                    <p className="text-[12.5px] leading-relaxed">{msg.text}</p>
-                    <div className="flex items-center justify-end gap-1 mt-0.5 text-[9px] text-slate-400">
-                      <span>{msg.time}</span>
-                      {msg.sender === 'user' && <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-
-              {/* Typing Indicator */}
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 bg-white text-slate-600 px-3 py-1.5 rounded-2xl rounded-tl-xs border border-slate-200 shadow-2xs w-fit"
-                >
-                  <span className="text-[10px] text-slate-500 font-medium">
-                    Travel Agency is typing
-                  </span>
-                  <span className="flex gap-1 ml-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" />
-                  </span>
-                </motion.div>
-              )}
-
-            </div>
-
-            {/* Bottom WhatsApp Input Form */}
-            <form
-              onSubmit={handleSendMessage}
-              className="px-2.5 py-2 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-2 shrink-0 z-30"
-            >
-              <button
-                type="button"
-                className="text-slate-500 hover:text-slate-700 p-1 rounded-full transition-colors shrink-0"
-              >
-                <Smile className="w-4.5 h-4.5" />
-              </button>
-
-              <button
-                type="button"
-                className="text-slate-500 hover:text-slate-700 p-1 rounded-full transition-colors shrink-0"
-              >
-                <Paperclip className="w-4.5 h-4.5" />
-              </button>
-
-              <input
-                type="text"
-                value={interactiveInput}
-                onChange={(e) => setInteractiveInput(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 rounded-full border border-slate-300 px-3.5 py-1.5 bg-white text-slate-800 text-xs focus:outline-none focus:border-emerald-600 shadow-2xs min-w-0"
-              />
-
-              <button
-                type="submit"
-                disabled={!interactiveInput.trim()}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                  interactiveInput.trim()
-                    ? 'bg-[#00a884] hover:bg-[#008f6f] text-white shadow-xs active:scale-95 cursor-pointer'
-                    : 'bg-slate-300 text-slate-400 cursor-not-allowed'
-                }`}
-                title="Send message"
-              >
-                <Send className="w-3.5 h-3.5 ml-0.5" />
-              </button>
-            </form>
-
-            {/* Nothing OS / Android Navigation Pill */}
-            <div className="py-1.5 bg-[#f0f2f5] flex justify-center shrink-0 z-30">
-              <div className="w-20 h-[3px] bg-slate-400/70 rounded-full" />
-            </div>
-
           </div>
         </div>
       </div>

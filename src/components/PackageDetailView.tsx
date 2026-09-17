@@ -983,7 +983,7 @@ export default function PackageDetailView({
     },
     {
       icon: MapPin,
-      label: 'City',
+      label: 'Places Covered',
       value: getDisplayPlaces().join(', ') || 'N/A'
     },
     {
