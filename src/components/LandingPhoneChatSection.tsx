@@ -10,6 +10,10 @@ import {
   ChevronLeft,
   Search,
   Paperclip,
+  Handshake,
+  SlidersHorizontal,
+  ShieldCheck,
+  BadgeCheck,
 } from 'lucide-react';
 
 export default function LandingPhoneChatSection({
@@ -194,55 +198,112 @@ export default function LandingPhoneChatSection({
 
   return (
     <section ref={sectionRef} className="py-8 sm:py-12 lg:py-14 px-4 sm:px-8 lg:px-12 w-full max-w-[1240px] mx-auto bg-white overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
         {/* ========================================================
-            LEFT COLUMN: Copy & Title
+            LEFT COLUMN: Copy & Title + Symbolic Highlights (Top-Aligned)
             ======================================================== */}
-        <div className="lg:col-span-7 flex flex-col justify-center text-left">
-          {/* Heading */}
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.2] mb-3.5">
-            Chat Directly with Travel Agencies
-          </h2>
+        <div className="lg:col-span-7 flex flex-col justify-start text-left space-y-6 lg:pt-3">
+          <div>
+            {/* Heading */}
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.2] mb-3.5">
+              Connect, Negotiate, and Customize Directly with Verified Operators
+            </h2>
 
-          {/* Subtitle */}
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal max-w-xl">
-            Ask questions, get instant package pricing, and customize your itinerary directly with verified local travel agencies.
-          </p>
+            {/* Subtitle */}
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal max-w-xl">
+              Experience seamless one-on-one communication with local travel agencies for instant pricing, flexible adjustments, and guaranteed local rates.
+            </p>
+          </div>
+
+          {/* Symbolic Highlights (No containers, neutral tones, no AI words) */}
+          <div className="space-y-4 pt-1">
+            {/* 1. Real-Time Price Negotiation */}
+            <div className="flex items-start gap-3.5">
+              <Handshake className="w-5 h-5 text-slate-900 mt-0.5 shrink-0" strokeWidth={2} />
+              <div>
+                <h4 className="text-sm sm:text-base font-semibold text-slate-900 tracking-tight">
+                  Real-Time Price Negotiation
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed mt-0.5 max-w-lg">
+                  Bargain directly with operators to secure tailored group discounts and custom pricing.
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Dynamic Itinerary Customization */}
+            <div className="flex items-start gap-3.5">
+              <SlidersHorizontal className="w-5 h-5 text-slate-900 mt-0.5 shrink-0" strokeWidth={2} />
+              <div>
+                <h4 className="text-sm sm:text-base font-semibold text-slate-900 tracking-tight">
+                  Dynamic Itinerary Customization
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed mt-0.5 max-w-lg">
+                  Adjust hotel categories, add sightseeing spots, and fine-tune trip pacing on demand.
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Verified Local Expertise */}
+            <div className="flex items-start gap-3.5">
+              <ShieldCheck className="w-5 h-5 text-slate-900 mt-0.5 shrink-0" strokeWidth={2} />
+              <div>
+                <h4 className="text-sm sm:text-base font-semibold text-slate-900 tracking-tight">
+                  Verified Local Expertise
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed mt-0.5 max-w-lg">
+                  Get authentic destination insights and reliable on-ground coordination from licensed agencies.
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Direct Booking Benefits */}
+            <div className="flex items-start gap-3.5">
+              <BadgeCheck className="w-5 h-5 text-slate-900 mt-0.5 shrink-0" strokeWidth={2} />
+              <div>
+                <h4 className="text-sm sm:text-base font-semibold text-slate-900 tracking-tight">
+                  Direct Booking Benefits
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed mt-0.5 max-w-lg">
+                  Enjoy zero middleman markups, transparent billing, and dedicated direct agent support.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ========================================================
-            RIGHT COLUMN: Sleek Compact Nothing Phone Mockup
+            RIGHT COLUMN: Sleek Modern Phone Mockup with Realistic Proportions
             ======================================================== */}
         <div className="lg:col-span-5 flex justify-center lg:justify-end items-center relative py-2">
           {/* Ambient Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[310px] h-[480px] bg-gradient-to-b from-orange-500/5 via-emerald-500/8 to-transparent blur-2xl rounded-full pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[310px] sm:w-[340px] h-[590px] sm:h-[640px] bg-gradient-to-b from-orange-500/5 via-emerald-500/8 to-transparent blur-2xl rounded-full pointer-events-none" />
 
           {/* Phone Chassis */}
           <div
             ref={phoneRef}
-            className="relative w-full max-w-[290px] sm:max-w-[310px] h-[500px] sm:h-[530px] bg-[#0c121b] rounded-[46px] p-[8px] shadow-[0_16px_36px_-10px_rgba(15,23,42,0.22),0_6px_14px_-4px_rgba(15,23,42,0.12),0_0_0_1.5px_#233044,inset_0_1px_1px_rgba(255,255,255,0.18)] border-[2.5px] border-[#182333] select-none"
+            className="relative w-full max-w-[300px] sm:max-w-[325px] h-[590px] sm:h-[640px] bg-[#0c121b] rounded-[48px] p-[8px] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.28),0_8px_20px_-6px_rgba(15,23,42,0.15),0_0_0_1.5px_#233044,inset_0_1px_1.5px_rgba(255,255,255,0.2)] border-[2.5px] border-[#182333] select-none"
           >
             {/* 3D Floor Shadow */}
-            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-[80%] h-5 bg-slate-950/16 blur-lg rounded-full pointer-events-none -z-10" />
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-[50%] h-2.5 bg-slate-950/25 blur-sm rounded-full pointer-events-none -z-10" />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[82%] h-6 bg-slate-950/18 blur-lg rounded-full pointer-events-none -z-10" />
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[55%] h-3 bg-slate-950/28 blur-sm rounded-full pointer-events-none -z-10" />
 
             {/* Top Speaker Micro-Slit */}
-            <div className="absolute top-[4px] left-1/2 -translate-x-1/2 w-10 h-[2px] bg-[#1e2a3c] rounded-full z-40 border-b border-[#2a3a52]/40" />
+            <div className="absolute top-[4.5px] left-1/2 -translate-x-1/2 w-11 h-[2px] bg-[#1e2a3c] rounded-full z-40 border-b border-[#2a3a52]/50" />
 
-            {/* Left Button (Power/Sleep) */}
-            <div className="absolute -left-[4px] top-[140px] w-[3px] h-[38px] bg-gradient-to-r from-[#2a384e] to-[#141d2c] rounded-l-xs shadow-xs border-l border-t border-b border-[#364964]" />
+            {/* Left Button (Power/Lock) */}
+            <div className="absolute -left-[4px] top-[165px] w-[3px] h-[44px] bg-gradient-to-r from-[#2a384e] to-[#141d2c] rounded-l-xs shadow-xs border-l border-t border-b border-[#364964]" />
 
-            {/* Right Buttons (Volume) */}
-            <div className="absolute -right-[4px] top-[118px] w-[3px] h-[28px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
-            <div className="absolute -right-[4px] top-[180px] w-[3px] h-[28px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
+            {/* Right Buttons (Volume Up & Down) */}
+            <div className="absolute -right-[4px] top-[140px] w-[3px] h-[32px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
+            <div className="absolute -right-[4px] top-[190px] w-[3px] h-[32px] bg-gradient-to-l from-[#2a384e] to-[#141d2c] rounded-r-xs shadow-xs border-r border-t border-b border-[#364964]" />
 
             {/* Symmetrical OLED Display Container */}
-            <div className="relative w-full h-full bg-[#efeae2] rounded-[38px] overflow-hidden flex flex-col font-sans border border-[#16202e]/60 shadow-inner">
+            <div className="relative w-full h-full bg-[#efeae2] rounded-[40px] overflow-hidden flex flex-col font-sans border border-[#16202e]/60 shadow-inner">
               {/* Screen Glare Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none z-30 rounded-[38px]" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none z-30 rounded-[40px]" />
 
               {/* Status Bar */}
-              <div className="bg-[#075e54] text-white pt-2 pb-1.5 px-4 flex items-center justify-between relative z-40 shrink-0 select-none border-b border-[#054c44]/40">
+              <div className="bg-[#075e54] text-white pt-2.5 pb-1.5 px-4 flex items-center justify-between relative z-40 shrink-0 select-none border-b border-[#054c44]/40">
                 <div className="w-12 flex items-center">
                   <span className="text-[11px] font-medium tracking-tight text-white/95 font-sans">
                     4:00
@@ -418,7 +479,7 @@ export default function LandingPhoneChatSection({
               </div>
 
               {/* Bottom WhatsApp Bar (Static mockup - new chat cannot be entered) */}
-              <div className="px-2 py-1.5 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-1.5 shrink-0 z-30 select-none">
+              <div className="px-2.5 py-2 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-1.5 shrink-0 z-30 select-none">
                 <span className="text-slate-400 p-0.5 rounded-full shrink-0 cursor-default">
                   <Smile className="w-4 h-4" />
                 </span>
@@ -437,8 +498,8 @@ export default function LandingPhoneChatSection({
               </div>
 
               {/* Bottom Android Navigation Pill */}
-              <div className="py-1 bg-[#f0f2f5] flex justify-center shrink-0 z-30">
-                <div className="w-16 h-[2.5px] bg-slate-400/70 rounded-full" />
+              <div className="py-1.5 bg-[#f0f2f5] flex justify-center shrink-0 z-30">
+                <div className="w-20 h-[3px] bg-slate-400/80 rounded-full" />
               </div>
             </div>
           </div>
