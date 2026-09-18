@@ -342,6 +342,25 @@ export default function ListingCard({
             <Scale className="h-3.5 w-3.5" />
           </button>
         )}
+
+        {/* Wishlist Button on Card */}
+        {variant === 'user' && onWishlist && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onWishlist(listing.id);
+            }}
+            className={`p-1.5 rounded-full backdrop-blur-md transition-all duration-200 border shadow-sm flex items-center justify-center cursor-pointer active:scale-90 ${
+              isWishlisted
+                ? 'bg-rose-500 text-white border-rose-400 shadow-rose-500/30'
+                : 'bg-white/85 hover:bg-white text-slate-700 hover:text-rose-500 border-white/60 hover:shadow'
+            }`}
+            title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            aria-label={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          >
+            <Heart className={`h-3.5 w-3.5 ${isWishlisted ? 'fill-current text-white' : ''}`} />
+          </button>
+        )}
       </div>
 
       {/* Image Section (Top, full width) */}
@@ -609,14 +628,18 @@ export default function ListingCard({
                       });
                     }}
                   >
-                    <Button className="w-full h-[42px] sm:h-[48px] px-2 sm:px-3 bg-orange-400 hover:bg-orange-600 text-white font-medium text-[12.5px] sm:text-[14px] rounded-xl shadow-sm transition-colors truncate">
+                    <Button 
+                      className="w-full h-[40px] sm:h-[44px] px-2 sm:px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold text-[12.5px] sm:text-[13.5px] shadow-sm hover:shadow transition-all truncate border border-amber-400/40 active:scale-[0.98]"
+                      style={{ borderRadius: '6px' }}
+                    >
                       View Details
                     </Button>
                   </Link>
                   
                   {/* Chat Button - Responsive compact icon on small mobile, expanded with label on larger screens */}
                   <Button 
-                    className="h-[42px] sm:h-[48px] w-[42px] sm:w-[124px] px-0 sm:px-2 bg-[#D84315] hover:bg-[#BF360C] text-white font-medium text-[12px] rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5 shrink-0"
+                    className="h-[40px] sm:h-[44px] w-[40px] sm:w-[120px] px-0 sm:px-2 bg-[#D84315] hover:bg-[#BF360C] text-white font-semibold text-[11.5px] sm:text-[12px] shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 shrink-0 active:scale-[0.98]"
+                    style={{ borderRadius: '6px' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       event({
@@ -642,20 +665,26 @@ export default function ListingCard({
                 </>
               ) : (
                 <>
-                  <Button className="flex-1 h-[42px] sm:h-[48px] bg-orange-500 hover:bg-orange-600 text-white font-medium text-[12.5px] sm:text-[14px] rounded-xl shadow-sm transition-colors min-w-0 truncate" onClick={() => onView?.(listing)}>
+                  <Button 
+                    className="flex-1 h-[40px] sm:h-[44px] bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold text-[12.5px] sm:text-[13.5px] shadow-sm transition-all min-w-0 truncate" 
+                    style={{ borderRadius: '6px' }}
+                    onClick={() => onView?.(listing)}
+                  >
                     View Details
                   </Button>
                   <div className="flex flex-col gap-1 sm:gap-1.5 w-[75px] sm:w-[88px] shrink-0">
                     <Button
                       variant="outline"
-                      className="flex-1 h-[19px] sm:h-[21px] border-[#1961CA] text-[#1961CA] hover:bg-[#F0F6FF] font-medium text-[10px] sm:text-[11px] rounded-md transition-colors px-1"
+                      className="flex-1 h-[19px] sm:h-[21px] border-[#1961CA] text-[#1961CA] hover:bg-[#F0F6FF] font-medium text-[10px] sm:text-[11px] transition-colors px-1"
+                      style={{ borderRadius: '6px' }}
                       onClick={() => onEdit?.(listing)}
                     >
                       Edit
                     </Button>
                     <Button
-                      variant="destructive"
-                      className="flex-1 h-[19px] sm:h-[21px] bg-[#FEF2F2] text-[#DC2626] hover:bg-[#FEE2E2] border border-[#FEE2E2] font-medium text-[10px] sm:text-[11px] rounded-md shadow-none transition-colors px-1"
+                      variant="outline"
+                      className="flex-1 h-[19px] sm:h-[21px] border-[#E53935] text-[#E53935] hover:bg-[#FFEBEE] font-medium text-[10px] sm:text-[11px] transition-colors px-1"
+                      style={{ borderRadius: '6px' }}
                       onClick={() => onDelete?.(listing.id)}
                     >
                       Delete

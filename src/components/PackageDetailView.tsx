@@ -1061,7 +1061,8 @@ export default function PackageDetailView({
             <div className="flex items-center gap-3">
               <button
                 onClick={onBack}
-                className="flex items-center gap-1.5 text-white bg-black/40 hover:bg-black/60 active:scale-95 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold transition-all border border-white/25 shadow-sm"
+                className="flex items-center gap-1.5 text-white bg-black/40 hover:bg-black/60 active:scale-95 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold transition-all border border-white/25 shadow-sm"
+                style={{ borderRadius: '6px' }}
                 aria-label="Go back"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -1087,7 +1088,8 @@ export default function PackageDetailView({
                 <>
                   <button
                     onClick={handleShare}
-                    className="flex items-center justify-center gap-1.5 text-white bg-black/40 hover:bg-black/60 active:scale-90 backdrop-blur-md p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium transition-all border border-white/25 shadow-sm min-w-[34px] min-h-[34px]"
+                    className="flex items-center justify-center gap-1.5 text-white bg-black/40 hover:bg-black/60 active:scale-90 backdrop-blur-md p-2 sm:px-3 sm:py-1.5 text-xs font-medium transition-all border border-white/25 shadow-sm min-w-[34px] min-h-[34px]"
+                    style={{ borderRadius: '6px' }}
                     title="Share"
                     aria-label="Share package"
                   >
@@ -1096,7 +1098,8 @@ export default function PackageDetailView({
                   </button>
                   <button
                     onClick={() => onWishlist?.(listing.id)}
-                    className={`flex items-center justify-center gap-1.5 backdrop-blur-md p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium transition-all border active:scale-90 shadow-sm min-w-[34px] min-h-[34px] ${isWishlisted ? 'bg-red-500 text-white border-red-400' : 'text-white bg-black/40 hover:bg-black/60 border-white/25'}`}
+                    className={`flex items-center justify-center gap-1.5 backdrop-blur-md p-2 sm:px-3 sm:py-1.5 text-xs font-medium transition-all border active:scale-90 shadow-sm min-w-[34px] min-h-[34px] ${isWishlisted ? 'bg-red-500 text-white border-red-400' : 'text-white bg-black/40 hover:bg-black/60 border-white/25'}`}
+                    style={{ borderRadius: '6px' }}
                     title={isWishlisted ? 'Saved' : 'Save'}
                     aria-label={isWishlisted ? 'Saved to wishlist' : 'Save to wishlist'}
                   >
@@ -1147,7 +1150,8 @@ export default function PackageDetailView({
                         }
                       }
                     }}
-                    className={`flex items-center justify-center gap-1.5 backdrop-blur-md p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium transition-all border active:scale-90 shadow-sm min-w-[34px] min-h-[34px] ${isInComparison(listing.id) ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30' : 'text-white bg-black/40 hover:bg-black/60 border-white/25'}`}
+                    className={`flex items-center justify-center gap-1.5 backdrop-blur-md p-2 sm:px-3 sm:py-1.5 text-xs font-medium transition-all border active:scale-90 shadow-sm min-w-[34px] min-h-[34px] ${isInComparison(listing.id) ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30' : 'text-white bg-black/40 hover:bg-black/60 border-white/25'}`}
+                    style={{ borderRadius: '6px' }}
                     title={isInComparison(listing.id) ? 'Comparing (Click to remove)' : 'Compare'}
                     aria-label={isInComparison(listing.id) ? 'Comparing package' : 'Compare package'}
                   >
@@ -1480,8 +1484,8 @@ export default function PackageDetailView({
                         agencyId: listing.agencyId || listing.userId,
                       });
                     }}
-                    className="btn-wavy-chat w-full flex items-center justify-center gap-2.5 text-white font-bold py-3 text-sm cursor-pointer border border-amber-300/40 rounded-lg shadow-lg"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    className="btn-wavy-chat w-full flex items-center justify-center gap-2.5 text-white font-bold py-3 text-sm cursor-pointer border border-amber-300/40 shadow-lg"
+                    style={{ borderRadius: '6px', fontFamily: "'DM Sans', sans-serif" }}
                   >
                     <MessageCircle className="h-4 w-4 icon-wavy" />
                     <span>Chat with Agency</span>
@@ -1562,15 +1566,16 @@ export default function PackageDetailView({
               {user ? (
                 <button
                   onClick={() => setShowWriteReviewModal(true)}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-white px-4 py-2 rounded-lg cursor-pointer transition-all hover:opacity-90"
-                  style={{ background: '#b84814' }}
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white px-4 py-2 cursor-pointer transition-all hover:opacity-95 shadow-2xs active:scale-[0.98]"
+                  style={{ background: '#b84814', borderRadius: '6px' }}
                 >
                   <Plus className="h-4 w-4" /> Write a Review
                 </button>
               ) : (
                 <button
                   onClick={handleRequireLogin}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 px-4 py-2 rounded-lg cursor-pointer transition-all"
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200/80 px-4 py-2 cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
+                  style={{ borderRadius: '6px' }}
                 >
                   <User className="h-4 w-4" /> Please login to review
                 </button>
@@ -1652,7 +1657,13 @@ export default function PackageDetailView({
                         <Label className="text-sm font-semibold text-gray-800">Who did you travel with?</Label>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {['Family', 'Couples', 'Friends', 'Solo', 'Business'].map(type => (
-                            <button type="button" key={type} onClick={() => setNewReview({ ...newReview, tripType: type })} className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer ${newReview.tripType === type ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-stone-300 hover:bg-stone-50'}`}>
+                            <button
+                              type="button"
+                              key={type}
+                              onClick={() => setNewReview({ ...newReview, tripType: type })}
+                              className={`px-3.5 py-1.5 text-xs font-semibold border transition-all cursor-pointer ${newReview.tripType === type ? 'bg-orange-500 text-white border-orange-500 shadow-2xs' : 'bg-white text-gray-700 border-stone-200 hover:bg-stone-50'}`}
+                              style={{ borderRadius: '6px' }}
+                            >
                               {type}
                             </button>
                           ))}
@@ -1662,29 +1673,39 @@ export default function PackageDetailView({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="rev-name" className="text-xs font-semibold text-gray-700">Your Full Name *</Label>
-                          <Input id="rev-name" required placeholder="e.g. Amit Kumar" value={newReview.name} onChange={e => setNewReview({ ...newReview, name: e.target.value })} className="mt-1 rounded-lg" />
+                          <Input id="rev-name" required placeholder="e.g. Amit Kumar" value={newReview.name} onChange={e => setNewReview({ ...newReview, name: e.target.value })} className="mt-1" style={{ borderRadius: '6px' }} />
                         </div>
                         <div>
                           <Label htmlFor="rev-city" className="text-xs font-semibold text-gray-700">City / Origin *</Label>
-                          <Input id="rev-city" required placeholder="e.g. Mumbai, Delhi, London..." value={newReview.travelledFrom} onChange={e => setNewReview({ ...newReview, travelledFrom: e.target.value })} className="mt-1 rounded-lg" />
+                          <Input id="rev-city" required placeholder="e.g. Mumbai, Delhi, London..." value={newReview.travelledFrom} onChange={e => setNewReview({ ...newReview, travelledFrom: e.target.value })} className="mt-1" style={{ borderRadius: '6px' }} />
                         </div>
                       </div>
                       {/* Detailed review */}
                       <div>
                         <Label htmlFor="rev-comment" className="text-xs font-semibold text-gray-700">Detailed Review *</Label>
-                        <Textarea id="rev-comment" required rows={4} placeholder="Tell us about your experience: hotel stay, sightseeing highlights, driver/guide assistance, and overall value..." value={newReview.comment} onChange={e => setNewReview({ ...newReview, comment: e.target.value })} className="mt-1 leading-relaxed rounded-lg" />
+                        <Textarea id="rev-comment" required rows={4} placeholder="Tell us about your experience: hotel stay, sightseeing highlights, driver/guide assistance, and overall value..." value={newReview.comment} onChange={e => setNewReview({ ...newReview, comment: e.target.value })} className="mt-1 leading-relaxed" style={{ borderRadius: '6px' }} />
                       </div>
                       {/* Photo URL */}
                       <div>
                         <Label htmlFor="rev-photo" className="text-xs font-semibold text-gray-700">Attach Trip Photo URL (Optional)</Label>
-                        <Input id="rev-photo" placeholder="https://images.unsplash.com/..." value={newReview.photoUrl} onChange={e => setNewReview({ ...newReview, photoUrl: e.target.value })} className="mt-1 text-xs rounded-lg" />
+                        <Input id="rev-photo" placeholder="https://images.unsplash.com/..." value={newReview.photoUrl} onChange={e => setNewReview({ ...newReview, photoUrl: e.target.value })} className="mt-1 text-xs" style={{ borderRadius: '6px' }} />
                       </div>
                       {/* Actions */}
                       <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-100">
-                        <button type="button" onClick={() => setShowWriteReviewModal(false)} className="px-6 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 border border-stone-300 rounded-lg transition-colors cursor-pointer">
+                        <button
+                          type="button"
+                          onClick={() => setShowWriteReviewModal(false)}
+                          className="px-6 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 border border-stone-300 transition-colors cursor-pointer shadow-2xs"
+                          style={{ borderRadius: '6px' }}
+                        >
                           Cancel
                         </button>
-                        <button type="submit" disabled={isSubmittingReview || !newReview.comment.trim() || !newReview.name.trim()} className="px-8 py-2 text-sm font-semibold text-white rounded-lg transition-all disabled:opacity-50 cursor-pointer" style={{ background: '#b84814' }}>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingReview || !newReview.comment.trim() || !newReview.name.trim()}
+                          className="px-8 py-2 text-sm font-semibold text-white transition-all disabled:opacity-50 cursor-pointer shadow-2xs hover:opacity-95 active:scale-[0.98]"
+                          style={{ background: '#b84814', borderRadius: '6px' }}
+                        >
                           {isSubmittingReview ? 'Posting Review...' : 'Submit Review'}
                         </button>
                       </div>
@@ -1781,15 +1802,16 @@ export default function PackageDetailView({
                     {user ? (
                       <button
                         onClick={() => setShowWriteReviewModal(true)}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-white px-5 py-2.5 rounded-lg cursor-pointer transition-all hover:opacity-90"
-                        style={{ background: '#b84814' }}
+                        className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-white px-5 py-2.5 cursor-pointer transition-all hover:opacity-95 shadow-2xs active:scale-[0.98]"
+                        style={{ background: '#b84814', borderRadius: '6px' }}
                       >
                         <Plus className="h-4 w-4" /> Write a Review
                       </button>
                     ) : (
                       <button
                         onClick={handleRequireLogin}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 px-5 py-2.5 rounded-lg cursor-pointer transition-all"
+                        className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200/80 px-5 py-2.5 cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
+                        style={{ borderRadius: '6px' }}
                       >
                         <User className="h-4 w-4" /> Please login to review
                       </button>
@@ -1897,8 +1919,9 @@ export default function PackageDetailView({
                 window.location.href = `/?action=chat&agencyId=${listing.agencyId || listing.userId}&agencyName=${encodeURIComponent(activeAgencyName)}`;
               }
             }}
-            className="btn-wavy-chat w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 text-sm border border-amber-300/40 cursor-pointer rounded-xl"
+            className="btn-wavy-chat w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 text-sm border border-amber-300/40 cursor-pointer shadow-md"
             style={{
+              borderRadius: '6px',
               fontFamily: "'DM Sans', sans-serif"
             }}
           >
@@ -2088,7 +2111,8 @@ export default function PackageDetailView({
                     value={newReview.name}
                     onChange={e => setNewReview(prev => ({ ...prev, name: e.target.value }))}
                     placeholder={user?.displayName || 'Your Name'}
-                    className="w-full text-xs px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    className="w-full text-xs px-3 py-2 border border-stone-200 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    style={{ borderRadius: '6px' }}
                   />
                 </div>
                 <div>
@@ -2096,7 +2120,8 @@ export default function PackageDetailView({
                   <select
                     value={newReview.tripType}
                     onChange={e => setNewReview(prev => ({ ...prev, tripType: e.target.value }))}
-                    className="w-full text-xs px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
+                    className="w-full text-xs px-3 py-2 border border-stone-200 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
+                    style={{ borderRadius: '6px' }}
                   >
                     <option value="Family">Family</option>
                     <option value="Couple">Couple</option>
@@ -2116,7 +2141,8 @@ export default function PackageDetailView({
                   value={newReview.comment}
                   onChange={e => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
                   placeholder="Share details about the tour, hotels, driver, food, and overall itinerary experience..."
-                  className="w-full text-xs p-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none leading-relaxed"
+                  className="w-full text-xs p-3 border border-stone-200 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none leading-relaxed"
+                  style={{ borderRadius: '6px' }}
                 />
               </div>
 
@@ -2125,14 +2151,16 @@ export default function PackageDetailView({
                 <button
                   type="button"
                   onClick={() => setShowWriteReviewModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 border border-stone-200 transition-colors cursor-pointer shadow-2xs"
+                  style={{ borderRadius: '6px' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingReview || !newReview.comment.trim()}
-                  className="px-5 py-2 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-50 shadow-2xs hover:opacity-95 active:scale-[0.98]"
+                  style={{ background: '#b84814', borderRadius: '6px' }}
                 >
                   {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                 </button>

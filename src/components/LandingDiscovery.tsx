@@ -228,7 +228,7 @@ export default function LandingDiscovery({
           Auto-created whenever agency posts a listing (Assam, Europe, Kashmir, Goa, etc.)
           ========================================== */}
       {packageTypeTab !== 'all' && destinationSections.length > 0 && (
-        <div className="space-y-4 border-b border-slate-200/80 pb-8 mb-6">
+        <div className="space-y-4 pb-8 mb-6">
           <div className="px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto pt-2 flex items-center justify-between">
             <div>
               {/* <span className="text-xs font-extrabold text-orange-600 uppercase tracking-wider">
@@ -246,7 +246,7 @@ export default function LandingDiscovery({
             <section
               key={sec.id}
               id={`section-${sec.id}`}
-              className="py-8 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100 scroll-mt-28"
+              className="py-8 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto scroll-mt-28"
             >
               {/* Section Header: Unique Font for State / Country Name */}
               <div className="flex items-center justify-between mb-6">
@@ -257,11 +257,6 @@ export default function LandingDiscovery({
                   >
                     {sec.name}
                   </h2>
-                  {/* <span className="bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 text-[11px] font-extrabold px-3 py-1 rounded-full border border-orange-200/80 shadow-2xs flex items-center gap-1">
-                    <span>{sec.packageType === 'international' ? '✈️ Country' : '🇮🇳 State'}</span>
-                    <span>•</span>
-                    <span>{sec.packageCount} {sec.packageCount === 1 ? 'Package' : 'Packages'}</span>
-                  </span> */}
                 </div>
 
                 <button
@@ -315,6 +310,11 @@ export default function LandingDiscovery({
                   ))}
                 </div>
               </div>
+
+              {/* Gradient Divider: Fades on edges, darker in center */}
+              <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-10">
+                <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+              </div>
             </section>
           ))}
         </div>
@@ -367,7 +367,7 @@ export default function LandingDiscovery({
               null;
 
             return (
-              <section className="pt-1 sm:pt-2 pb-10 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
+              <section className="pt-1 sm:pt-2 pb-10 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
                 {/* Section Header */}
                 <div className="text-center max-w-3xl mx-auto mb-6">
                   <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-2">
@@ -643,7 +643,7 @@ export default function LandingDiscovery({
                                 )}
                                 <span className="text-[11px] font-bold text-white group-hover:text-orange-400 flex items-center gap-1 transition-colors">
                                   <span>View</span>
-                                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                                 </span>
                               </div>
                             </div>
@@ -693,6 +693,11 @@ export default function LandingDiscovery({
                     </div>
                   </div>
                 )}
+
+                {/* Gradient Divider */}
+                <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12 sm:pt-14">
+                  <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+                </div>
               </section>
             );
           })()}
@@ -731,7 +736,7 @@ export default function LandingDiscovery({
             }}
           />
 
-          <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
+          <section className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
             {/* Centered Header with Title */}
             <div className="flex items-center justify-center mb-8">
               <div className="text-center max-w-2xl mx-auto px-4">
@@ -753,10 +758,6 @@ export default function LandingDiscovery({
                 const placesList: string[] = Array.isArray(story.places)
                   ? story.places.map((p: any) => p?.name || p).filter(Boolean)
                   : (Array.isArray(story.discoveredPlaces) ? story.discoveredPlaces.filter(Boolean) : []);
-
-                const cleanNarrative = story.narrative
-                  ? story.narrative.split('\n\n')[0].replace(/^Paragraph \d+:\s*/gi, '').trim()
-                  : '';
 
                 return (
                   <div
@@ -806,6 +807,11 @@ export default function LandingDiscovery({
                 );
               })}
             </div>
+
+            {/* Gradient Divider */}
+            <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
+              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+            </div>
           </section>
       </>
     )}
@@ -831,7 +837,7 @@ export default function LandingDiscovery({
         };
 
         return (
-          <section className="pt-16 pb-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100 scroll-mt-32">
+          <section className="pt-16 pb-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto scroll-mt-32">
             {/* Section Header Centered in the Middle */}
             <div className="flex items-center justify-center mb-8">
               <div className="text-center max-w-2xl mx-auto px-4">
@@ -936,6 +942,11 @@ export default function LandingDiscovery({
                 })}
               </div>
             </div>
+
+            {/* Gradient Divider */}
+            <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
+              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+            </div>
           </section>
         );
       })()}
@@ -944,7 +955,7 @@ export default function LandingDiscovery({
           SECTION 5 — Marketplace Product Rails (Weekend Getaways, Group Escapes, etc.)
           ========================================== */}
       {intentRails.map((rail) => (
-        <section key={rail.id} className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-b border-slate-100">
+        <section key={rail.id} className="py-12 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
           <div className="mb-6">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
               {rail.title}
@@ -969,18 +980,27 @@ export default function LandingDiscovery({
               </div>
             ))}
           </div>
+
+          {/* Gradient Divider */}
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          </div>
         </section>
       ))}
 
       {/* ==========================================
           SECTION 6 — Interactive TripDM AI & Direct Agent Chat Simulation
           ========================================== */}
-      <div className="border-b border-slate-100">
+      <div>
         <LandingPhoneChatSection
           onChat={onChat}
           onView={onView}
           listings={listings}
         />
+        {/* Gradient Divider */}
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-2">
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+        </div>
       </div>
 
       {/* ==========================================
@@ -1012,13 +1032,18 @@ export default function LandingDiscovery({
               </div>
             ))}
           </div>
+
+          {/* Gradient Divider */}
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          </div>
         </section>
       )}
 
       {/* ==========================================
           SECTION 7 — How TripDM Works & Why Book Direct (Clean Travel Marketplace Style)
           ========================================== */}
-      <section className="py-16 sm:py-20 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto border-t border-slate-100">
+      <section className="py-16 sm:py-20 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-2.5">
@@ -1075,6 +1100,11 @@ export default function LandingDiscovery({
               Pay genuine ground operator rates with zero middleman fees. Receive instant booking confirmation and dedicated on-trip support.
             </p>
           </div>
+        </div>
+
+        {/* Gradient Divider */}
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
         </div>
       </section>
         </>

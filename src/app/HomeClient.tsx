@@ -1189,15 +1189,15 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
   // Load Profile States from userData & user
   useEffect(() => {
-    if (user && userData && userData.role === 'user') {
-      setProfileName(userData.name || '');
+    if (user && userData) {
+      setProfileName(userData.name || userData.companyName || user.displayName || (user.email ? user.email.split('@')[0] : '') || '');
       setProfilePhone(userData.phone || userData.contactNumber || '');
       setProfileEmail(user.email || '');
       setProfilePhotoUrl(userData.avatarUrl || user.photoURL || '');
       setProfileImageError(false);
       setCoTravellers(userData.coTravellers || []);
     }
-  }, [user?.uid, userData?.role, userData?.name, userData?.phone, userData?.contactNumber, userData?.avatarUrl, userData?.coTravellers]);
+  }, [user?.uid, userData?.role, userData?.name, userData?.companyName, userData?.phone, userData?.contactNumber, userData?.avatarUrl, userData?.coTravellers]);
 
   // Fetch user's pincode automatically with robust API waterfall & IP fallback
   useEffect(() => {
@@ -1862,24 +1862,35 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     }
   };
 
-  // Fetch user's wishlist from Firestore with real-time listener
+  // Hydrate wishlist from localStorage on initial mount
   useEffect(() => {
-    if (user && userData?.role === 'user') {
+    try {
+      const saved = localStorage.getItem('tripdm_wishlist');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWishlist(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not hydrate wishlist from localStorage:', e);
+    }
+  }, []);
+
+  // Fetch user's wishlist from Firestore with real-time listener for all logged-in users
+  useEffect(() => {
+    if (user?.uid) {
       const dbInstance = getDbInstance();
       if (!dbInstance) return;
 
       // Set up real-time listener for wishlist changes
       const unsubscribe = onSnapshot(doc(dbInstance, 'users', user.uid), (docSnapshot) => {
         if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          console.log('🔍 User document data:', userData);
-          console.log('🔍 Wishlist field value:', userData.wishlist);
-          console.log('🔍 Wishlist field type:', typeof userData.wishlist);
-          console.log('🔍 Is wishlist array?', Array.isArray(userData.wishlist));
+          const uData = docSnapshot.data();
 
           // Safely handle wishlist field - initialize as empty array if it doesn't exist
-          let wishlistData = userData.wishlist && Array.isArray(userData.wishlist)
-            ? userData.wishlist
+          let wishlistData = uData.wishlist && Array.isArray(uData.wishlist)
+            ? uData.wishlist
             : [];
 
           // Check for pending wishlist item saved before login
@@ -1894,31 +1905,28 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
             }
           }
 
-          console.log('🎯 Final wishlist data to set:', wishlistData);
           setWishlist(wishlistData);
+          try {
+            localStorage.setItem('tripdm_wishlist', JSON.stringify(wishlistData));
+          } catch (e) {
+            // ignore
+          }
 
           // If wishlist field doesn't exist in Firestore, initialize it
-          if (!userData.wishlist && !pendingWishlist) {
-            console.log('📝 Initializing wishlist field in Firestore');
+          if (!uData.wishlist && !pendingWishlist) {
             updateDoc(doc(dbInstance, 'users', user.uid), {
               wishlist: []
-            }).then(() => {
-              console.log('✅ Wishlist field initialized successfully');
-              // Update the local state immediately after initializing
-              setWishlist([]);
             }).catch((error) => {
               console.error('❌ Error initializing wishlist field:', error);
             });
           }
-        } else {
-          console.log('❌ User document does not exist');
         }
       });
 
       // Cleanup function to unsubscribe from the listener
       return () => unsubscribe();
     }
-  }, [user?.uid, userData?.role]);
+  }, [user?.uid]);
 
   // Function to update wishlist in Firestore
   const updateWishlistInFirestore = async (newWishlist: string[]) => {
@@ -1926,17 +1934,15 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     const dbInstance = getDbInstance();
     if (!dbInstance) return;
     try {
-      console.log('🔄 Updating wishlist in Firestore:', newWishlist);
       await updateDoc(doc(dbInstance, 'users', user.uid), {
         wishlist: newWishlist
       });
-      console.log('✅ Wishlist successfully updated in Firestore');
     } catch (error) {
-      console.error('❌ Error updating wishlist:', error);
+      console.error('❌ Error updating wishlist in Firestore:', error);
     }
   };
 
-  // Handle wishlist toggle with persistence
+  // Handle wishlist toggle with persistence (Firestore + localStorage)
   const handleWishlistToggle = (listingId: string) => {
     if (!user) {
       sessionStorage.setItem('pending_wishlist_target', listingId);
@@ -1948,6 +1954,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       const newWishlist = prev.includes(listingId)
         ? prev.filter(id => id !== listingId)
         : [...prev, listingId];
+
+      try {
+        localStorage.setItem('tripdm_wishlist', JSON.stringify(newWishlist));
+      } catch (e) {
+        // ignore
+      }
 
       // Persist to Firestore
       updateWishlistInFirestore(newWishlist);
@@ -4599,7 +4611,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       setMobileMenuOpen(false);
                     }}
                     suggestions={allDestinations}
-                    inputClassName="w-full pl-9 pr-3 py-2 rounded-xl text-slate-900 bg-slate-100/90 focus:bg-white focus:ring-2 focus:ring-orange-500/40 focus:outline-none border border-slate-200 text-xs h-9 shadow-none font-medium"
+                    inputClassName="w-full pl-9 pr-3 py-2 rounded-md text-slate-900 bg-slate-100/90 focus:bg-white focus:ring-2 focus:ring-orange-500/40 focus:outline-none border border-slate-200 text-xs h-9 shadow-none font-medium"
+                    inputStyle={{ borderRadius: '6px' }}
                     iconClassName="left-3 top-2.5 text-slate-400"
                   />
                 </div>
@@ -4838,7 +4851,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     setSearchTerm(val);
                   }}
                   suggestions={allDestinations}
-                  inputClassName="w-full pl-10 pr-4 py-2 rounded-full text-slate-900 bg-slate-50/90 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200/90 text-sm h-10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-slate-300 transition-all font-medium"
+                  inputClassName="w-full pl-10 pr-4 py-2 rounded-md text-slate-900 bg-slate-50/90 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200/90 text-sm h-10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-slate-300 transition-all font-medium"
+                  inputStyle={{ borderRadius: '6px' }}
                   iconClassName="left-3.5 top-3 text-slate-400"
                 />
               </div>
@@ -4939,7 +4953,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           <User className="h-4 w-4" />
                         </div>
                       )}
-                      <span>Hi, {userData?.name ? userData.name.split(' ')[0] : 'User'}</span>
+                      <span>
+                        Hi,{' '}
+                        {userData?.name?.trim()?.split(' ')[0] ||
+                          userData?.companyName?.trim()?.split(' ')[0] ||
+                          profileName?.trim()?.split(' ')[0] ||
+                          user?.displayName?.trim()?.split(' ')[0] ||
+                          (user?.email
+                            ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1)
+                            : 'User')}
+                      </span>
                     </div>
                     
                     <span
@@ -5087,7 +5110,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         <img src={userData.avatarUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover" />
                       ) : (
                         <div className="w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                          {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                          {(userData?.name || userData?.companyName || profileName || user?.displayName || user?.email || 'U').charAt(0).toUpperCase()}
                         </div>
                       )}
                     </button>
@@ -5121,7 +5144,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   setShowComparison(false);
                 }}
                 suggestions={allDestinations}
-                inputClassName="w-full pl-10 pr-4 py-2 rounded-full text-slate-900 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200 text-sm h-10 shadow-sm font-medium"
+                inputClassName="w-full pl-10 pr-4 py-2 rounded-md text-slate-900 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200 text-sm h-10 shadow-sm font-medium"
+                inputStyle={{ borderRadius: '6px' }}
                 iconClassName="left-3.5 top-3 text-slate-400"
               />
             </div>
@@ -6770,6 +6794,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     setViewingListing(listing);
                     setUserActiveSection('listings');
                   }}
+                  onBook={startBooking}
+                  onChat={handleInitiateChat}
                   onExplore={() => setUserActiveSection('listings')}
                   onBack={() => {
                     const returnUrl = sessionStorage.getItem('tripdm_return_url');

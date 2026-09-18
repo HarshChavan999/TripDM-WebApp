@@ -16,6 +16,7 @@ interface AutocompleteSearchProps {
   icon?: React.ReactNode;
   typewriterPrefix?: string;
   typewriter?: string[];
+  inputStyle?: React.CSSProperties;
 }
 
 // Levenshtein distance for typo tolerance
@@ -49,7 +50,8 @@ export default function AutocompleteSearch({
   containerClassName = "relative w-full",
   icon = <Search className={`absolute left-3 top-3 h-4 w-4 text-gray-400 ${iconClassName}`} />,
   typewriterPrefix = "",
-  typewriter = []
+  typewriter = [],
+  inputStyle
 }: AutocompleteSearchProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -190,6 +192,7 @@ export default function AutocompleteSearch({
           }}
           onKeyDown={handleKeyDown}
           className={inputClassName}
+          style={inputStyle || { borderRadius: '6px' }}
         />
         {icon}
         {hasTypewriter && isFocused && !value && (

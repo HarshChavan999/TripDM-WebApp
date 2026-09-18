@@ -1,61 +1,56 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import ListingCard from '@/components/ListingCard';
 import { 
   Heart, 
-  MapPin, 
-  Users, 
-  Mail, 
   Search, 
   ChevronDown, 
   ChevronLeft,
-  LayoutGrid, 
-  List, 
-  MoreVertical, 
-  Calendar, 
-  Plus,
-  Send,
-  Trash2
+  ArrowRight
 } from 'lucide-react';
-import { optimizeImageUrl } from '@/lib/imageOptimization';
 
 interface WishlistViewProps {
   wishlist: string[];
   listings: any[];
-  onWishlistToggle: (id: string, e: React.MouseEvent) => void;
+  onWishlistToggle: (id: string, e?: React.MouseEvent) => void;
   onView: (listing: any) => void;
+  onBook?: (listing: any) => void;
+  onChat?: (listing: any) => void;
   onExplore?: () => void;
   onBack?: () => void;
 }
 
-const fallbackImages = [
-  'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=400&q=80',
-];
-
-export default function WishlistView({ wishlist = [], listings = [], onWishlistToggle, onView, onExplore, onBack }: WishlistViewProps) {
+export default function WishlistView({ 
+  wishlist = [], 
+  listings = [], 
+  onWishlistToggle, 
+  onView, 
+  onBook,
+  onChat,
+  onExplore, 
+  onBack 
+}: WishlistViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('recent');
 
   const wishlistedItems = (listings || []).filter(listing => (wishlist || []).includes(listing?.id));
-  const topListings = [...(listings || [])].sort((a, b) => {
-    const aIsAmbaji = a?.title?.toLowerCase().includes('ambaji');
-    const bIsAmbaji = b?.title?.toLowerCase().includes('ambaji');
-    if (aIsAmbaji && !bIsAmbaji) return -1;
-    if (!aIsAmbaji && bIsAmbaji) return 1;
 
-    const aIsEscape = a?.agencyName?.toLowerCase().includes('escape');
-    const bIsEscape = b?.agencyName?.toLowerCase().includes('escape');
-    if (aIsEscape && !bIsEscape) return -1;
-    if (!aIsEscape && bIsEscape) return 1;
-    return 0;
-  }).slice(0, 4);
-  
+  const getNumericPrice = (item: any) => {
+    const raw = item.cost || item.price || item.startingPrice || 0;
+    const num = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+    return isNaN(num) ? 0 : num;
+  };
+
+  const getNumericDuration = (item: any) => {
+    const raw = item.duration || (item.itinerary ? item.itinerary.length : 0);
+    const num = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+    return isNaN(num) ? 0 : num;
+  };
+
   const filteredItems = wishlistedItems.filter(item => {
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
     return (
       (item?.title || '').toLowerCase().includes(query) || 
       (item?.countryName || '').toLowerCase().includes(query) ||
@@ -64,141 +59,166 @@ export default function WishlistView({ wishlist = [], listings = [], onWishlistT
       (item?.agencyName || '').toLowerCase().includes(query)
     );
   }).sort((a, b) => {
+    if (sortBy === 'price_asc') return getNumericPrice(a) - getNumericPrice(b);
+    if (sortBy === 'price_desc') return getNumericPrice(b) - getNumericPrice(a);
+    if (sortBy === 'duration_asc') return getNumericDuration(a) - getNumericDuration(b);
+    if (sortBy === 'duration_desc') return getNumericDuration(b) - getNumericDuration(a);
     if (sortBy === 'name_asc') return (a.title || '').localeCompare(b.title || '');
     if (sortBy === 'name_desc') return (b.title || '').localeCompare(a.title || '');
-    return 0;
+    // Default 'recent': retain wishlist order (last added first)
+    const idxA = (wishlist || []).indexOf(a?.id);
+    const idxB = (wishlist || []).indexOf(b?.id);
+    return idxB - idxA;
   });
 
   return (
-    <div className="w-full bg-[#fcfdfd] min-h-screen py-8 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <div className="w-full bg-[#fcfdfd] min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header */}
-        <div className="flex flex-col gap-2 mb-2">
-          {onBack && (
-            <div>
-              <Button 
-                variant="ghost" 
-                onClick={onBack}
-                className="mb-2 -ml-2 text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-100 rounded-lg px-3 py-2 group transition-all"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform" /> Back
-              </Button>
-            </div>
-          )}
-        </div>
+        {/* Top Navigation */}
+        {onBack && (
+          <div>
+            <Button 
+              variant="ghost" 
+              onClick={onBack}
+              className="text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-100 px-3.5 py-1.5 group transition-all cursor-pointer inline-flex items-center gap-1.5 border border-slate-200/80 bg-white shadow-2xs hover:shadow-xs"
+              style={{ borderRadius: '6px' }}
+            >
+              <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" /> 
+              <span>Back</span>
+            </Button>
+          </div>
+        )}
 
-        {/* MY WISHLISTS LISTING SECTION */}
-        <div>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        {/* Header & Controls Strip (Rendered when wishlist has items) */}
+        {wishlistedItems.length > 0 && (
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-100">
             <div>
-              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Wishlists</h1>
-              <p className="text-sm text-gray-500 mt-1 font-medium">Save and manage your favorite travel destinations.</p>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Wishlist
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-xs font-bold">
+                  {wishlistedItems.length} {wishlistedItems.length === 1 ? 'Package' : 'Packages'}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+                Save, organize, and compare your favorite travel itineraries in one place.
+              </p>
             </div>
+
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
               <div className="relative flex-1 sm:flex-none">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Input 
-                  placeholder="Search Wishlists" 
-                  className="pl-9 pr-4 py-2 w-full sm:w-56 md:w-64 rounded-xl border-gray-200 bg-white shadow-sm text-sm"
+                  placeholder="Search saved packages..." 
+                  className="pl-9 pr-4 py-2 w-full sm:w-60 md:w-64 border-slate-200 bg-white shadow-2xs text-xs font-medium focus-visible:ring-orange-500"
+                  style={{ borderRadius: '6px' }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="relative inline-block">
+
+              <div className="relative inline-block shrink-0">
                 <select 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
-                  <option value="recent">Recently Updated</option>
+                  <option value="recent">Recently Added</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="duration_asc">Duration: Short to Long</option>
+                  <option value="duration_desc">Duration: Long to Short</option>
                   <option value="name_asc">Name (A-Z)</option>
                   <option value="name_desc">Name (Z-A)</option>
                 </select>
-                <Button variant="outline" className="border-gray-200 rounded-xl bg-white text-gray-600 shadow-sm text-sm font-semibold hover:bg-gray-50 pointer-events-none">
-                  Sort by: {sortBy === 'recent' ? 'Recently Updated' : sortBy === 'name_asc' ? 'Name (A-Z)' : 'Name (Z-A)'}
-                  <ChevronDown className="ml-2 h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  className="border-slate-200 bg-white text-slate-700 shadow-2xs text-xs font-bold hover:bg-slate-50 flex items-center gap-1.5 px-4 py-2"
+                  style={{ borderRadius: '6px' }}
+                >
+                  <span>Sort by:</span>
+                  <span className="text-orange-600">
+                    {sortBy === 'recent' ? 'Recently Added' :
+                     sortBy === 'price_asc' ? 'Price (Low to High)' :
+                     sortBy === 'price_desc' ? 'Price (High to Low)' :
+                     sortBy === 'duration_asc' ? 'Duration (Short)' :
+                     sortBy === 'duration_desc' ? 'Duration (Long)' :
+                     sortBy === 'name_asc' ? 'Name (A-Z)' : 'Name (Z-A)'}
+                  </span>
+                  <ChevronDown className="ml-1 h-3.5 w-3.5 text-slate-400" />
                 </Button>
               </div>
-              <div className="flex bg-orange-50 p-1 rounded-xl">
-                <button className="p-1.5 bg-white text-orange-500 rounded-lg shadow-sm"><LayoutGrid className="w-4 h-4" /></button>
-                <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"><List className="w-4 h-4" /></button>
-              </div>
             </div>
           </div>
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredItems.map((item, index) => {
-              // Extract main image safely (prioritize Day 1 itinerary image)
-              let mainImage = '';
-              if (item.itinerary && item.itinerary.length > 0) {
-                for (const day of item.itinerary) {
-                  if (day.imageUrls && day.imageUrls.length > 0 && day.imageUrls[0]) {
-                    mainImage = day.imageUrls[0];
-                    break;
-                  } else if (day.imageUrl) {
-                    mainImage = day.imageUrl;
-                    break;
-                  }
-                }
-              }
-              if (!mainImage) {
-                mainImage = (item.placesCovered && item.placesCovered.length > 0 && item.placesCovered[0].imageUrls && item.placesCovered[0].imageUrls.length > 0) 
-                            ? item.placesCovered[0].imageUrls[0] : (item.photos && item.photos.length > 0 ? item.photos[0] : '');
-              }
-              
-              const optimizedImage = mainImage ? optimizeImageUrl(mainImage, { quality: 80, format: 'auto' }) : fallbackImages[index % fallbackImages.length];
-              
-              // Real stats for the listing
-              const placesCount = item.placesCovered?.length || 0;
-              const duration = item.duration || item.itinerary?.length || 0;
-
-              return (
-                <div key={item.id} className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.06)] border border-gray-100 overflow-hidden flex flex-col group cursor-pointer hover:shadow-lg transition-all" onClick={() => onView(item)}>
-                  {/* Image Header */}
-                  <div className="relative h-44 overflow-hidden">
-                    <img src={optimizedImage} alt={item.title || 'Destination'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <button className="absolute top-3 right-3 text-white hover:text-red-500 p-1.5 bg-black/40 hover:bg-black/60 rounded-md transition-colors z-10" onClick={(e) => { e.stopPropagation(); onWishlistToggle(item.id, e); }} title="Remove from Wishlist">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    {/* Floating Heart Button */}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onWishlistToggle(item.id, e); }}
-                      className="absolute -bottom-4 right-4 bg-white p-2.5 rounded-full shadow-md text-red-500 hover:scale-110 transition-transform z-10"
-                    >
-                      <Heart className="w-4 h-4 fill-current" />
-                    </button>
-                  </div>
-                  
-                  {/* Card Body */}
-                  <div className="p-4 pt-6 flex-1 flex flex-col">
-                    <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">{item.title}</h3>
-                    <p className="text-[11px] text-gray-500 font-medium mb-4">
-                      {placesCount} Place{placesCount !== 1 ? 's' : ''} {duration > 0 ? `• ${duration} Days` : ''}
-                    </p>
-                    
-                    {/* Card Footer */}
-                    <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center text-gray-400 text-[10px] font-medium line-clamp-1">
-                        <MapPin className="w-3.5 h-3.5 mr-1.5" />
-                        {item.agencyName || 'Agency'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Create New Wishlist Dashed Card */}
-            <div onClick={onExplore} className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-8 text-center min-h-[300px] hover:bg-gray-50 cursor-pointer transition-colors group">
-              <div className="w-12 h-12 rounded-full bg-[#FF6B00] flex items-center justify-center text-white mb-4 shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                <Plus className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">Create New Wishlist</h3>
-              <p className="text-xs text-gray-500 font-medium">Start adding your dream destinations now!</p>
+        {/* Content Section */}
+        {wishlistedItems.length === 0 ? (
+          /* Clean & Open Empty Wishlist State */
+          <div className="py-16 sm:py-24 px-4 flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
+            
+            {/* Soft Heart Icon */}
+            <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mb-5 shadow-xs">
+              <Heart className="w-8 h-8 text-rose-500 fill-rose-500/20" />
             </div>
+
+            {/* Title & Inspirational Subtitle */}
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-3">
+              Your Dream Adventures Start Here
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 font-normal max-w-lg leading-relaxed mb-8">
+              The world is full of unforgettable journeys waiting to be explored. Save your favorite packages as you browse to organize itineraries, compare options, and keep your dream getaways ready.
+            </p>
+
+            {/* CTA Button */}
+            {onExplore && (
+              <Button
+                onClick={onExplore}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs sm:text-sm px-8 py-3 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-2 border border-amber-400/50"
+                style={{ borderRadius: '6px' }}
+              >
+                <span>Explore Packages</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
           </div>
-        </div>
+        ) : filteredItems.length === 0 ? (
+          /* Search Results Empty State */
+          <div className="py-16 text-center bg-white rounded-2xl border border-slate-200/80 p-8 max-w-md mx-auto">
+            <Search className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-slate-800 mb-1">No saved packages match &quot;{searchQuery}&quot;</h3>
+            <p className="text-xs text-slate-500 mb-4">Try checking for typos or searching by destination name.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold shadow-2xs"
+              style={{ borderRadius: '6px' }}
+            >
+              Clear Search
+            </Button>
+          </div>
+        ) : (
+          /* 3-Column Responsive Listing Cards Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full justify-items-center sm:justify-items-stretch">
+            {filteredItems.map((pkg) => (
+              <div key={pkg.id} className="w-full flex flex-col h-full self-stretch">
+                <ListingCard
+                  listing={pkg}
+                  onView={onView}
+                  onBook={onBook}
+                  onChat={onChat}
+                  onWishlist={(id) => onWishlistToggle(id)}
+                  isWishlisted={true}
+                  variant="user"
+                  showCompare={true}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
       </div>
     </div>

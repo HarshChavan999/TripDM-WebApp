@@ -262,7 +262,8 @@ export default function PackageComparison({ onBack, onChat, onView, onBrowsePack
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button
               onClick={onBack}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-lg shadow-sm text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-2.5 shadow-sm text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer border border-amber-400/50"
+              style={{ borderRadius: '6px' }}
             >
               <ChevronLeft className="w-4 h-4" /> Back to Packages
             </Button>
@@ -310,7 +311,8 @@ export default function PackageComparison({ onBack, onChat, onView, onBrowsePack
           <Button 
             variant="ghost" 
             onClick={onBack}
-            className="mb-1 -ml-2 text-slate-500 hover:text-slate-900 font-bold hover:bg-slate-100 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm cursor-pointer"
+            className="mb-1 -ml-2 text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-100 px-3 py-1.5 text-xs sm:text-sm cursor-pointer inline-flex items-center gap-1 border border-slate-200/80 bg-white shadow-2xs hover:shadow-xs"
+            style={{ borderRadius: '6px' }}
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> Back
           </Button>
@@ -321,7 +323,8 @@ export default function PackageComparison({ onBack, onChat, onView, onBrowsePack
           <Button 
             variant="outline" 
             size="sm"
-            className="rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50 font-bold shadow-xs text-xs cursor-pointer px-3.5 py-2"
+            className="border-slate-200/90 text-slate-700 hover:bg-slate-50 font-bold shadow-2xs text-xs cursor-pointer px-3.5 py-2"
+            style={{ borderRadius: '6px' }}
             onClick={handleShare}
           >
             <Share2 className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
@@ -331,7 +334,8 @@ export default function PackageComparison({ onBack, onChat, onView, onBrowsePack
             onClick={clearComparison} 
             size="sm" 
             variant="outline" 
-            className="rounded-lg border-slate-200 text-slate-700 hover:bg-rose-50 hover:text-rose-600 font-bold shadow-xs text-xs cursor-pointer px-3.5 py-2"
+            className="border-slate-200/90 text-slate-700 hover:bg-rose-50 hover:text-rose-600 font-bold shadow-2xs text-xs cursor-pointer px-3.5 py-2"
+            style={{ borderRadius: '6px' }}
           >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
             Clear All
@@ -565,7 +569,8 @@ export default function PackageComparison({ onBack, onChat, onView, onBrowsePack
               <div key={pkg.id} className="px-6 py-4 border-r border-slate-200 flex items-center justify-center last:border-r-0">
                 <Button 
                   onClick={() => handleAction(pkg)}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-lg shadow-sm text-xs sm:text-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-2.5 shadow-sm text-xs sm:text-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 border border-amber-400/50"
+                  style={{ borderRadius: '6px' }}
                 >
                   <span>View Details</span>
                   <ExternalLink className="w-3.5 h-3.5" />
