@@ -300,11 +300,14 @@ export default function ListingCard({
   };
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-[18px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group flex flex-col h-full w-full max-w-[420px] mx-auto border border-slate-100/90 min-w-0">
+    <div
+      className="bg-white/95 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group flex flex-col h-full w-full max-w-[420px] mx-auto border border-slate-100/90 min-w-0"
+      style={{ borderRadius: '6px' }}
+    >
       {/* Compare Toast */}
       {showCompareToast && (
         <div className="absolute top-4 right-4 z-30 animate-in fade-in duration-200 pointer-events-none">
-          <div className="bg-gray-900/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+          <div className="bg-gray-900/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 shadow-lg" style={{ borderRadius: '6px' }}>
             {compareToastMessage}
           </div>
         </div>
@@ -314,14 +317,14 @@ export default function ListingCard({
       <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
         {/* Status Badge */}
         {!listing.approved && (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 shadow-sm px-2 py-0.5">
+          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 shadow-sm px-2 py-0.5" style={{ borderRadius: '6px' }}>
             Pending
           </Badge>
         )}
 
         {/* Verification badge */}
         {listing.agencyData?.verified && listing.approved && (
-          <Badge variant="outline" className="bg-white/90 backdrop-blur-md text-emerald-700 border-white/40 text-[10px] px-2 py-1 shadow-sm flex items-center gap-1">
+          <Badge variant="outline" className="bg-white/90 backdrop-blur-md text-emerald-700 border-white/40 text-[10px] px-2 py-1 shadow-sm flex items-center gap-1" style={{ borderRadius: '6px' }}>
             <ShieldCheck className="h-3 w-3 text-emerald-600" />
             Verified
           </Badge>
@@ -331,11 +334,12 @@ export default function ListingCard({
         {variant === 'user' && showCompare && (
           <button
             onClick={handleCompareToggle}
-            className={`p-1.5 rounded-full backdrop-blur-md transition-all duration-200 border shadow-sm flex items-center justify-center cursor-pointer active:scale-90 ${
+            className={`p-1.5 backdrop-blur-md transition-all duration-200 border shadow-sm flex items-center justify-center cursor-pointer active:scale-90 ${
               isInComparison(listing.id)
                 ? 'bg-blue-600 text-white border-blue-500 shadow-blue-500/30 ring-2 ring-blue-300'
                 : 'bg-white/85 hover:bg-white text-slate-700 hover:text-blue-600 border-white/60 hover:shadow'
             }`}
+            style={{ borderRadius: '6px' }}
             title={isInComparison(listing.id) ? 'In Comparison (Click to remove)' : 'Add to Compare'}
             aria-label={isInComparison(listing.id) ? 'In Comparison' : 'Add to Compare'}
           >
@@ -350,11 +354,12 @@ export default function ListingCard({
               e.stopPropagation();
               onWishlist(listing.id);
             }}
-            className={`p-1.5 rounded-full backdrop-blur-md transition-all duration-200 border shadow-sm flex items-center justify-center cursor-pointer active:scale-90 ${
+            className={`p-1.5 backdrop-blur-md transition-all duration-200 border shadow-sm flex items-center justify-center cursor-pointer active:scale-90 ${
               isWishlisted
                 ? 'bg-rose-500 text-white border-rose-400 shadow-rose-500/30'
                 : 'bg-white/85 hover:bg-white text-slate-700 hover:text-rose-500 border-white/60 hover:shadow'
             }`}
+            style={{ borderRadius: '6px' }}
             title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
             aria-label={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
@@ -368,12 +373,18 @@ export default function ListingCard({
         {/* Pills overlay */}
         <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5 max-w-[calc(100%-85px)]">
           {/* Domestic/International badge */}
-          <span className="bg-[#DCEBF4]/90 backdrop-blur-md text-[#1a5f7a] px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-semibold shadow-sm border border-white/20 truncate max-w-[120px] sm:max-w-none">
+          <span
+            className="bg-[#DCEBF4]/90 backdrop-blur-md text-[#1a5f7a] px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-[11px] font-semibold shadow-sm border border-white/20 truncate max-w-[120px] sm:max-w-none"
+            style={{ borderRadius: '6px' }}
+          >
             {packageType}
           </span>
           {/* Tour Categories badge */}
           {listing.tourCategories && listing.tourCategories.length > 0 && (
-            <span className="bg-[#F8E7C0]/90 backdrop-blur-md text-[#8C6D1F] px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-semibold shadow-sm border border-white/20 truncate max-w-[130px] sm:max-w-none">
+            <span
+              className="bg-[#F8E7C0]/90 backdrop-blur-md text-[#8C6D1F] px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-[11px] font-semibold shadow-sm border border-white/20 truncate max-w-[130px] sm:max-w-none"
+              style={{ borderRadius: '6px' }}
+            >
               {listing.tourCategories[0]} Tour
             </span>
           )}
@@ -426,7 +437,8 @@ export default function ListingCard({
                   e.stopPropagation();
                   setCurrentImageIndex((prev) => Math.max(0, prev - 1));
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-sm hover:shadow transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 hover:scale-110 active:scale-95 focus:outline-none z-20 cursor-pointer"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-1.5 shadow-sm hover:shadow transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 hover:scale-110 active:scale-95 focus:outline-none z-20 cursor-pointer"
+                style={{ borderRadius: '6px' }}
                 aria-label="Previous image"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -439,7 +451,8 @@ export default function ListingCard({
                   e.stopPropagation();
                   setCurrentImageIndex((prev) => Math.min(allImages.length - 1, prev + 1));
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-sm hover:shadow transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 hover:scale-110 active:scale-95 focus:outline-none z-20 cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-1.5 shadow-sm hover:shadow transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 hover:scale-110 active:scale-95 focus:outline-none z-20 cursor-pointer"
+                style={{ borderRadius: '6px' }}
                 aria-label="Next image"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -447,7 +460,7 @@ export default function ListingCard({
             )}
 
             {/* Pagination Dots */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/30 backdrop-blur-[2px] px-2 py-1 rounded-full opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 transition-all duration-200 z-20">
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/30 backdrop-blur-[2px] px-2 py-1 opacity-100 sm:opacity-0 sm:group-hover/image:opacity-100 transition-all duration-200 z-20" style={{ borderRadius: '6px' }}>
               {allImages.map((_, idx) => (
                 <button
                   key={idx}
@@ -455,7 +468,7 @@ export default function ListingCard({
                     e.stopPropagation();
                     setCurrentImageIndex(idx);
                   }}
-                  className={`h-1.5 rounded-full transition-all duration-200 ${
+                  className={`h-1.5 rounded-[2px] transition-all duration-200 ${
                     idx === currentImageIndex 
                       ? 'w-4 bg-white' 
                       : 'w-1.5 bg-white/60 hover:bg-white/80'

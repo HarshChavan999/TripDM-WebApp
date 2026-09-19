@@ -261,11 +261,12 @@ export default function LandingDiscovery({
 
                 <button
                   onClick={() => setSearchTerm(sec.name)}
-                  className="flex items-center gap-2 text-xs font-extrabold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-4 py-2 rounded-full transition-all group border border-orange-200/60 shadow-2xs"
+                  className="flex items-center gap-2 text-xs font-extrabold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3.5 py-1.5 transition-all group border border-orange-200/60 shadow-2xs"
+                  style={{ borderRadius: '6px' }}
                 >
                   <span>View All</span>
-                  <div className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform shadow-xs">
-                    <ChevronRight className="w-3.5 h-3.5" />
+                  <div className="w-4 h-4 bg-orange-500 text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform shadow-xs" style={{ borderRadius: '3px' }}>
+                    <ChevronRight className="w-3 h-3" />
                   </div>
                 </button>
               </div>
@@ -276,14 +277,16 @@ export default function LandingDiscovery({
                   <>
                     <button
                       onClick={() => scrollRail(`rail-${sec.id}`, 'left')}
-                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95"
+                      className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-9 h-9 bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95"
+                      style={{ borderRadius: '6px' }}
                       aria-label="Scroll left"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => scrollRail(`rail-${sec.id}`, 'right')}
-                      className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95"
+                      className="absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-9 h-9 bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95"
+                      style={{ borderRadius: '6px' }}
                       aria-label="Scroll right"
                     >
                       <ChevronRight className="w-5 h-5" />
@@ -410,7 +413,8 @@ export default function LandingDiscovery({
                           {heroDest && (
                             <div
                               onClick={() => setSearchTerm(heroDest.name)}
-                              className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm min-h-[260px] flex flex-col justify-end p-5"
+                              className="group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm min-h-[260px] flex flex-col justify-end p-5"
+                              style={{ borderRadius: '6px' }}
                             >
                               {heroDest.coverImage ? (
                                 <img
@@ -454,7 +458,10 @@ export default function LandingDiscovery({
                                   ) : (
                                     <span className="text-xs text-slate-300 font-bold">Verified Packages</span>
                                   )}
-                                  <span className="text-xs font-black text-white bg-orange-500 px-3.5 py-1.5 rounded-full flex items-center gap-1 shadow-xs">
+                                  <span
+                                    className="text-xs font-black text-white bg-orange-500 px-3.5 py-1.5 flex items-center gap-1 shadow-xs"
+                                    style={{ borderRadius: '6px' }}
+                                  >
                                     <span>Explore</span>
                                     <ArrowRight className="w-3.5 h-3.5" />
                                   </span>
@@ -470,7 +477,8 @@ export default function LandingDiscovery({
                                 <div
                                   key={dest.name}
                                   onClick={() => setSearchTerm(dest.name)}
-                                  className="group cursor-pointer relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs h-36 flex flex-col justify-end p-3.5"
+                                  className="group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs h-36 flex flex-col justify-end p-3.5"
+                                  style={{ borderRadius: '6px' }}
                                 >
                                   {dest.coverImage ? (
                                     <img
@@ -540,7 +548,8 @@ export default function LandingDiscovery({
                         onClick={() => setSearchTerm(heroDest.name)}
                         className={`${
                           otherDests.length > 0 ? 'lg:col-span-5' : 'lg:col-span-12'
-                        } group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 min-h-[340px] sm:min-h-[400px] flex flex-col justify-between p-6 sm:p-8`}
+                        } group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 min-h-[340px] sm:min-h-[400px] flex flex-col justify-between p-6 sm:p-8`}
+                        style={{ borderRadius: '6px' }}
                       >
                         {heroDest.coverImage ? (
                           <img
@@ -589,7 +598,10 @@ export default function LandingDiscovery({
                             ) : (
                               <span className="text-xs text-slate-300 font-bold">Verified Packages</span>
                             )}
-                            <span className="text-xs font-black text-white bg-white/20 group-hover:bg-orange-500 px-4 py-2 rounded-full transition-all flex items-center gap-1.5 shadow-xs">
+                            <span
+                              className="text-xs font-black text-white bg-white/20 group-hover:bg-orange-500 px-4 py-2 transition-all flex items-center gap-1.5 shadow-xs"
+                              style={{ borderRadius: '6px' }}
+                            >
                               <span>Explore Packages</span>
                               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                             </span>
@@ -605,7 +617,8 @@ export default function LandingDiscovery({
                           <div
                             key={dest.name}
                             onClick={() => setSearchTerm(dest.name)}
-                            className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs hover:shadow-lg transition-all duration-300 h-44 sm:h-48 flex flex-col justify-between p-5"
+                            className="group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs hover:shadow-lg transition-all duration-300 h-44 sm:h-48 flex flex-col justify-between p-5"
+                            style={{ borderRadius: '6px' }}
                           >
                             {dest.coverImage ? (
                               <img
@@ -665,7 +678,8 @@ export default function LandingDiscovery({
                         <div
                           key={dest.name}
                           onClick={() => setSearchTerm(dest.name)}
-                          className="min-w-[220px] max-w-[240px] snap-start shrink-0 group cursor-pointer relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs hover:shadow-md transition-all duration-300 h-36 flex flex-col justify-end p-4"
+                          className="min-w-[220px] max-w-[240px] snap-start shrink-0 group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs hover:shadow-md transition-all duration-300 h-36 flex flex-col justify-end p-4"
+                          style={{ borderRadius: '6px' }}
                         >
                           {dest.coverImage ? (
                             <img
@@ -749,63 +763,96 @@ export default function LandingDiscovery({
               </div>
             </div>
 
-            {/* Horizontal Scroll Rail of TripDM White Editorial Magazine Cards */}
-            <div
-              id="rail-destination-stories"
-              className="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 pt-1 -mx-4 px-4 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12"
-            >
-              {displayStories.map((story: any, index: number) => {
-                const placesList: string[] = Array.isArray(story.places)
-                  ? story.places.map((p: any) => p?.name || p).filter(Boolean)
-                  : (Array.isArray(story.discoveredPlaces) ? story.discoveredPlaces.filter(Boolean) : []);
+            {/* Horizontal Scroll Rail of TripDM Modern Editorial Magazine Cards */}
+            <div className="relative group/rail">
+              {/* Floating Side Arrows for Desktop */}
+              <button
+                onClick={() => scrollRail('rail-destination-stories', 'left')}
+                className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => scrollRail('rail-destination-stories', 'right')}
+                className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
 
-                return (
-                  <div
-                    key={story.id || story.stateName || index}
-                    onClick={() => {
-                      handleSelectStory(story);
-                    }}
-                    className="w-[285px] sm:w-[320px] lg:w-[335px] shrink-0 h-[420px] sm:h-[440px] relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.11)] hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer flex flex-col select-none"
-                  >
-                    {/* Top Image Visual Banner (~75-80% of card) */}
-                    <div className="relative w-full h-[310px] sm:h-[330px] shrink-0 overflow-hidden bg-slate-100">
-                      {story.coverImage ? (
-                        <img
-                          src={story.coverImage}
-                          alt={story.title || story.stateName}
-                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
-                          <Compass className="w-12 h-12" />
+              <div
+                id="rail-destination-stories"
+                className="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 pt-1 -mx-4 px-4 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12"
+              >
+                {displayStories.map((story: any, index: number) => {
+                  const placesList: string[] = Array.isArray(story.places)
+                    ? story.places.map((p: any) => p?.name || p).filter(Boolean)
+                    : (Array.isArray(story.discoveredPlaces) ? story.discoveredPlaces.filter(Boolean) : []);
+
+                  const storyTeaser = story.narrative || story.description || (placesList.length > 0
+                    ? `Explore verified travel itineraries, scenic places, and local experiences across ${story.stateName}.`
+                    : 'Curated travel narrative and verified destination itinerary.');
+
+                  return (
+                    <div
+                      key={story.id || story.stateName || index}
+                      onClick={() => {
+                        handleSelectStory(story);
+                      }}
+                      className="w-[290px] sm:w-[320px] lg:w-[340px] shrink-0 h-[430px] sm:h-[445px] relative overflow-hidden bg-white border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.09)] hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer flex flex-col select-none"
+                      style={{ borderRadius: '6px' }}
+                    >
+                      {/* Top Balanced Image Section (~50% of card) */}
+                      <div className="relative w-full h-[200px] sm:h-[215px] shrink-0 overflow-hidden bg-slate-100">
+                        {story.coverImage ? (
+                          <img
+                            src={story.coverImage}
+                            alt={story.title || story.stateName}
+                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-106"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
+                            <Compass className="w-12 h-12" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Editorial Content Area */}
+                      <div className="p-4 sm:p-5 flex flex-col justify-between flex-1 bg-white">
+                        {/* Title & Excerpt */}
+                        <div>
+                          <h3 className="text-[15.5px] sm:text-[16.5px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">
+                            {story.title || `${story.stateName} Odyssey`}
+                          </h3>
+                          <p className="text-xs text-slate-500 font-normal line-clamp-2 leading-relaxed mt-2">
+                            {storyTeaser}
+                          </p>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Bottom White Information Section (~20-25% of card) */}
-                    <div className="p-4 sm:p-4.5 flex flex-col justify-between flex-1 bg-white">
-                      {/* Title */}
-                      <h3 className="text-[15px] sm:text-[16px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">
-                        {story.title || `${story.stateName} Odyssey`}
-                      </h3>
+                        {/* Bottom Bar: Locations & Read Story Button */}
+                        <div className="pt-3 border-t border-slate-100 mt-2 space-y-2.5">
+                          <div className="flex items-center text-[11.5px] text-slate-400 font-medium truncate">
+                            <MapPin className="w-3.5 h-3.5 mr-1 text-slate-400 shrink-0" />
+                            <span className="truncate">
+                              {placesList.length > 0 ? placesList.slice(0, 3).join(' • ') : story.stateName}
+                            </span>
+                          </div>
 
-                      {/* Bottom Quick Bar: Key Place & Read Story CTA */}
-                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 mt-2">
-                        <div className="flex items-center text-xs text-slate-500 font-medium truncate max-w-[160px] sm:max-w-[180px]">
-                          <span className="truncate">
-                            {placesList.length > 0 ? placesList.slice(0, 2).join(' • ') : story.stateName}
-                          </span>
+                          <div
+                            className="w-full py-2 px-3 text-xs font-bold text-slate-700 bg-slate-50 group-hover:bg-gradient-to-r group-hover:from-amber-500 group-hover:to-orange-500 group-hover:text-white group-hover:border-amber-400/50 border border-slate-200/90 transition-all duration-200 flex items-center justify-between shadow-2xs"
+                            style={{ borderRadius: '6px' }}
+                          >
+                            <span>Read Story</span>
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          </div>
                         </div>
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 group-hover:text-orange-700 transition-all shrink-0">
-                          <span>Read Story</span>
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             {/* Gradient Divider */}
@@ -885,7 +932,8 @@ export default function LandingDiscovery({
                           setSearchTerm(exp.name);
                           if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="w-[260px] sm:w-[290px] lg:w-[310px] h-[410px] sm:h-[450px] lg:h-[470px] group cursor-pointer relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-xs hover:shadow-2xl transition-all duration-500 flex flex-col justify-end p-5 sm:p-6 select-none"
+                        className="w-[260px] sm:w-[290px] lg:w-[310px] h-[410px] sm:h-[450px] lg:h-[470px] group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/80 shadow-xs hover:shadow-2xl transition-all duration-500 flex flex-col justify-end p-5 sm:p-6 select-none"
+                        style={{ borderRadius: '6px' }}
                       >
                         {/* Background Cover Photography */}
                         {exp.coverImage ? (
@@ -930,7 +978,10 @@ export default function LandingDiscovery({
                               )}
                             </div>
 
-                            <span className="text-xs font-extrabold text-white bg-white/20 backdrop-blur-md group-hover:bg-orange-500 px-3.5 py-2 rounded-full transition-all flex items-center gap-1.5 shadow-md">
+                            <span
+                              className="text-xs font-extrabold text-white bg-white/20 backdrop-blur-md group-hover:bg-orange-500 px-3.5 py-2 transition-all flex items-center gap-1.5 shadow-md"
+                              style={{ borderRadius: '6px' }}
+                            >
                               <span>Explore</span>
                               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                             </span>

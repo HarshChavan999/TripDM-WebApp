@@ -6,7 +6,6 @@ import {
   Heart, 
   Search, 
   ChevronDown, 
-  ChevronLeft,
   ArrowRight
 } from 'lucide-react';
 
@@ -75,21 +74,6 @@ export default function WishlistView({
     <div className="w-full bg-[#fcfdfd] min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Top Navigation */}
-        {onBack && (
-          <div>
-            <Button 
-              variant="ghost" 
-              onClick={onBack}
-              className="text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-100 px-3.5 py-1.5 group transition-all cursor-pointer inline-flex items-center gap-1.5 border border-slate-200/80 bg-white shadow-2xs hover:shadow-xs"
-              style={{ borderRadius: '6px' }}
-            >
-              <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" /> 
-              <span>Back</span>
-            </Button>
-          </div>
-        )}
-
         {/* Header & Controls Strip (Rendered when wishlist has items) */}
         {wishlistedItems.length > 0 && (
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-100">
