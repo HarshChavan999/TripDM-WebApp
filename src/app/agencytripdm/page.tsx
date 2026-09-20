@@ -19,7 +19,7 @@ async function getApprovedListings() {
             value: { booleanValue: true }
           }
         },
-        limit: 50
+        limit: 1000
       }
     };
 
@@ -48,11 +48,12 @@ async function getApprovedListings() {
 }
 
 import { Suspense } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 export default async function AgencyPage() {
   const initialListings = await getApprovedListings();
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<PageLoader text="Fetching details..." />}>
       <HomeClient initialListings={initialListings} routeMode="agency" />
     </Suspense>
   );

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MapPin, User, Scale, Heart, MessageSquare, Shield, Search, Menu, X, Palmtree, ChevronRight, LogOut, FileText, Briefcase } from 'lucide-react';
+import { User, Scale, Heart, MessageSquare, Shield, Search, Menu, X, Palmtree, ChevronRight, LogOut, FileText, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
@@ -12,7 +12,6 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const router = useRouter();
   const { user, userData, signIn, signInWithGoogle, register, signOut } = useAuth();
-  const [pincode, setPincode] = useState<string>('Select City');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,79 +39,17 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
     }
   };
 
-  useEffect(() => {
-    const fetchIpPincode = async () => {
-      try {
-        const res = await fetch('https://ipwho.is/');
-        const data = await res.json();
-        if (data && data.postal) {
-          setPincode(`Pincode ${data.postal}`);
-        } else if (data && data.city) {
-          setPincode(data.city);
-        }
-      } catch (e) {
-        console.error('IP geolocation fallback error:', e);
-      }
-    };
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            let gotPincode = false;
-
-            // 1. Try BigDataCloud
-            try {
-              const bdcResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
-              const bdcData = await bdcResponse.json();
-              if (bdcData && bdcData.postcode) {
-                setPincode(`Pincode ${bdcData.postcode}`);
-                gotPincode = true;
-              }
-            } catch (err) {
-              console.error('BigDataCloud geocoding error:', err);
-            }
-
-            // 2. Try Nominatim (secondary fallback)
-            if (!gotPincode) {
-              try {
-                const nomResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                const nomData = await nomResponse.json();
-                if (nomData && nomData.address && nomData.address.postcode) {
-                  setPincode(`Pincode ${nomData.address.postcode}`);
-                  gotPincode = true;
-                }
-              } catch (err) {
-                console.error('Nominatim geocoding error:', err);
-              }
-            }
-
-            // 3. Try IP geolocation if geocoding requests failed
-            if (!gotPincode) {
-              await fetchIpPincode();
-            }
-          } catch (error) {
-            console.error('Error in coordinates geocoding waterfall:', error);
-            await fetchIpPincode();
-          }
-        },
-        async (error) => {
-          console.warn('Geolocation permission denied or error. Falling back to IP-based location:', error);
-          await fetchIpPincode();
-        },
-        { timeout: 8000 }
-      );
-    } else {
-      fetchIpPincode();
-    }
-  }, []);
-
   const tabs = [
+    { name: 'About Us', href: '/policies/about' },
     { name: 'Terms & Conditions', href: '/policies/conditions-of-use' },
     { name: 'Privacy Policy', href: '/policies/privacy-notice' },
     { name: 'Copyright Policies', href: '/policies/internet-based-policy' },
   ];
+
+  const isTabActive = (href: string) => {
+    if (!pathname) return false;
+    return pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -280,7 +217,7 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
                     href={tab.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                      pathname === tab.href
+                      isTabActive(tab.href)
                         ? 'bg-orange-50 text-orange-600 font-bold'
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
@@ -316,17 +253,18 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
       {/* Global Header */}
       <header className="header-transition bg-white/95 backdrop-blur-md text-gray-900 z-[100] sticky top-0 shadow-sm border-b border-gray-200">
         {/* Desktop Header Layout */}
-        <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 px-4 h-16 w-full">
-          {/* Logo & Search */}
-          <div className="flex items-center gap-4 flex-1">
-            <div 
-              className="flex items-center gap-1 sm:gap-2 font-black tracking-tight cursor-pointer hover:opacity-90 transition-opacity shrink-0"
-              onClick={() => router.push('/')}
-            >
-              <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain" />
-            </div>
-            
-            <div className="relative w-full max-w-xl">
+        <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-6 px-4 h-16 w-full">
+          {/* Logo */}
+          <div 
+            className="flex items-center gap-1 sm:gap-2 font-black tracking-tight cursor-pointer hover:opacity-90 transition-opacity shrink-0"
+            onClick={() => router.push('/')}
+          >
+            <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain py-1" />
+          </div>
+          
+          {/* Search Bar */}
+          <div className="flex-1 max-w-2xl mx-2 lg:mx-6">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <input 
                 type="text" 
@@ -342,15 +280,7 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
           </div>
 
           {/* Right Links */}
-          <div className="flex items-center gap-5 shrink-0 pl-4">
-            {/* Location */}
-            <div className="flex items-center gap-1.5 text-gray-700 select-none mr-2">
-              <MapPin className="h-4 w-4 text-slate-500" />
-              <div className="flex flex-col leading-[1.1]">
-                <span className="font-semibold text-gray-900 text-[13px]">{pincode}</span>
-              </div>
-            </div>
-
+          <div className="flex items-center gap-4 lg:gap-6 shrink-0">
             {/* Compare */}
             <span
               className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
@@ -487,7 +417,7 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-10 overflow-x-auto hide-scrollbar" aria-label="Tabs">
             {tabs.map((tab) => {
-              const isActive = pathname === tab.href;
+              const isActive = isTabActive(tab.href);
               return (
                 <Link
                   key={tab.name}

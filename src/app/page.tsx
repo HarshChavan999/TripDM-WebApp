@@ -20,7 +20,7 @@ async function getApprovedListings() {
             value: { booleanValue: true }
           }
         },
-        limit: 50
+        limit: 1000
       }
     };
 
@@ -53,9 +53,25 @@ async function getApprovedListings() {
 export const metadata: Metadata = {
   title: "TripDM: Direct Message. Better Travel.",
   description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  alternates: {
+    canonical: 'https://tripdm.com',
+  },
+  openGraph: {
+    title: "TripDM: Direct Message. Better Travel.",
+    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+    url: 'https://tripdm.com',
+    siteName: 'TripDM',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "TripDM: Direct Message. Better Travel.",
+    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  },
 };
 
 import { Suspense } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 export default async function HomePage() {
   // Fetch initial data on the server for pure HTML SSR
@@ -63,7 +79,7 @@ export default async function HomePage() {
 
   // Render the client component monolith, passing the server-fetched data as initial state
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<PageLoader text="Fetching details..." />}>
       <HomeClient initialListings={initialListings} routeMode="user" />
     </Suspense>
   );

@@ -1,4 +1,13 @@
 import React from 'react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Privacy Notice & Policy | TripDM',
+  description: 'TripDM Privacy Notice explaining how we protect and manage your personal information.',
+  alternates: {
+    canonical: 'https://tripdm.com/policies/privacy-notice',
+  },
+};
 
 export default function PrivacyNotice() {
   return (

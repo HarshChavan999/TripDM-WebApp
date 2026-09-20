@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
   },
   // Exclude Firebase Admin SDK from bundling
   serverExternalPackages: ['firebase-admin'],
-  trailingSlash: true,
-  skipTrailingSlashRedirect: true,
   images: {
     unoptimized: true
   }

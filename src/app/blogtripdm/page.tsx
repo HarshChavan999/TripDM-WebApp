@@ -11,10 +11,11 @@ export const metadata: Metadata = {
 };
 
 import { Suspense } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 export default function BlogAdminPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<PageLoader text="Fetching details..." />}>
       <BlogAdminClient />
     </Suspense>
   );

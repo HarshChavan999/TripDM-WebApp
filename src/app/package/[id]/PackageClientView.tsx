@@ -61,8 +61,23 @@ export default function PackageClientView({ listing }: { listing: any }) {
     fetchAgency();
   }, [listing]);
 
+  // Hydrate wishlist from localStorage on initial mount
   useEffect(() => {
-    if (!user) return;
+    try {
+      const saved = localStorage.getItem('tripdm_wishlist');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWishlist(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not hydrate wishlist from localStorage in PackageClientView:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user?.uid) return;
     const dbInstance = getDbInstance();
     if (!dbInstance) return;
 
@@ -86,6 +101,11 @@ export default function PackageClientView({ listing }: { listing: any }) {
         }
 
         setWishlist(wishlistData);
+        try {
+          localStorage.setItem('tripdm_wishlist', JSON.stringify(wishlistData));
+        } catch (e) {
+          // ignore
+        }
         
         if (!userData.wishlist && !pendingWishlist) {
           updateDoc(doc(dbInstance, 'users', user.uid), {
@@ -96,7 +116,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user?.uid]);
 
   const updateWishlistInFirestore = async (newWishlist: string[]) => {
     if (!user) return;
@@ -121,6 +141,11 @@ export default function PackageClientView({ listing }: { listing: any }) {
       const newWishlist = prev.includes(listingId)
         ? prev.filter(id => id !== listingId)
         : [...prev, listingId];
+      try {
+        localStorage.setItem('tripdm_wishlist', JSON.stringify(newWishlist));
+      } catch (e) {
+        // ignore
+      }
       updateWishlistInFirestore(newWishlist);
       return newWishlist;
     });

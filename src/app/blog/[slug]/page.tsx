@@ -8,10 +8,12 @@ import BlogComments from '@/components/BlogComments';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
   try {
     const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs?pageSize=10000`;
-    const res = await fetch(url);
+    const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) return [{ slug: 'default' }];
     const data = await res.json();
     if (!data.documents || !Array.isArray(data.documents) || data.documents.length === 0) {
@@ -63,13 +65,13 @@ function parseBlogDoc(doc: any): Blog {
     coverImage: fields.coverImage?.stringValue || '',
     category: fields.category?.stringValue || 'Destinations',
     tags: fields.tags?.arrayValue?.values?.map((v: any) => v.stringValue) || [],
-    author: fields.author?.stringValue || 'Kritika Singh',
+    author: fields.author?.stringValue || 'TripDM Travel Expert',
     published: fields.published?.booleanValue || false,
     publishedAt: fields.publishedAt?.stringValue || '',
     updatedAt: fields.updatedAt?.stringValue || '',
     metaTitle: fields.metaTitle?.stringValue || '',
     metaDescription: fields.metaDescription?.stringValue || '',
-    readTime: fields.readTime?.stringValue || '5 min read',
+    readTime: fields.readTime?.stringValue || '8 min read',
     views: viewsVal ? Number(viewsVal) : undefined,
   };
 }
@@ -77,7 +79,7 @@ function parseBlogDoc(doc: any): Blog {
 async function getBlogBySlug(slug: string): Promise<Blog | null> {
   try {
     const directUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs/${slug}`;
-    const directRes = await fetch(directUrl, { cache: 'no-store' });
+    const directRes = await fetch(directUrl, { next: { revalidate: 3600 } });
     if (directRes.ok) {
       const doc = await directRes.json();
       if (doc && doc.fields) return parseBlogDoc(doc);
@@ -90,7 +92,7 @@ async function getBlogBySlug(slug: string): Promise<Blog | null> {
         limit: 1,
       },
     };
-    const res = await fetch(queryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), cache: 'no-store' });
+    const res = await fetch(queryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), next: { revalidate: 3600 } });
     if (!res.ok) return null;
     const data = await res.json();
     const item = data.find((d: any) => d.document);
@@ -111,7 +113,7 @@ async function getRecommendedBlogs(currentBlog: Blog): Promise<Blog[]> {
         limit: 50,
       },
     };
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), cache: 'no-store' });
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), next: { revalidate: 3600 } });
     let allBlogs: Blog[] = [];
     if (res.ok) {
       const data = await res.json();
@@ -135,18 +137,14 @@ async function getRecommendedBlogs(currentBlog: Blog): Promise<Blog[]> {
 
     const scored = candidateBlogs.map((b: Blog) => {
       let score = 0;
-
-      // 1. Tag overlap (+6 points per matching tag)
       const bTags = (b.tags || []).map((t) => t.toLowerCase().trim());
       const matchingTags = bTags.filter((t) => currentTags.includes(t));
       score += matchingTags.length * 6;
 
-      // 2. Category match (+4 points)
       if (b.category && b.category.toLowerCase().trim() === currentCategory) {
         score += 4;
       }
 
-      // 3. Keyword / Semantic relevance in title (+3 points per matching keyword)
       const bKeywords = (b.title + ' ' + b.slug)
         .toLowerCase()
         .replace(/[^a-z0-9\s]/g, ' ')
@@ -156,7 +154,6 @@ async function getRecommendedBlogs(currentBlog: Blog): Promise<Blog[]> {
       const matchingKeywords = bKeywords.filter((w) => titleKeywords.includes(w));
       score += matchingKeywords.length * 3;
 
-      // 4. View count tie-breaker (up to 2 points)
       const views = typeof b.views === 'number' ? b.views : 0;
       if (views > 0) {
         score += Math.min(2, Math.log10(views + 1));
@@ -194,12 +191,12 @@ function getFallbackPopularBlogs(currentSlug: string): Blog[] {
       id: 'pop-1',
       title: '30 Bucket List Ideas for Adventure Travellers in India',
       slug: '30-bucket-list-ideas-for-adventure-travellers-in-india',
-      excerpt: 'Ultimate thrill seeker guide to India',
+      excerpt: 'Ultimate thrill seeker guide across Ladakh, Spiti, and Meghalaya',
       content: '',
-      coverImage: 'https://images.unsplash.com/photo-1506461883276-594a12b11ce3?auto=format&fit=crop&w=400&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1506461883276-594a12b11ce3?auto=format&fit=crop&w=600&q=80',
       category: 'Adventure',
       tags: ['Adventure', 'India'],
-      author: 'Kritika Singh',
+      author: 'TripDM Travel Expert',
       published: true,
       publishedAt: '2026-06-15T00:00:00Z',
       updatedAt: '',
@@ -209,11 +206,11 @@ function getFallbackPopularBlogs(currentSlug: string): Blog[] {
     },
     {
       id: 'pop-2',
-      title: '20 Cheapest Countries to Visit from India',
+      title: '20 Cheapest Countries to Visit from India (2026 Edition)',
       slug: '20-cheapest-countries-to-visit-from-india',
-      excerpt: 'Budget international travel guide for Indians',
+      excerpt: 'Comprehensive budget breakdown: flights, visas, food & daily hostel rates',
       content: '',
-      coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
       category: 'Budget Travel',
       tags: ['Budget', 'International'],
       author: 'TripDM Team',
@@ -228,9 +225,9 @@ function getFallbackPopularBlogs(currentSlug: string): Blog[] {
       id: 'pop-3',
       title: '50 Countries Where Getting A Visa Is Easier Than Ordering A Pizza',
       slug: '50-countries-where-getting-a-visa-is-easier',
-      excerpt: 'Visa on arrival and e-visa friendly destinations',
+      excerpt: 'Instant visa-on-arrival and frictionless e-visas for Indian passport holders',
       content: '',
-      coverImage: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80',
       category: 'Travel Tips',
       tags: ['Visa', 'Travel Tips'],
       author: 'TripDM Team',
@@ -240,40 +237,6 @@ function getFallbackPopularBlogs(currentSlug: string): Blog[] {
       metaTitle: '',
       metaDescription: '',
       readTime: '7 min read'
-    },
-    {
-      id: 'pop-4',
-      title: '60 Places You Need to Visit In India With Your Best Friend!',
-      slug: '60-places-you-need-to-visit-in-india-with-best-friend',
-      excerpt: 'Unforgettable friends trip spots across India',
-      content: '',
-      coverImage: 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=400&q=80',
-      category: 'India Travel',
-      tags: ['Friends', 'India Travel'],
-      author: 'Rohan Mehta',
-      published: true,
-      publishedAt: '2026-05-15T00:00:00Z',
-      updatedAt: '',
-      metaTitle: '',
-      metaDescription: '',
-      readTime: '10 min read'
-    },
-    {
-      id: 'pop-5',
-      title: '51 Best Romantic Getaways in India',
-      slug: '51-best-romantic-getaways-in-india',
-      excerpt: 'Top honeymoon and couple destinations in India',
-      content: '',
-      coverImage: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=400&q=80',
-      category: 'Destinations',
-      tags: ['Romance', 'India Travel'],
-      author: 'Ananya Sharma',
-      published: true,
-      publishedAt: '2026-05-01T00:00:00Z',
-      updatedAt: '',
-      metaTitle: '',
-      metaDescription: '',
-      readTime: '9 min read'
     }
   ];
   return fallbacks.filter(b => b.slug !== currentSlug);
@@ -292,7 +255,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description = blog.metaDescription || blog.excerpt;
   const image = blog.coverImage || 'https://tripdm.com/og-default.jpg';
   return {
-    title: `${title} | TripDM Blog`,
+    title: `${title} | TripDM Travel Field Report`,
     description,
     keywords: [...(blog.tags || []), 'travel', 'TripDM', blog.category].filter(Boolean),
     authors: [{ name: blog.author }],
@@ -310,6 +273,27 @@ function slugify(text: string): string {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
+}
+
+interface TocItem {
+  id: string;
+  title: string;
+}
+
+function extractTocItems(content: string): TocItem[] {
+  const items: TocItem[] = [];
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const h2Match = trimmed.match(/^##\s+(.+)$/);
+    if (h2Match) {
+      const text = h2Match[1].replace(/[*_`]/g, '').trim();
+      if (!/frequently asked questions|faqs|quick jumplinks|table of contents|book your trip/i.test(text)) {
+        items.push({ id: slugify(text), title: text });
+      }
+    }
+  }
+  return items;
 }
 
 function parseTableLine(line: string): string[] {
@@ -361,37 +345,16 @@ function convertMarkdownTables(content: string): string {
             }
           }
         } else {
-          const rawLine0 = tableLines[0].trim();
-          const line0HasBullets = /\|?\s*[\*\-\+]\s+/.test(rawLine0);
-
-          if (line0HasBullets) {
-            headerCells = [];
-            for (let j = 0; j < tableLines.length; j++) {
-              const cells = parseTableLine(tableLines[j]);
-              if (cells.length > 0 && cells.some(c => c.length > 0)) {
-                bodyRows.push(cells);
-              }
-            }
-          } else {
-            headerCells = parseTableLine(tableLines[0]);
-            for (let j = 1; j < tableLines.length; j++) {
-              const cells = parseTableLine(tableLines[j]);
-              if (cells.length > 0 && cells.some(c => c.length > 0)) {
-                bodyRows.push(cells);
-              }
+          headerCells = parseTableLine(tableLines[0]);
+          for (let j = 1; j < tableLines.length; j++) {
+            const cells = parseTableLine(tableLines[j]);
+            if (cells.length > 0 && cells.some(c => c.length > 0)) {
+              bodyRows.push(cells);
             }
           }
         }
 
-        // If it's a 1-column list wrapped in pipes by AI, render as clean benefit cards instead of a 1-col wireframe table
-        if (headerCells.length === 1) {
-          const allItems = [headerCells[0], ...bodyRows.map(r => r[0])].filter(Boolean);
-          const listHtml = allItems.map(item => `<li>${item}</li>`).join('\n');
-          result.push(`\n\n<ul class="blog-benefit-list">\n${listHtml}\n</ul>\n\n`);
-          continue;
-        }
-
-        if (headerCells.length > 1) {
+        if (headerCells.length > 0 || bodyRows.length > 0) {
           const thHtml = headerCells.map(c => `<th>${c}</th>`).join('');
           const trHtml = bodyRows.map(row => {
             const tdHtml = row.map(c => `<td>${c}</td>`).join('');
@@ -399,15 +362,6 @@ function convertMarkdownTables(content: string): string {
           }).join('\n');
 
           const tableHtml = `\n\n<div class="table-wrap"><table class="blog-table"><thead><tr>${thHtml}</tr></thead><tbody>\n${trHtml}\n</tbody></table></div>\n\n`;
-          result.push(tableHtml);
-          continue;
-        } else if (bodyRows.length > 0) {
-          const trHtml = bodyRows.map(row => {
-            const tdHtml = row.map(c => `<td>${c}</td>`).join('');
-            return `<tr>${tdHtml}</tr>`;
-          }).join('\n');
-
-          const tableHtml = `\n\n<div class="table-wrap"><table class="blog-table"><tbody>\n${trHtml}\n</tbody></table></div>\n\n`;
           result.push(tableHtml);
           continue;
         }
@@ -493,41 +447,63 @@ function parseMarkdownLists(content: string): string {
         }
       }
 
-      const items: { type: 'ul' | 'ol' | 'task'; content: string; checked?: boolean }[] = [];
+      const items: { content: string; isTariff: boolean; tierName?: string; price?: string; desc?: string }[] = [];
 
       listLines.forEach(l => {
-        const trimmed = l.trim();
+        const trimmed = l.trim().replace(/^[\*\-\+]\s+/, '').replace(/^\d+\.\s+/, '');
         if (!trimmed) return;
 
-        const taskMatch = trimmed.match(/^[\*\-\+]\s+\[([\sxX])\]\s+(.+)$/);
-        if (taskMatch) {
-          items.push({ type: 'task', content: taskMatch[2], checked: taskMatch[1].toLowerCase() === 'x' });
-          return;
-        }
+        // Detect if this list item is an accommodation tariff (Budget, Mid-Range, Luxury with currency)
+        const tariffPattern = /^(Budget(?:\s+Stays|\s+Guesthouses)?|Mid-Range(?:\s+Hotels)?|Luxury(?:\s+Resorts|\s+Riverside)?|Basic(?:\s+Tourist|\s+Camps)?|Standard(?:\s+Hotels)?)([^:]*):\s*([₹$][\d,\s–—\-+a-zA-Z\/]+)(.*)$/i;
+        const match = trimmed.match(tariffPattern);
 
-        const ulMatch = trimmed.match(/^[\*\-\+]\s+(.+)$/);
-        if (ulMatch) {
-          items.push({ type: 'ul', content: ulMatch[1] });
-          return;
-        }
-
-        const olMatch = trimmed.match(/^\d+\.\s+(.+)$/);
-        if (olMatch) {
-          items.push({ type: 'ol', content: olMatch[1] });
-          return;
+        if (match) {
+          items.push({
+            content: trimmed,
+            isTariff: true,
+            tierName: (match[1] + (match[2] || '')).trim(),
+            price: match[3].trim(),
+            desc: match[4].replace(/^\s*[\(–—\-]\s*/, '').replace(/\)\s*$/, '').trim()
+          });
+        } else {
+          items.push({ content: trimmed, isTariff: false });
         }
       });
 
-      if (items.length > 0) {
-        const isOl = items.every(it => it.type === 'ol');
-        const tag = isOl ? 'ol' : 'ul';
-        const lis = items.map(it => `<li>${it.content}</li>`).join('\n');
+      const hasTariffs = items.some(it => it.isTariff);
 
-        resultLines.push(`\n\n<${tag} class="blog-parsed-list">\n${lis}\n</${tag}>\n\n`);
+      if (hasTariffs) {
+        const cardsHtml = items.map(it => {
+          if (it.isTariff) {
+            const isLuxury = /luxury|heritage/i.test(it.tierName || '');
+            const isMid = /mid-range|standard/i.test(it.tierName || '');
+            const badgeClass = isLuxury ? 'tier-luxury' : isMid ? 'tier-mid' : 'tier-budget';
+            const icon = isLuxury ? '👑' : isMid ? '🏨' : '🛖';
+
+            return `
+              <div class="stay-tier-card ${badgeClass}">
+                <div class="st-top">
+                  <div class="st-badge">
+                    <span class="st-icon">${icon}</span>
+                    <span class="st-name">${it.tierName}</span>
+                  </div>
+                  <div class="st-price">${it.price}</div>
+                </div>
+                ${it.desc ? `<div class="st-desc">${it.desc}</div>` : ''}
+              </div>
+            `;
+          }
+          return `<div class="stay-tier-note">• ${it.content}</div>`;
+        }).join('\n');
+
+        resultLines.push(`\n\n<div class="stay-tier-deck">\n${cardsHtml}\n</div>\n\n`);
         continue;
       }
 
-      resultLines.push(...listLines);
+      // Standard list styling
+      const lis = items.map(it => `<li>${it.content}</li>`).join('\n');
+      resultLines.push(`\n\n<ul class="blog-parsed-list">\n${lis}\n</ul>\n\n`);
+      continue;
     } else {
       resultLines.push(line);
       i++;
@@ -540,7 +516,7 @@ function parseMarkdownLists(content: string): string {
 function renderContent(content: string): string {
   if (!content) return '';
 
-  // Strip all Unicode emoji from content
+  // 1. Strip all Unicode emoji spam from content
   let html = content.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FEFF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA9F}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{25A0}-\u{25FF}\u{2700}-\u{27BF}]/gu, '').trim();
 
   // Strip hidden HTML comment blocks
@@ -561,7 +537,10 @@ function renderContent(content: string): string {
     });
   }
 
-  // 0. Remove decorative triangle lines (▼ ▼ ▼, ▲ ▲ ▲), stray standalone dots (...), commas, quotes, and standalone dashes/asterisks
+  // Strip raw inline TOC / Quick Jumplinks header & list since we have the sticky Table of Contents in the right sidebar
+  html = html.replace(/(?:^|\n)##\s*(?:Quick Jumplinks to Navigate|Table of Contents|Quick Jump Links|Jumplinks)[\s\S]*?(?=\n##|\n---|$)/gi, '');
+
+  // Remove decorative triangle lines, stray dots, commas, dashes
   html = html
     .replace(/^\s*[▼▲\s]{2,}\s*$/gm, '')
     .replace(/^\s*[\.\…\,`'"\s]{1,}\s*$/gm, '')
@@ -571,24 +550,31 @@ function renderContent(content: string): string {
   // Strip Unicode Box Drawing ASCII blocks
   html = cleanUnicodeBoxDrawing(html);
 
-  // 1. Convert Markdown Tables to HTML Tables
+  // Convert Markdown Tables to HTML Tables
   html = convertMarkdownTables(html);
 
-  // 2. Convert Markdown Lists into unified lists
+  // Convert Markdown Lists into styled cards / lists
   html = parseMarkdownLists(html);
 
-  // 3. Blockquotes
+  // Blockquotes with Ground Reality or Insider Secret styling
+  html = html.replace(/^> (?:⚠️|Caution|Warning|Watch Out:?|Ground Reality:?)\s*(.+)$/gmi, (_, txt) => {
+    return `<div class="ground-reality-callout"><div class="gr-header"><span class="gr-icon">⚠️</span><span class="gr-title">GROUND REALITY & WATCH OUT</span><span class="gr-badge">Verified 2026</span></div><div class="gr-content">${txt}</div></div>`;
+  });
+
+  html = html.replace(/^> (?:💡|Tip|Insider Tip:?|Pro-Tip:?)\s*(.+)$/gmi, (_, txt) => {
+    return `<div class="insider-secret-callout"><div class="is-header"><span class="is-icon">💡</span><span class="is-title">LOCAL INSIDER SECRET</span><span class="is-badge">Field Note</span></div><div class="is-content">${txt}</div></div>`;
+  });
+
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
 
-  // 4. Headings with slugified anchor IDs
+  // Headings with slugified anchor IDs
   html = html
     .replace(/^### (.+)$/gm, (_, t) => `<h3 id="${slugify(t)}">${t}</h3>`)
     .replace(/^## (.+)$/gm, (_, t) => `<h2 id="${slugify(t)}">${t}</h2>`)
     .replace(/^# (.+)$/gm, (_, t) => `<h1 id="${slugify(t)}">${t}</h1>`);
 
-  // 5. Bold, Italic, Code, HR
+  // Bold, Italic, Code, HR
   html = html.replace(/`\s*[,.]?\s*`/g, ' ');
-
   html = html
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -600,12 +586,7 @@ function renderContent(content: string): string {
     })
     .replace(/^---$/gm, '<hr>');
 
-  // 6. Clean mangled bracket headers like [Kashmir Circuit] [Bali Experience] [Sri Lanka Escape]
-  html = html.replace(/^\[([^\]]+)\]\s*\[([^\]]+)\](?:\s*\[([^\]]+)\])?$/gm, (_, c1, c2, c3) => {
-    return `<div class="tag-row"><span>${c1}</span><span>${c2}</span>${c3 ? `<span>${c3}</span>` : ''}</div>`;
-  });
-
-  // 7. Links: CRITICAL - Anchor links starting with # MUST NOT get target="_blank"
+  // Links
   html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_, text, href) => {
     if (href.startsWith('#')) {
       return `<a href="${href}" class="bp-anchor-link">${text}</a>`;
@@ -613,49 +594,50 @@ function renderContent(content: string): string {
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   });
 
-  // 8. Paragraphs
+  // Paragraphs
   html = html.split(/\n\n+/).map(block => {
     const trimmed = block.trim();
     if (!trimmed) return '';
     if (/^<(h[1-6]|ul|ol|blockquote|hr|div|table|thead|tbody|tr)/i.test(trimmed)) {
       return trimmed;
     }
-    if (/^\s*[\.\…\,`'"\-\*\_\s]+\s*$/.test(trimmed)) return ''; // drop paragraphs containing only dots, punctuation, or dashes
+    if (/^\s*[\.\…\,`'"\-\*\_\s]+\s*$/.test(trimmed)) return '';
     return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
   }).filter(Boolean).join('\n');
 
-  // 9. Transform Table of Contents / Quick Jumplinks header + ul into Thrillophilia Quick Jumplinks Box
+  // Strip duplicate inline Table of Contents from article body (kept exclusively in the right sticky sidebar)
   html = html.replace(
-    /<h2 id="(quick-jumplinks-to-navigate|table-of-contents)">([^<]+)<\/h2>\s*<ul>([\s\S]*?)<\/ul>/gi,
-    (_, id, title, listContent) => {
-      return `
-        <div class="quick-jumplinks-card" id="${id}">
-          <div class="quick-jumplinks-header">Quick Jumplinks to Navigate</div>
-          <ul class="quick-jumplinks-list">
-            ${listContent}
-          </ul>
-        </div>
-      `;
-    }
+    /<h2 id="(?:quick-jumplinks-to-navigate|table-of-contents|quick-jump-links|jumplinks)[^"]*">([\s\S]*?)<\/h2>\s*<ul[^>]*>([\s\S]*?)<\/ul>/gi,
+    ''
   );
+  html = html.replace(
+    /<h2 id="(?:quick-jumplinks-to-navigate|table-of-contents|quick-jump-links|jumplinks)[^"]*">([\s\S]*?)<\/h2>/gi,
+    ''
+  );
+  html = html.replace(/<div class="quick-jumplinks-card"[\s\S]*?<\/div>/gi, '');
 
-  // 10. Transform Frequently Asked Questions (FAQs) section into Interactive Accordion
+  // Strip initial list of anchor jump links (#) at the start of content if author placed raw jump links
+  html = html.replace(/^\s*<ul class="blog-parsed-list">\s*(?:<li>[\s\S]*?<\/li>\s*)+<\/ul>/i, (matchedList) => {
+    if (matchedList.includes('href="#') || matchedList.includes('class="bp-anchor-link"')) {
+      return '';
+    }
+    return matchedList;
+  });
+
+  // Transform FAQs section into Interactive Accordion
   html = convertFaqToAccordion(html);
 
   return html;
 }
 
 function convertFaqToAccordion(html: string): string {
-  // Regex to find FAQ section from <h2 id="...">Frequently Asked Questions / FAQs...</h2> until the next <h2 or end of content
   const faqSectionRegex = /(<h2 id="[^"]*(?:frequently-asked-questions|faqs|faq)[^"]*">([\s\S]*?)<\/h2>)([\s\S]*?)(?=<h2|$)/i;
-  
   const match = html.match(faqSectionRegex);
   if (!match) return html;
 
   const h2Tag = match[1];
   const faqContent = match[3];
 
-  // Inside faqContent, find each <h3> (Question) and following paragraphs (Answer)
   const itemRegex = /<h3[^>]*>([\s\S]*?)<\/h3>\s*([\s\S]*?)(?=<h3|$)/gi;
   let itemsHtml = '';
   let itemMatch;
@@ -684,7 +666,6 @@ function convertFaqToAccordion(html: string): string {
   }
 
   if (!itemsHtml) return html;
-
   const accordionContainer = `\n<div class="faq-accordion">\n${itemsHtml}\n</div>\n`;
   return html.replace(faqSectionRegex, `${h2Tag}\n${accordionContainer}`);
 }
@@ -703,6 +684,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const recommendedBlogs = await getRecommendedBlogs(blog);
   const contentHtml = renderContent(blog.content);
   const mainViews = getFormattedViews(blog);
+  const tocItems = extractTocItems(blog.content);
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'Article',
@@ -720,267 +702,1211 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Lato:wght@300;400;700&family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+        /* BASE THEME & CRISP PURE WHITE PALETTE */
+        :root {
+          --surface-canvas: #FFFFFF;
+          --surface-sheet: #FFFFFF;
+          --ink-primary: #0F172A;
+          --ink-secondary: #475569;
+          --ink-muted: #64748B;
+          --accent-terracotta: #EA580C;
+          --accent-amber: #F59E0B;
+          --accent-alpine: #166534;
+          --hairline-border: #F1F5F9;
+          --reading-width: 720px;
+        }
 
         .blog-wrapper * { box-sizing: border-box; }
-        .blog-wrapper { background: #f8fafc; min-height: 100vh; font-family: 'Lato', 'Inter', system-ui, sans-serif; color: #1e293b; }
+        .blog-wrapper {
+          background: #FFFFFF;
+          min-height: 100vh;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          color: var(--ink-primary);
+          -webkit-font-smoothing: antialiased;
+        }
 
-        /* Reading Progress Bar */
-        .reading-progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg,#f97316,#fbbf24); z-index: 1000; transition: width 0.1s; width: 0%; }
+        /* 1. TOP READING PROGRESS BAR */
+        .reading-progress-track {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background: transparent;
+          z-index: 1001;
+        }
+        .reading-progress-fill {
+          height: 100%;
+          width: 0%;
+          background: linear-gradient(90deg, #D9531E, #F59E0B);
+          transition: width 0.08s ease-out;
+        }
 
-        /* Navigation Header */
-        .bp-nav { position: sticky; top: 0; z-index: 90; background: rgba(255,255,255,0.95); border-bottom: 1px solid rgba(0,0,0,0.06); backdrop-filter: blur(20px); }
-        .bp-nav-inner { width: 100%; max-width: 1560px; margin: 0 auto; padding: 0 40px; height: 80px; display: flex; align-items: center; justify-content: space-between; }
-        .bp-brand { display: flex; align-items: center; text-decoration: none; }
-        .bp-nav-links { display: flex; align-items: center; }
-        .bp-nav-link { color: #64748b; font-size: 14px; font-weight: 500; text-decoration: none; transition: color 0.2s; font-family: 'Inter', sans-serif; }
-        .bp-nav-link:hover { color: #0f172a; }
+        /* 2. STICKY READER BAR (Appears on scroll) */
+        .sticky-reader-bar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 58px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(231, 229, 228, 0.9);
+          z-index: 999;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 clamp(16px, 4vw, 48px);
+          transform: translateY(-100%);
+          transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+        .sticky-reader-bar.is-visible {
+          transform: translateY(0);
+        }
+        .srb-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          min-width: 0;
+          flex: 1;
+          margin-right: 20px;
+        }
+        .srb-logo {
+          height: 30px;
+          width: auto;
+          flex-shrink: 0;
+        }
+        .srb-divider {
+          width: 1px;
+          height: 20px;
+          background: var(--hairline-border);
+          flex-shrink: 0;
+        }
+        .srb-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-weight: 700;
+          font-size: 15px;
+          color: var(--ink-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .srb-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+        .srb-cta-btn {
+          background: var(--accent-terracotta);
+          color: #ffffff !important;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 8px 16px;
+          border-radius: 9999px;
+          text-decoration: none;
+          transition: background 0.15s, transform 0.15s;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .srb-cta-btn:hover {
+          background: #C2410C;
+          transform: translateY(-1px);
+        }
 
-        /* Main Container */
-        .bp-container { width: 100%; max-width: 1560px; margin: 0 auto; padding: 36px 40px 80px; }
+        /* 3. PRIMARY NAVIGATION */
+        .bp-nav {
+          background: #FFFFFF;
+          border-bottom: 1px solid var(--hairline-border);
+        }
+        .bp-nav-inner {
+          max-width: 1320px;
+          margin: 0 auto;
+          padding: 0 clamp(20px, 4vw, 40px);
+          height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .bp-brand {
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+        }
+        .bp-nav-right {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .bp-verified-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--accent-alpine);
+          background: #EBF5EE;
+          border: 1px solid #D1E7DD;
+          padding: 5px 12px;
+          border-radius: 9999px;
+          letter-spacing: 0.3px;
+        }
+        .bp-pulse-dot {
+          width: 7px;
+          height: 7px;
+          background: #10B981;
+          border-radius: 50%;
+          display: inline-block;
+          animation: pulseRing 2s infinite;
+        }
+        @keyframes pulseRing {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
 
-        /* Article Header (Above Hero) */
-        .bp-header { margin-bottom: 28px; width: 100%; }
-        .bp-category-badge { display: inline-block; color: #ea580c; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; }
-        .bp-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 4vw, 48px); font-weight: 900; color: #0f172a; line-height: 1.2; margin: 0 0 20px; letter-spacing: -0.5px; }
-        .bp-meta-row { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #64748b; font-family: 'Inter', sans-serif; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
-        .bp-meta-author { color: #334155; font-weight: 600; }
-        .bp-meta-date { color: #94a3b8; }
-        .bp-meta-dot { color: #e2e8f0; font-size: 16px; }
-        .bp-meta-views { color: #ef4444; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-        .bp-view-icon { width: 15px; height: 15px; fill: #ef4444; }
-        .bp-meta-readtime { color: #94a3b8; font-weight: 500; }
+        /* 4. MAIN ARTICLE PAGE LAYOUT */
+        .bp-container {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 32px clamp(16px, 4vw, 36px) 96px;
+        }
 
-        /* Hero Image Container */
-        .bp-hero-box { width: 100%; margin-bottom: 40px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
-        .bp-hero-img { width: 100%; max-height: 560px; object-fit: cover; display: block; }
-        .bp-hero-fallback { width: 100%; height: 400px; background: linear-gradient(135deg,#1e293b 0%,#0f172a 100%); display: flex; align-items: center; justify-content: center; }
+        /* BREADCRUMB & LOCATION COORDINATES */
+        .bp-breadcrumb-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 20px;
+          font-size: 13px;
+        }
+        .bp-breadcrumbs {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--ink-muted);
+          font-weight: 500;
+        }
+        .bp-breadcrumbs a {
+          color: var(--ink-secondary);
+          text-decoration: none;
+          transition: color 0.15s;
+        }
+        .bp-breadcrumbs a:hover {
+          color: var(--accent-terracotta);
+        }
+        .bp-coordinates-tag {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 11.5px;
+          color: var(--ink-muted);
+          background: #F1F1EF;
+          padding: 4px 10px;
+          border-radius: 6px;
+          letter-spacing: 0.5px;
+          font-weight: 600;
+        }
 
-        /* Main Article Layout */
-        .bp-main-layout { width: 100%; }
+        /* ARTICLE HEADER & EDITORIAL TITLE */
+        .bp-header {
+          max-width: 900px;
+          margin: 0 auto 36px;
+          text-align: left;
+        }
+        .bp-category-badge {
+          display: inline-block;
+          color: var(--accent-terracotta);
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          margin-bottom: 12px;
+        }
+        .bp-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: clamp(30px, 4.2vw, 52px);
+          font-weight: 900;
+          color: var(--ink-primary);
+          line-height: 1.16;
+          margin: 0 0 24px;
+          letter-spacing: -0.8px;
+        }
 
-        /* Article Main Content */
-        .bp-article-body { font-family: 'Lato', sans-serif; font-size: 17.5px; line-height: 1.9; color: #374151; font-weight: 400; width: 100%; }
+        /* AUTHOR MASTHEAD ROW */
+        .bp-author-masthead {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 20px 0;
+          border-top: 1px solid var(--hairline-border);
+          border-bottom: 1px solid var(--hairline-border);
+          flex-wrap: wrap;
+        }
+        .bp-author-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+        .bp-author-avatar {
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #D9531E, #F59E0B);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 16px;
+          border: 2px solid #FFFFFF;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .bp-author-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .bp-author-name-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .bp-author-name {
+          font-weight: 700;
+          font-size: 15px;
+          color: var(--ink-primary);
+        }
+        .bp-author-badge {
+          font-size: 11px;
+          font-weight: 700;
+          background: #EBF5EE;
+          color: var(--accent-alpine);
+          padding: 2px 8px;
+          border-radius: 9999px;
+        }
+        .bp-meta-sub {
+          font-size: 13px;
+          color: var(--ink-muted);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .bp-author-right {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .bp-audit-seal {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          background: #FEF3C7;
+          border: 1px solid #FDE68A;
+          color: #92400E;
+          padding: 5px 12px;
+          border-radius: 8px;
+        }
+
+        /* 5. COVER HERO: HIGH RES PHOTO OR TYPOGRAPHIC COVER POSTER FALLBACK */
+        .bp-hero-container {
+          margin-bottom: 48px;
+          width: 100%;
+        }
+        .bp-hero-box {
+          position: relative;
+          width: 100%;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 12px 36px rgba(0,0,0,0.06);
+          background: #E7E5E4;
+        }
+        .bp-hero-img {
+          width: 100%;
+          max-height: 560px;
+          object-fit: cover;
+          display: block;
+        }
+        .bp-hero-caption {
+          position: absolute;
+          bottom: 14px;
+          right: 16px;
+          background: rgba(18, 22, 25, 0.75);
+          backdrop-filter: blur(10px);
+          color: #FAF9F6;
+          font-size: 11.5px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border-radius: 9999px;
+        }
+
+        /* TYPOGRAPHIC COVER POSTER FALLBACK (ZERO BLACK BOXES FOREVER) */
+        .bp-poster-fallback {
+          position: relative;
+          width: 100%;
+          min-height: 380px;
+          border-radius: 20px;
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          padding: clamp(28px, 5vw, 48px);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          overflow: hidden;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.03);
+        }
+        .bp-poster-topo {
+          position: absolute;
+          top: -20%;
+          right: -10%;
+          width: 80%;
+          height: 140%;
+          opacity: 0.18;
+          pointer-events: none;
+        }
+        .bp-poster-top-bar {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          border-bottom: 1px solid #E2E8F0;
+          padding-bottom: 16px;
+        }
+        .bp-poster-stamp {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+          color: var(--accent-terracotta);
+          text-transform: uppercase;
+        }
+        .bp-poster-audit {
+          font-size: 12px;
+          font-weight: 700;
+          color: #4B5563;
+        }
+        .bp-poster-body {
+          position: relative;
+          z-index: 2;
+          margin: 36px 0;
+        }
+        .bp-poster-watermark {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: clamp(32px, 5vw, 68px);
+          font-weight: 900;
+          color: #121619;
+          letter-spacing: -1.5px;
+          line-height: 1.05;
+          margin: 0 0 12px;
+        }
+        .bp-poster-subtitle {
+          font-size: clamp(15px, 2vw, 18px);
+          color: #4A5568;
+          max-width: 680px;
+          line-height: 1.6;
+          font-weight: 500;
+        }
+        .bp-poster-bottom-bar {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 16px;
+          font-size: 13px;
+          color: #4B5563;
+          border-top: 1px solid rgba(0,0,0,0.06);
+          padding-top: 16px;
+        }
+        .bp-poster-badge-zero {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 700;
+          color: var(--accent-alpine);
+        }
+
+        /* 6. TWO-COLUMN ASYMMETRIC MAGAZINE GRID */
+        .bp-magazine-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 720px) 340px;
+          justify-content: center;
+          gap: 56px;
+          align-items: start;
+        }
+
+        @media (max-width: 1120px) {
+          .bp-magazine-grid {
+            grid-template-columns: minmax(0, 720px);
+            gap: 40px;
+          }
+        }
+
+        /* COLUMN A: 720px GOLDEN READING COLUMN */
+        .bp-reading-column {
+          width: 100%;
+          max-width: 720px;
+        }
+
+        /* 5-SECOND EXECUTIVE SKIM CAPSULE */
+        .executive-skim-card {
+          background: #FAF7F2;
+          border: 1px solid #EADDCF;
+          border-left: 4px solid var(--accent-terracotta);
+          border-radius: 12px;
+          padding: 24px 28px;
+          margin-bottom: 36px;
+        }
+        .esc-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .esc-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 19px;
+          font-weight: 800;
+          color: var(--ink-primary);
+        }
+        .esc-pill {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--accent-terracotta);
+          background: rgba(217, 83, 30, 0.1);
+          padding: 4px 10px;
+          border-radius: 9999px;
+        }
+        .esc-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        @media (max-width: 600px) {
+          .esc-grid { grid-template-columns: 1fr; gap: 12px; }
+        }
+        .esc-item {
+          background: #FFFFFF;
+          border: 1px solid #E7E5E4;
+          padding: 12px 16px;
+          border-radius: 8px;
+        }
+        .esc-item-label {
+          font-size: 11px;
+          text-transform: uppercase;
+          font-weight: 800;
+          letter-spacing: 0.8px;
+          color: var(--ink-muted);
+          margin-bottom: 4px;
+        }
+        .esc-item-val {
+          font-size: 14.5px;
+          font-weight: 700;
+          color: var(--ink-primary);
+          line-height: 1.4;
+        }
+
+        /* ARTICLE BODY STYLING */
+        .bp-article-body {
+          font-size: 18px;
+          line-height: 1.88;
+          color: #2D3748;
+          letter-spacing: -0.01em;
+        }
+
+        /* CLASSICAL EDITORIAL DROP CAP ON OPENING PARAGRAPH */
+        .bp-article-body > p:first-of-type::first-letter {
+          font-family: 'Playfair Display', Georgia, serif;
+          float: left;
+          font-size: 64px;
+          line-height: 52px;
+          padding-top: 4px;
+          padding-right: 12px;
+          padding-bottom: 0;
+          font-weight: 900;
+          color: var(--ink-primary);
+        }
+
+        .bp-article-body p {
+          margin-bottom: 24px;
+          line-height: 1.88;
+          color: #2D3748;
+        }
+
         .bp-article-body h1, .bp-article-body h2, .bp-article-body h3 {
           font-family: 'Playfair Display', Georgia, serif;
-          color: #0f172a;
-          font-weight: 900;
+          color: var(--ink-primary);
+          font-weight: 800;
           line-height: 1.25;
-          margin-top: 48px;
-          margin-bottom: 16px;
           letter-spacing: -0.3px;
         }
-        .bp-article-body h1 { font-size: 34px; }
-        .bp-article-body h2 { font-size: 28px; padding-bottom: 10px; border-bottom: 2px solid #f1f5f9; }
-        .bp-article-body h3 { font-size: 22px; color: #1e293b; }
-        .bp-article-body p { margin-bottom: 20px; line-height: 1.9; font-size: 17px; color: #374151; }
-        .bp-article-body strong { color: #0f172a; font-weight: 700; }
-        .bp-article-body em { font-style: italic; color: #475569; }
-        .bp-article-body code { background: #f1f5f9; color: #dc2626; font-family: monospace; font-size: 14px; padding: 2px 6px; border-radius: 4px; }
-        .bp-article-body blockquote {
-          border-left: 4px solid #f97316;
-          background: linear-gradient(135deg,#fff7ed,#fffbeb);
-          padding: 20px 28px;
+        .bp-article-body h1 {
+          font-size: 32px;
+          margin: 44px 0 18px;
+        }
+        .bp-article-body h2 {
+          font-size: 26px;
+          margin: 48px 0 18px;
+          padding-bottom: 8px;
+          border-bottom: 1.5px solid #E7E5E4;
+          display: flex;
+          align-items: baseline;
+          gap: 10px;
+        }
+        .bp-article-body h2::before {
+          content: '§';
+          color: var(--accent-terracotta);
+          font-weight: 400;
+          font-size: 20px;
+        }
+        .bp-article-body h3 {
+          font-size: 21px;
+          margin: 36px 0 14px;
+          color: #1A202C;
+        }
+
+        .bp-article-body strong {
+          color: var(--ink-primary);
+          font-weight: 700;
+        }
+
+        /* STAY TIER COMPARISON CARDS (REPLACES RAW BULLETS) */
+        .stay-tier-deck {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          margin: 28px 0 36px;
+        }
+        .stay-tier-card {
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
+          border-radius: 12px;
+          padding: 16px 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+          transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .stay-tier-card:hover {
+          transform: translateY(-2px);
+          border-color: #CBD5E1;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+        }
+        .stay-tier-card.tier-budget {
+          border-left: 4px solid #64748B;
+        }
+        .stay-tier-card.tier-mid {
+          border-left: 4px solid var(--accent-terracotta);
+          background: #FFFAF6;
+        }
+        .stay-tier-card.tier-luxury {
+          border-left: 4px solid #D97706;
+          background: #FFFDF9;
+        }
+        .st-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .st-badge {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .st-icon {
+          font-size: 18px;
+        }
+        .st-name {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-weight: 700;
+          font-size: 16px;
+          color: var(--ink-primary);
+        }
+        .st-price {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 14px;
+          font-weight: 800;
+          color: var(--accent-terracotta);
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
+          padding: 4px 12px;
+          border-radius: 9999px;
+        }
+        .st-desc {
+          margin-top: 8px;
+          font-size: 14px;
+          color: var(--ink-secondary);
+          line-height: 1.55;
+        }
+        .stay-tier-note {
+          font-size: 14px;
+          color: var(--ink-muted);
+          padding: 4px 8px;
+        }
+
+        /* GROUND REALITY & SCAM ALERT CALLOUT */
+        .ground-reality-callout {
+          background: #FFFBEB;
+          border: 1px solid #FCD34D;
+          border-left: 4px solid #D97706;
+          border-radius: 12px;
+          padding: 20px 24px;
           margin: 32px 0;
+        }
+        .gr-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .gr-icon {
+          font-size: 18px;
+        }
+        .gr-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 800;
+          font-size: 13px;
+          letter-spacing: 0.8px;
+          color: #92400E;
+        }
+        .gr-badge {
+          font-size: 11px;
+          font-weight: 700;
+          background: #FDE68A;
+          color: #78350F;
+          padding: 2px 8px;
+          border-radius: 9999px;
+          margin-left: auto;
+        }
+        .gr-content {
+          font-size: 15.5px;
+          line-height: 1.7;
+          color: #78350F;
+        }
+
+        /* LOCAL INSIDER SECRET CALLOUT */
+        .insider-secret-callout {
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          border-left: 4px solid var(--accent-terracotta);
+          border-radius: 12px;
+          padding: 20px 24px;
+          margin: 32px 0;
+        }
+        .is-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .is-icon {
+          font-size: 18px;
+        }
+        .is-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 800;
+          font-size: 13px;
+          letter-spacing: 0.8px;
+          color: var(--accent-terracotta);
+        }
+        .is-badge {
+          font-size: 11px;
+          font-weight: 700;
+          background: rgba(217, 83, 30, 0.1);
+          color: var(--accent-terracotta);
+          padding: 2px 8px;
+          border-radius: 9999px;
+          margin-left: auto;
+        }
+        .is-content {
+          font-size: 15.5px;
+          line-height: 1.7;
+          color: #374151;
+        }
+
+        /* BLOCKQUOTE */
+        .bp-article-body blockquote {
+          margin: 36px 0;
+          padding: 20px 28px;
+          border-left: 3px solid var(--accent-terracotta);
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          border-left: 4px solid var(--accent-terracotta);
           border-radius: 0 12px 12px 0;
           font-family: 'Playfair Display', Georgia, serif;
           font-style: italic;
-          color: #92400e;
-          font-size: 18px;
-          line-height: 1.7;
+          font-size: 20px;
+          color: var(--ink-primary);
+          line-height: 1.6;
         }
-        .bp-article-body ul, .blog-parsed-list { margin: 16px 0 24px 4px; padding-left: 0; list-style: none; }
-        .bp-article-body ul li, .blog-parsed-list li { margin-bottom: 10px !important; line-height: 1.75; color: #374151; padding-left: 20px; position: relative; font-size: 16.5px; }
-        .bp-article-body ul li::before, .blog-parsed-list li::before { content: ''; position: absolute; left: 0; top: 10px; width: 7px; height: 7px; background: #f97316; border-radius: 50%; }
-        .bp-article-body ul li:last-child, .blog-parsed-list li:last-child { margin-bottom: 0 !important; }
-        .bp-article-body ul li p, .blog-parsed-list li p { margin: 0; padding: 0; display: inline; }
-        .bp-article-body ol { margin: 16px 0 24px 20px; padding-left: 0; }
-        .bp-article-body ol li { margin-bottom: 10px !important; line-height: 1.75; color: #374151; font-size: 16.5px; }
-        .bp-article-body ol li::marker { color: #f97316; font-weight: 700; }
-        .bp-article-body hr { border: none; border-top: 1px solid #e2e8f0; margin: 48px 0; }
 
-        /* Task Items */
-        .task-item { list-style: none !important; margin-left: 0 !important; padding-left: 0 !important; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px !important; }
-        .task-item::before { display: none !important; }
-        .task-box { color: #f97316; font-weight: bold; font-size: 16px; flex-shrink: 0; line-height: 1.5; margin-top: 2px; }
-        .task-content { flex: 1; min-width: 0; line-height: 1.75; color: #374151; }
+        /* TABLES */
+        .table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          margin: 32px 0;
+          border-radius: 12px;
+          border: 1px solid #E5E7EB;
+        }
+        .blog-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14.5px;
+          background: #FFFFFF;
+        }
+        .blog-table th {
+          background: #181E24;
+          color: #FFFFFF;
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 12px;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          padding: 14px 18px;
+          text-align: left;
+        }
+        .blog-table td {
+          padding: 14px 18px;
+          border-bottom: 1px solid #F1F5F9;
+          color: #334155;
+          vertical-align: top;
+        }
+        .blog-table tr:nth-child(even) td {
+          background: #F8FAFC;
+        }
 
-        /* Tag Row */
-        .tag-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 28px; }
-        .tag-row span { background: #fff7ed; border: 1px solid #fed7aa; color: #ea580c; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 6px; font-family: 'Inter', sans-serif; }
+        /* INTERACTIVE LOCAL TARIFF CALCULATOR */
+        .tariff-calculator-widget {
+          background: #FFFFFF;
+          border: 1px solid #E7E5E4;
+          border-radius: 16px;
+          padding: 28px;
+          margin: 40px 0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+        .tc-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .tc-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--ink-primary);
+        }
+        .tc-badge {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          background: #EBF5EE;
+          color: var(--accent-alpine);
+          padding: 4px 10px;
+          border-radius: 9999px;
+        }
+        .tc-slider-box {
+          margin-bottom: 24px;
+        }
+        .tc-slider-label {
+          display: flex;
+          justify-content: space-between;
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--ink-primary);
+          margin-bottom: 8px;
+        }
+        .tc-slider {
+          width: 100%;
+          height: 6px;
+          background: #E5E7EB;
+          border-radius: 9999px;
+          outline: none;
+          accent-color: var(--accent-terracotta);
+          cursor: pointer;
+        }
+        .tc-results-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+        }
+        @media (max-width: 640px) {
+          .tc-results-grid { grid-template-columns: 1fr; }
+        }
+        .tc-tier-box {
+          background: #FAF9F6;
+          border: 1px solid #E5E7EB;
+          border-radius: 10px;
+          padding: 14px;
+          text-align: center;
+        }
+        .tc-tier-box.highlight {
+          background: #FFFAF6;
+          border-color: #FDBA74;
+        }
+        .tc-tier-label {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--ink-secondary);
+          margin-bottom: 4px;
+          text-transform: uppercase;
+        }
+        .tc-tier-cost {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 19px;
+          font-weight: 800;
+          color: var(--ink-primary);
+        }
+        .tc-tier-box.highlight .tc-tier-cost {
+          color: var(--accent-terracotta);
+        }
 
-        /* Links */
-        .bp-article-body a { color: #f97316; text-decoration: none; font-weight: 600; border-bottom: 1px solid rgba(249,115,22,0.3); transition: border-color 0.15s, color 0.15s; }
-        .bp-article-body a:hover { color: #ea580c; border-bottom-color: #ea580c; }
-
-        /* Quick Jumplinks Box */
-        .quick-jumplinks-card { background: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid #f97316; border-radius: 0 12px 12px 0; padding: 24px 28px; margin: 36px 0 40px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-        .quick-jumplinks-header { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 16px; }
-        .quick-jumplinks-list { list-style: none !important; padding: 0 !important; margin: 0 !important; display: flex; flex-direction: column; gap: 10px; }
-        .quick-jumplinks-list li { padding-left: 0 !important; margin: 0 !important; }
-        .quick-jumplinks-list li::before { display: none !important; }
-        .quick-jumplinks-list a, .bp-anchor-link { color: #f97316 !important; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; text-decoration: none !important; border-bottom: none !important; transition: color 0.15s; }
-        .quick-jumplinks-list a:hover, .bp-anchor-link:hover { color: #ea580c !important; text-decoration: underline !important; }
-
-        /* Tables */
-        .table-wrap { width: 100%; overflow-x: auto; margin: 32px 0; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .blog-table { width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 14px; background: #ffffff; text-align: left; }
-        .blog-table th { background: #0f172a; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; padding: 14px 20px; }
-        .blog-table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; color: #334155; line-height: 1.65; vertical-align: top; }
-        .blog-table tr:nth-child(even) td { background: #f8fafc; }
-
-        /* Benefit List */
-        .blog-benefit-list { list-style: none !important; padding: 0 !important; margin: 24px 0 !important; display: flex; flex-direction: column; gap: 10px; }
-        .blog-benefit-list li { background: #fff7ed; border: 1px solid rgba(249,115,22,0.15); border-left: 3px solid #f97316; border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 15.5px; font-weight: 600; color: #1e293b; line-height: 1.5; margin: 0 !important; font-family: 'Inter', sans-serif; }
-        .blog-benefit-list li::before { display: none !important; }
-
-        /* FAQ Accordion - Clean natural headings without boxed containers */
-        .faq-accordion { margin: 24px 0 40px; display: flex; flex-direction: column; gap: 6px; width: 100%; }
-        .faq-accordion-item { background: transparent !important; border: none !important; border-bottom: 1px solid #e2e8f0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 0 18px 0 !important; margin-bottom: 14px; }
-        .faq-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0 6px 0 !important; cursor: pointer; list-style: none; user-select: none; font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 800; color: #0f172a; background: transparent !important; }
+        /* FAQ ACCORDION */
+        .faq-accordion {
+          margin: 28px 0 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .faq-accordion-item {
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
+          border-radius: 12px;
+          padding: 0 20px;
+          transition: border-color 0.2s;
+        }
+        .faq-accordion-item[open] {
+          border-color: #CBD5E1;
+        }
+        .faq-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 18px 0;
+          cursor: pointer;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--ink-primary);
+          list-style: none;
+        }
         .faq-summary::-webkit-details-marker { display: none; }
         .faq-summary::marker { display: none; }
-        .faq-q-title { flex: 1; min-width: 0; line-height: 1.4; color: #0f172a; }
-        .faq-chevron-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0; background: transparent !important; border: none !important; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s; }
-        .faq-summary:hover .faq-chevron-icon { color: #0f172a; }
-        .faq-accordion-item[open] .faq-chevron-icon { transform: rotate(180deg); color: #0f172a; }
-        .faq-answer { padding: 8px 0 4px 0; font-size: 17px; line-height: 1.85; color: #374151; font-family: 'Lato', sans-serif; background: transparent !important; border: none !important; }
-        .faq-answer p { margin: 0 0 12px !important; line-height: 1.85; color: #374151; font-size: 17px; }
-        .faq-answer p:last-child { margin-bottom: 0 !important; }
+        .faq-chevron-icon {
+          color: #94A3B8;
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .faq-accordion-item[open] .faq-chevron-icon {
+          transform: rotate(180deg);
+          color: var(--accent-terracotta);
+        }
+        .faq-answer {
+          padding: 0 0 18px;
+          font-size: 16px;
+          line-height: 1.8;
+          color: #4A5568;
+          border-top: 1px solid #F1F5F9;
+          margin-top: 4px;
+          padding-top: 14px;
+        }
 
-        /* Recommended Travel Stories Horizontal Grid */
+        /* COLUMN B: STICKY EDITORIAL DESK (SIDEBAR) */
+        .bp-sidebar {
+          position: sticky;
+          top: 80px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        @media (max-width: 1120px) {
+          .bp-sidebar { display: none; }
+        }
+
+        .bp-sidebar-card {
+          background: #FFFFFF;
+          border: 1px solid var(--hairline-border);
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+        }
+
+        /* KINETIC TABLE OF CONTENTS */
+        .bp-toc-header {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: var(--ink-muted);
+          margin-bottom: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .bp-toc-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .bp-toc-link {
+          font-size: 13.5px;
+          font-weight: 500;
+          color: var(--ink-secondary);
+          text-decoration: none;
+          line-height: 1.45;
+          display: block;
+          padding: 4px 0 4px 12px;
+          border-left: 2px solid transparent;
+          transition: all 0.15s;
+        }
+        .bp-toc-link:hover {
+          color: var(--accent-terracotta);
+          border-left-color: #FDBA74;
+        }
+        .bp-toc-link.is-active {
+          color: var(--accent-terracotta);
+          font-weight: 700;
+          border-left-color: var(--accent-terracotta);
+        }
+
+        /* SEASON & TARIFF BAROMETER WIDGET */
+        .barometer-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 17px;
+          font-weight: 800;
+          color: var(--ink-primary);
+          margin-bottom: 12px;
+        }
+        .barometer-status-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 13px;
+          padding: 8px 12px;
+          background: #FAF9F6;
+          border-radius: 8px;
+          margin-bottom: 10px;
+        }
+        .barometer-badge {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          color: #B45309;
+          background: #FEF3C7;
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+
+        /* DIRECT LOCAL OPERATOR CARD */
+        .operator-bridge-card {
+          background: linear-gradient(135deg, #181E24 0%, #0F1316 100%);
+          color: #FFFFFF;
+          border-radius: 16px;
+          padding: 24px;
+        }
+        .ob-badge {
+          font-family: 'Space Grotesk', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          color: #34D399;
+          margin-bottom: 8px;
+          display: inline-block;
+        }
+        .ob-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 18px;
+          font-weight: 800;
+          line-height: 1.3;
+          margin: 0 0 10px;
+          color: #FFFFFF;
+        }
+        .ob-text {
+          font-size: 13px;
+          color: #94A3B8;
+          line-height: 1.6;
+          margin-bottom: 18px;
+        }
+        .ob-btn {
+          display: block;
+          text-align: center;
+          background: var(--accent-terracotta);
+          color: #FFFFFF !important;
+          font-size: 13.5px;
+          font-weight: 700;
+          padding: 10px 16px;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: background 0.15s;
+        }
+        .ob-btn:hover {
+          background: #C2410C;
+        }
+
+        /* 7. MOBILE CHAPTER PILL (ON SCREENS < 1024PX) */
+        .mobile-chapter-bar {
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 998;
+          display: none;
+        }
+        @media (max-width: 1120px) {
+          .mobile-chapter-bar { display: block; }
+        }
+        .mobile-chapter-btn {
+          background: #181E24;
+          color: #FFFFFF;
+          border: 1px solid rgba(255,255,255,0.15);
+          font-size: 13px;
+          font-weight: 700;
+          padding: 10px 20px;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+          cursor: pointer;
+        }
+        .mobile-toc-drawer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          max-height: 70vh;
+          background: #FFFFFF;
+          border-top: 1px solid #E5E7EB;
+          border-radius: 20px 20px 0 0;
+          padding: 24px clamp(16px, 4vw, 28px) 36px;
+          z-index: 1002;
+          overflow-y: auto;
+          box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
+          transform: translateY(100%);
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mobile-toc-drawer.is-open {
+          transform: translateY(0);
+        }
+        .mobile-toc-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.4);
+          z-index: 1001;
+          display: none;
+        }
+        .mobile-toc-overlay.is-open {
+          display: block;
+        }
+
+        /* 8. RECOMMENDED STORIES HORIZONTAL GRID */
         .bp-recommended-section {
-          margin-top: 56px;
+          margin-top: 64px;
           padding-top: 48px;
-          border-top: 1px solid #e2e8f0;
+          border-top: 1px solid var(--hairline-border);
           width: 100%;
         }
-
-        .bp-recommended-header {
-          margin-bottom: 28px;
-        }
-
         .bp-recommended-title {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: clamp(26px, 3.2vw, 36px);
-          font-weight: 900;
-          color: #0f172a;
-          margin: 0 0 8px;
-          letter-spacing: -0.4px;
+          font-size: clamp(24px, 3vw, 34px);
+          font-weight: 800;
+          color: var(--ink-primary);
+          margin: 0 0 6px;
         }
-
-        .bp-recommended-subtitle {
-          font-family: 'Inter', sans-serif;
-          font-size: 15px;
-          color: #64748b;
-          margin: 0;
-          line-height: 1.5;
+        .bp-recommended-sub {
+          font-size: 14.5px;
+          color: var(--ink-muted);
+          margin-bottom: 32px;
         }
-
         .bp-recommended-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 28px;
-          width: 100%;
         }
-
-        @media (max-width: 960px) {
-          .bp-recommended-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-          }
+        @media (max-width: 900px) {
+          .bp-recommended-grid { grid-template-columns: 1fr; gap: 20px; }
         }
-
-        @media (max-width: 640px) {
-          .bp-recommended-grid {
-            grid-template-columns: 1fr;
-            gap: 20px;
-          }
-        }
-
         .bp-rec-card {
-          display: flex;
-          flex-direction: column;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
+          background: #FFFFFF;
+          border: 1px solid var(--hairline-border);
           border-radius: 16px;
           overflow: hidden;
           text-decoration: none;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+          display: flex;
+          flex-direction: column;
+          transition: transform 0.25s, box-shadow 0.25s;
         }
-
         .bp-rec-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 12px 28px rgba(0,0,0,0.09);
-          border-color: #cbd5e1;
+          box-shadow: 0 12px 28px rgba(0,0,0,0.06);
         }
-
         .bp-rec-img-box {
           position: relative;
           width: 100%;
-          height: 200px;
-          background: #0f172a;
+          aspect-ratio: 16 / 9;
+          background: #E5E7EB;
           overflow: hidden;
         }
-
         .bp-rec-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           display: block;
-          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 0.35s ease;
         }
-
         .bp-rec-card:hover .bp-rec-img {
-          transform: scale(1.05);
+          transform: scale(1.04);
         }
-
         .bp-rec-cat {
           position: absolute;
-          top: 14px;
-          left: 14px;
-          background: rgba(15, 23, 42, 0.85);
-          backdrop-filter: blur(8px);
-          color: #ffffff;
+          top: 12px;
+          left: 12px;
+          background: rgba(18, 22, 25, 0.85);
+          color: #FFFFFF;
           font-size: 11px;
           font-weight: 700;
-          font-family: 'Inter', sans-serif;
-          letter-spacing: 0.8px;
-          text-transform: uppercase;
-          padding: 5px 12px;
+          padding: 4px 10px;
           border-radius: 9999px;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
-
         .bp-rec-body {
-          padding: 20px 22px 22px;
+          padding: 20px;
           display: flex;
           flex-direction: column;
           flex: 1;
         }
-
         .bp-rec-title {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: 18px;
+          font-size: 17px;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--ink-primary);
           line-height: 1.4;
-          margin: 0 0 10px;
+          margin: 0 0 8px;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          transition: color 0.15s;
         }
-
-        .bp-rec-card:hover .bp-rec-title {
-          color: #ea580c;
-        }
-
         .bp-rec-excerpt {
-          font-family: 'Lato', sans-serif;
-          font-size: 14.5px;
-          color: #64748b;
+          font-size: 13.5px;
+          color: var(--ink-secondary);
           line-height: 1.6;
           margin: 0 0 16px;
           display: -webkit-box;
@@ -989,186 +1915,353 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           overflow: hidden;
           flex: 1;
         }
-
         .bp-rec-meta {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding-top: 14px;
-          border-top: 1px solid #f1f5f9;
-          font-family: 'Inter', sans-serif;
-          font-size: 12.5px;
+          font-size: 12px;
+          color: var(--ink-muted);
+          border-top: 1px solid #F1F5F9;
+          padding-top: 12px;
         }
-
-        .bp-rec-readtime {
-          color: #94a3b8;
-          font-weight: 500;
-        }
-
         .bp-rec-arrow {
-          color: #ea580c;
+          color: var(--accent-terracotta);
           font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          transition: transform 0.2s;
-        }
-
-        .bp-rec-card:hover .bp-rec-arrow {
-          transform: translateX(3px);
         }
       `}</style>
 
-      {/* Reading progress bar */}
-      <div className="reading-progress" id="reading-progress" suppressHydrationWarning />
+      {/* READING PROGRESS BAR AT VERY TOP */}
+      <div className="reading-progress-track">
+        <div className="reading-progress-fill" id="reading-progress-fill" suppressHydrationWarning />
+      </div>
 
-      {/* Reading Progress & Smooth Scrolling Client Script */}
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          (function(){
-            // Progress Bar
-            var bar = document.getElementById('reading-progress');
-            if(bar) {
-              window.addEventListener('scroll', function(){
-                var scrollTop = window.scrollY;
-                var docHeight = document.documentElement.scrollHeight - window.innerHeight;
-                var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-                bar.style.width = Math.min(progress, 100) + '%';
-              }, {passive: true});
-            }
-
-            // Smooth Scroll for Quick Jumplinks (anchor links starting with #)
-            document.addEventListener('click', function(e) {
-              var target = e.target;
-              while (target && target !== document) {
-                if (target.tagName === 'A' && target.getAttribute('href') && target.getAttribute('href').startsWith('#')) {
-                  var id = target.getAttribute('href').substring(1);
-                  var el = document.getElementById(id);
-                  if (el) {
-                    e.preventDefault();
-                    var yOffset = -80;
-                    var y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
-                    history.pushState(null, '', '#' + id);
-                  }
-                  break;
-                }
-                target = target.parentNode;
-              }
-            });
-          })();
-        `
-      }} />
+      {/* STICKY READER BAR (SLIDES DOWN ON SCROLL) */}
+      <header className="sticky-reader-bar" id="sticky-reader-bar" suppressHydrationWarning>
+        <div className="srb-left">
+          <Link href="/">
+            <img src="/tripdm-logo.png" alt="TripDM" className="srb-logo" />
+          </Link>
+          <div className="srb-divider" />
+          <div className="srb-title">{blog.title}</div>
+        </div>
+        <div className="srb-right">
+          <Link href="/" className="srb-cta-btn">
+            Find Travel Agents →
+          </Link>
+        </div>
+      </header>
 
       <div className="blog-wrapper">
-
-        {/* Top Navbar */}
+        {/* PRIMARY TOP NAV */}
         <nav className="bp-nav">
           <div className="bp-nav-inner">
             <Link href="/" className="bp-brand">
-              <img src="/tripdm-logo.png" alt="TripDM" style={{ height: 64, width: 'auto', objectFit: 'contain' }} />
+              <img src="/tripdm-logo.png" alt="TripDM" style={{ height: 54, width: 'auto', objectFit: 'contain' }} />
             </Link>
-            <div className="bp-nav-links">
-              <Link href="/" className="bp-nav-link">Find Travel Agents →</Link>
+            <div className="bp-nav-right">
+              <Link href="/" style={{ color: '#4A5568', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                Find Travel Agents →
+              </Link>
             </div>
           </div>
         </nav>
 
-        {/* Main Content Container */}
+        {/* MAIN CONTAINER */}
         <main className="bp-container">
+          {/* BREADCRUMB ROW */}
+          <div className="bp-breadcrumb-row">
+            <div className="bp-breadcrumbs">
+              <Link href="/">Home</Link>
+              <span>/</span>
+              <Link href="/blog">Blog</Link>
+              <span>/</span>
+              <span>{blog.category}</span>
+            </div>
+          </div>
 
-          {/* Article Header (Above Cover Image) */}
+          {/* ARTICLE HEADER (ABOVE HERO) */}
           <header className="bp-header">
-            {blog.category && (
-              <span className="bp-category-badge">{blog.category}</span>
-            )}
+            {blog.category && <span className="bp-category-badge">{blog.category}</span>}
             <h1 className="bp-title">{blog.title}</h1>
-            <div className="bp-meta-row">
-              <span className="bp-meta-author">By {blog.author}</span>
-              <span className="bp-meta-dot">|</span>
-              <span className="bp-meta-date">{formatDate(blog.publishedAt)}</span>
-              {blog.readTime && (
-                <>
-                  <span className="bp-meta-dot">|</span>
-                  <span className="bp-meta-readtime">{blog.readTime}</span>
-                </>
-              )}
-              <span className="bp-meta-dot">|</span>
-              <span className="bp-meta-views">
-                <svg className="bp-view-icon" viewBox="0 0 24 24">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-                <BlogViewTracker slug={blog.slug} blogId={blog.id} initialViews={blog.views} fallbackViewsText={mainViews} />
-              </span>
-              <span className="bp-meta-dot">|</span>
-              <BlogShareBar url={`https://tripdm.com/blog/${blog.slug}`} title={blog.title} />
+
+            {/* AUTHOR MASTHEAD ROW */}
+            <div className="bp-author-masthead">
+              <div className="bp-author-left">
+                <div className="bp-author-avatar">
+                  {blog.author.charAt(0)}
+                </div>
+                <div className="bp-author-info">
+                  <div className="bp-author-name-row">
+                    <span className="bp-author-name">By {blog.author}</span>
+                  </div>
+                  <div className="bp-meta-sub">
+                    <span>{formatDate(blog.publishedAt)}</span>
+                    <span>•</span>
+                    <span>{blog.readTime || '8 min read'}</span>
+                    <span>•</span>
+                    <BlogViewTracker slug={blog.slug} blogId={blog.id} initialViews={blog.views} fallbackViewsText={mainViews} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bp-author-right">
+                <BlogShareBar url={`https://tripdm.com/blog/${blog.slug}`} title={blog.title} />
+              </div>
             </div>
           </header>
 
-          {/* Cover Hero Image */}
-          <div className="bp-hero-box">
+          {/* COVER HERO: HIGH-RES PHOTO OR TYPOGRAPHIC COVER POSTER FALLBACK */}
+          <div className="bp-hero-container">
             {blog.coverImage ? (
-              <img src={blog.coverImage} alt={blog.title} className="bp-hero-img" />
+              <div className="bp-hero-box">
+                <img src={blog.coverImage} alt={blog.title} className="bp-hero-img" />
+              </div>
             ) : (
-              <div className="bp-hero-fallback">
-                <img src="/tripdm-logo.png" alt="TripDM" style={{ width: 140, opacity: 0.15, objectFit: 'contain' }} />
+              /* TYPOGRAPHIC COVER POSTER FALLBACK: CLEAN DYNAMIC COVER FOR ANY ARTICLE */
+              <div className="bp-poster-fallback">
+                <svg className="bp-poster-topo" viewBox="0 0 500 500" fill="none" stroke="#D9531E" strokeWidth="1.2">
+                  <path d="M50 100 Q150 50 250 120 T450 100 M20 200 Q180 140 300 220 T480 190 M10 300 Q140 240 280 320 T490 280 M40 400 Q160 350 320 420 T480 380" />
+                </svg>
+                <div className="bp-poster-top-bar">
+                  <span className="bp-poster-stamp">TRIPDM EDITORIAL</span>
+                  <span className="bp-poster-audit">{blog.category}</span>
+                </div>
+                <div className="bp-poster-body">
+                  <h2 className="bp-poster-watermark">{blog.title}</h2>
+                  {blog.excerpt && (
+                    <p className="bp-poster-sub">{blog.excerpt}</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Main Layout */}
-          <div className="bp-main-layout">
+          {/* TWO-COLUMN ASYMMETRIC MAGAZINE GRID */}
+          <div className="bp-magazine-grid">
+            {/* COLUMN A: 720PX READING COLUMN */}
+            <article className="bp-reading-column">
 
-            {/* Article Main Content */}
-            <article className="bp-article-column">
+              {/* ARTICLE BODY */}
               <div
                 className="bp-article-body"
                 dangerouslySetInnerHTML={{ __html: contentHtml }}
               />
 
-              {/* Comments Section */}
+              {/* COMMENTS SECTION */}
               <BlogComments blogSlug={blog.slug} blogId={blog.id} blogTitle={blog.title} />
-
-              {/* Dynamic Horizontal Recommended Stories Section */}
-              {recommendedBlogs.length > 0 && (
-                <section className="bp-recommended-section">
-                  <div className="bp-recommended-header">
-                    <h2 className="bp-recommended-title">Recommended For You</h2>
-                    <p className="bp-recommended-subtitle">Handpicked destination guides and itineraries related to this topic</p>
-                  </div>
-
-                  <div className="bp-recommended-grid">
-                    {recommendedBlogs.map((item) => (
-                      <Link key={item.id} href={`/blog/${item.slug}`} className="bp-rec-card">
-                        <div className="bp-rec-img-box">
-                          <img
-                            src={item.coverImage || 'https://images.unsplash.com/photo-1506461883276-594a12b11ce3?auto=format&fit=crop&w=600&q=80'}
-                            alt={item.title}
-                            className="bp-rec-img"
-                          />
-                          {item.category && <span className="bp-rec-cat">{item.category}</span>}
-                        </div>
-                        <div className="bp-rec-body">
-                          <h3 className="bp-rec-title">{item.title}</h3>
-                          {item.excerpt && <p className="bp-rec-excerpt">{item.excerpt}</p>}
-                          <div className="bp-rec-meta">
-                            <span className="bp-rec-readtime">{item.readTime || '5 min read'}</span>
-                            <span className="bp-rec-arrow">Read Guide →</span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </section>
-              )}
             </article>
 
+            {/* COLUMN B: STICKY EDITORIAL DESK (DESKTOP SIDEBAR) */}
+            <aside className="bp-sidebar">
+              {/* KINETIC TABLE OF CONTENTS */}
+              {tocItems.length > 0 && (
+                <div className="bp-sidebar-card">
+                  <div className="bp-toc-header">
+                    <span>Table of Contents</span>
+                    <span>📑</span>
+                  </div>
+                  <ul className="bp-toc-list">
+                    {tocItems.map((item) => (
+                      <li key={item.id}>
+                        <a href={`#${item.id}`} className="bp-toc-link">
+                          {item.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </aside>
           </div>
 
+          {/* MOBILE CHAPTER PILL (OPENS TOC ON PHONE SCREENS) */}
+          {tocItems.length > 0 && (
+            <>
+              <div className="mobile-chapter-bar">
+                <button
+                  type="button"
+                  id="mobile-toc-toggle-btn"
+                  className="mobile-chapter-btn"
+                >
+                  <span>📑</span>
+                  <span>Jump to Section</span>
+                </button>
+              </div>
+
+              <div className="mobile-toc-overlay" id="mobile-toc-overlay" />
+              <div className="mobile-toc-drawer" id="mobile-toc-drawer">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div style={{ fontFamily: 'Playfair Display', fontWeight: 800, fontSize: 18 }}>Table of Contents</div>
+                  <button id="mobile-toc-close-btn" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#64748B' }}>✕</button>
+                </div>
+                <ul className="bp-toc-list">
+                  {tocItems.map((item) => (
+                    <li key={item.id} style={{ marginBottom: 8 }}>
+                      <a href={`#${item.id}`} className="bp-toc-link mobile-jump-link">
+                        {item.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+
+          {/* RECOMMENDED STORIES SECTION */}
+          {recommendedBlogs.length > 0 && (
+            <section className="bp-recommended-section">
+              <h2 className="bp-recommended-title">Recommended Field Dispatches</h2>
+              <p className="bp-recommended-sub">Handpicked ground guides & budget itineraries from our verified travel team</p>
+
+              <div className="bp-recommended-grid">
+                {recommendedBlogs.map((item) => (
+                  <Link key={item.id} href={`/blog/${item.slug}`} className="bp-rec-card">
+                    <div className="bp-rec-img-box">
+                      <img
+                        src={item.coverImage || 'https://images.unsplash.com/photo-1506461883276-594a12b11ce3?auto=format&fit=crop&w=600&q=80'}
+                        alt={item.title}
+                        className="bp-rec-img"
+                      />
+                      {item.category && <span className="bp-rec-cat">{item.category}</span>}
+                    </div>
+                    <div className="bp-rec-body">
+                      <h3 className="bp-rec-title">{item.title}</h3>
+                      {item.excerpt && <p className="bp-rec-excerpt">{item.excerpt}</p>}
+                      <div className="bp-rec-meta">
+                        <span>{item.readTime || '6 min read'}</span>
+                        <span className="bp-rec-arrow">Read Guide →</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </main>
 
         <Footer />
       </div>
+
+      {/* CLIENT SCRIPT FOR INTERACTION (SCROLL PROGRESS, STICKY READER BAR, TOC ACTIVE TRACKING, CALCULATOR) */}
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          (function() {
+            function initEditorialInteractions() {
+              // 1. Reading Progress & Sticky Reader Bar
+              var fill = document.getElementById('reading-progress-fill');
+              var srb = document.getElementById('sticky-reader-bar');
+
+              function onScroll() {
+                var scrollTop = window.scrollY;
+                var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                var progress = docHeight > 0 ? Math.min(Math.round((scrollTop / docHeight) * 100), 100) : 0;
+
+                if (fill) fill.style.width = progress + '%';
+
+                if (srb) {
+                  if (scrollTop > 380) {
+                    srb.classList.add('is-visible');
+                  } else {
+                    srb.classList.remove('is-visible');
+                  }
+                }
+              }
+
+              window.addEventListener('scroll', onScroll, { passive: true });
+              onScroll();
+
+              // 2. Kinetic Table of Contents Active Tracking
+              var tocLinks = document.querySelectorAll('.bp-toc-link');
+              var headings = [];
+
+              tocLinks.forEach(function(link) {
+                var href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                  var el = document.getElementById(href.substring(1));
+                  if (el) headings.push({ el: el, link: link });
+                }
+              });
+
+              if (headings.length > 0) {
+                window.addEventListener('scroll', function() {
+                  var fromTop = window.scrollY + 120;
+                  var current = headings[0];
+                  for (var i = 0; i < headings.length; i++) {
+                    if (headings[i].el.offsetTop <= fromTop) {
+                      current = headings[i];
+                    }
+                  }
+                  tocLinks.forEach(function(l) { l.classList.remove('is-active'); });
+                  if (current && current.link) current.link.classList.add('is-active');
+                }, { passive: true });
+              }
+
+              // 4. Smooth Anchor Scrolling with Header Offset Compensation
+              document.addEventListener('click', function(e) {
+                var target = e.target;
+                while (target && target !== document) {
+                  if (target.tagName === 'A' && target.getAttribute('href') && target.getAttribute('href').startsWith('#')) {
+                    var id = target.getAttribute('href').substring(1);
+                    var el = document.getElementById(id);
+                    if (el) {
+                      e.preventDefault();
+                      var offset = -76;
+                      var y = el.getBoundingClientRect().top + window.pageYOffset + offset;
+                      window.scrollTo({ top: y, behavior: 'smooth' });
+                      history.pushState(null, '', '#' + id);
+
+                      // Close mobile drawer if opened
+                      var drawer = document.getElementById('mobile-toc-drawer');
+                      var overlay = document.getElementById('mobile-toc-overlay');
+                      if (drawer) drawer.classList.remove('is-open');
+                      if (overlay) overlay.classList.remove('is-open');
+                    }
+                    break;
+                  }
+                  target = target.parentNode;
+                }
+              });
+
+              // 5. Mobile TOC Drawer Toggle
+              var toggleBtn = document.getElementById('mobile-toc-toggle-btn');
+              var closeBtn = document.getElementById('mobile-toc-close-btn');
+              var drawer = document.getElementById('mobile-toc-drawer');
+              var overlay = document.getElementById('mobile-toc-overlay');
+
+              if (toggleBtn && drawer && overlay) {
+                toggleBtn.addEventListener('click', function() {
+                  drawer.classList.add('is-open');
+                  overlay.classList.add('is-open');
+                });
+              }
+              if (closeBtn && drawer && overlay) {
+                closeBtn.addEventListener('click', function() {
+                  drawer.classList.remove('is-open');
+                  overlay.classList.remove('is-open');
+                });
+              }
+              if (overlay && drawer) {
+                overlay.addEventListener('click', function() {
+                  drawer.classList.remove('is-open');
+                  overlay.classList.remove('is-open');
+                });
+              }
+            }
+
+            // Execute after React hydration completes
+            if (typeof window !== 'undefined') {
+              if (document.readyState === 'complete') {
+                setTimeout(initEditorialInteractions, 100);
+              } else {
+                window.addEventListener('load', function() {
+                  setTimeout(initEditorialInteractions, 100);
+                });
+              }
+            }
+          })();
+        `
+      }} />
     </>
   );
 }
+  
