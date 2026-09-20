@@ -30,6 +30,7 @@ import AdminItineraryPhotoManager from '@/components/AdminItineraryPhotoManager'
 import AdminBlogPhotoManager from '@/components/AdminBlogPhotoManager';
 import AdminDestinationStories from '@/components/AdminDestinationStories';
 import CheckoutModal from '@/components/CheckoutModal';
+import AgencyWelcomeModal from '@/components/AgencyWelcomeModal';
 import LandingDiscovery from '@/components/LandingDiscovery';
 import { normalizeExperienceName } from '@/lib/discoveryEngine';
 import { useComparison } from '@/contexts/ComparisonContext';
@@ -371,12 +372,30 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const [pendingListings, setPendingListings] = useState<any[]>([]);
   const [agencyActiveSection, setAgencyActiveSection] = useState('listings');
   const [userActiveSection, setUserActiveSection] = useState('listings');
+  const [showAgencyWelcomeModal, setShowAgencyWelcomeModal] = useState(false);
   const [fromSection, setFromSection] = useState('listings');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [agencyMobileMenuOpen, setAgencyMobileMenuOpen] = useState(false);
   const [pricingConfig, setPricingConfig] = useState({ starterPrice: 2000, premiumPrice: 5000, vipPrice: 10000, addonCreditPrice: 1 });
   const searchParams = useSearchParams();
   const sectionParam = searchParams.get('section');
+
+  // Auto-trigger welcome modal on first-ever agency dashboard visit
+  useEffect(() => {
+    if (loading || !user) return;
+    if (userData?.role === 'agency' || (userData?.role === 'admin' && routeMode === 'agency')) {
+      try {
+        const welcomeKey = `tripdm_agency_welcome_completed_${user.uid}`;
+        const hasSeenWelcome = localStorage.getItem(welcomeKey);
+        if (!hasSeenWelcome) {
+          setShowAgencyWelcomeModal(true);
+          localStorage.setItem(welcomeKey, 'true');
+        }
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    }
+  }, [user, userData?.role, routeMode, loading]);
   
   useEffect(() => {
     if (loading) return;
@@ -7617,6 +7636,18 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     <Settings className={`h-4 w-4 ${agencyActiveSection === 'settings' ? 'text-white' : 'text-slate-500'}`} />
                     <span>Settings</span>
                   </button>
+
+                  <button
+                    onClick={() => {
+                      setShowAgencyWelcomeModal(true);
+                      setAgencyMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer text-amber-800 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/80"
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                    <span>Partner Guide</span>
+                  </button>
                 </>
               ) : (
                 <div className="p-3 text-center rounded-lg bg-amber-50 border border-amber-200/70">
@@ -7767,6 +7798,15 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     <Settings className={`h-4 w-4 ${agencyActiveSection === 'settings' ? 'text-white' : 'text-slate-500'}`} />
                     <span>Settings</span>
                   </button>
+
+                  <button
+                    onClick={() => setShowAgencyWelcomeModal(true)}
+                    className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer text-amber-800 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/80 mt-1"
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                    <span>Partner Guide</span>
+                  </button>
                 </div>
               ) : (
                 <div className="p-4 text-center rounded-lg bg-amber-50 border border-amber-200/70">
@@ -7845,6 +7885,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 </h1>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                <button
+                  onClick={() => setShowAgencyWelcomeModal(true)}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200/80 hover:border-amber-300 hover:shadow-xs transition-all duration-200 cursor-pointer"
+                  style={{ borderRadius: '6px' }}
+                  title="Agency Guide & Listing Masterclass"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                  <span className="hidden sm:inline">Partner Guide</span>
+                  <span className="inline sm:hidden">Guide</span>
+                </button>
                 <a
                   href="/"
                   className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold bg-white/90 text-slate-700 hover:bg-white hover:text-slate-900 border border-slate-200/80 hover:border-slate-300 hover:shadow-xs transition-all duration-200"
@@ -9702,6 +9752,19 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
             agencyEmail={userData?.email}
             onSuccess={(newPlan) => {
               window.location.reload();
+            }}
+          />
+
+          <AgencyWelcomeModal
+            isOpen={showAgencyWelcomeModal}
+            onClose={() => setShowAgencyWelcomeModal(false)}
+            agencyName={userData?.companyName || userData?.name || 'Partner'}
+            onStartNewListing={() => {
+              setAgencyActiveSection('listings');
+              setShowListingForm(true);
+              setShowBulkUpload(false);
+              setEditingListing(null);
+              setViewingListing(null);
             }}
           />
         </div>
