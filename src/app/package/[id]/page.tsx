@@ -76,13 +76,21 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     imageUrl = listing.photos[0];
   }
 
+  const canonicalUrl = `https://tripdm.com/package/${resolvedParams.id}`;
+
   return {
     title: `${title} | TripDM`,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
-      images: imageUrl ? [{ url: imageUrl }] : [],
+      url: canonicalUrl,
+      siteName: 'TripDM',
+      type: 'website',
+      images: imageUrl ? [{ url: imageUrl, alt: title }] : [],
     },
     twitter: {
       card: 'summary_large_image',

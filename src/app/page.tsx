@@ -53,6 +53,21 @@ async function getApprovedListings() {
 export const metadata: Metadata = {
   title: "TripDM: Direct Message. Better Travel.",
   description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  alternates: {
+    canonical: 'https://tripdm.com',
+  },
+  openGraph: {
+    title: "TripDM: Direct Message. Better Travel.",
+    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+    url: 'https://tripdm.com',
+    siteName: 'TripDM',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "TripDM: Direct Message. Better Travel.",
+    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  },
 };
 
 import { Suspense } from 'react';

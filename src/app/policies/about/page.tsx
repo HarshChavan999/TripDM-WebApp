@@ -4,6 +4,9 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'About Us | TripDM',
   description: 'About TripDM - Your Trip. Your Choice. Your Direct Connection. Learn how TripDM connects travelers and verified travel agents directly.',
+  alternates: {
+    canonical: 'https://tripdm.com/policies/about',
+  },
 };
 
 export default function AboutPage() {

@@ -8,10 +8,12 @@ import BlogComments from '@/components/BlogComments';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
   try {
     const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs?pageSize=10000`;
-    const res = await fetch(url);
+    const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) return [{ slug: 'default' }];
     const data = await res.json();
     if (!data.documents || !Array.isArray(data.documents) || data.documents.length === 0) {
@@ -77,7 +79,7 @@ function parseBlogDoc(doc: any): Blog {
 async function getBlogBySlug(slug: string): Promise<Blog | null> {
   try {
     const directUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs/${slug}`;
-    const directRes = await fetch(directUrl, { cache: 'no-store' });
+    const directRes = await fetch(directUrl, { next: { revalidate: 3600 } });
     if (directRes.ok) {
       const doc = await directRes.json();
       if (doc && doc.fields) return parseBlogDoc(doc);
@@ -90,7 +92,7 @@ async function getBlogBySlug(slug: string): Promise<Blog | null> {
         limit: 1,
       },
     };
-    const res = await fetch(queryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), cache: 'no-store' });
+    const res = await fetch(queryUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), next: { revalidate: 3600 } });
     if (!res.ok) return null;
     const data = await res.json();
     const item = data.find((d: any) => d.document);
@@ -111,7 +113,7 @@ async function getRecommendedBlogs(currentBlog: Blog): Promise<Blog[]> {
         limit: 50,
       },
     };
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), cache: 'no-store' });
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), next: { revalidate: 3600 } });
     let allBlogs: Blog[] = [];
     if (res.ok) {
       const data = await res.json();

@@ -1,4 +1,13 @@
 import React from 'react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Conditions of Use & Terms | TripDM',
+  description: 'These Conditions of Use & Sale govern access to and use of the TripDM platform.',
+  alternates: {
+    canonical: 'https://tripdm.com/policies/conditions-of-use',
+  },
+};
 
 export default function ConditionsOfUse() {
   return (

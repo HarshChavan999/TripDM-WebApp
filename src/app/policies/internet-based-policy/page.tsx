@@ -1,4 +1,13 @@
 import React from 'react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Internet-Based Policy & Copyright | TripDM',
+  description: 'Standards, rules, and copyright practices governing the use of the TripDM Platform.',
+  alternates: {
+    canonical: 'https://tripdm.com/policies/internet-based-policy',
+  },
+};
 
 export default function InternetBasedPolicy() {
   return (

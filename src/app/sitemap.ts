@@ -11,27 +11,61 @@ async function fetchAllListings(baseUrl: string): Promise<MetadataRoute.Sitemap>
   const packageUrls: MetadataRoute.Sitemap = [];
 
   try {
-    initializeFirebase();
-    const db = getFirestore();
-
-    const snapshot = await db.collection('listings').get();
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-
-      // Only include public (approved) packages
-      if (data.approved === false) continue;
-
-      const updateTime = data.updatedAt || data.createdAt || doc.updateTime;
-
-      packageUrls.push({
-        url: `${baseUrl}/package/${doc.id}`,
-        lastModified: updateTime ? new Date(updateTime.seconds ? updateTime.seconds * 1000 : updateTime) : new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.8,
-      });
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'listings' }],
+        where: {
+          fieldFilter: { field: { fieldPath: 'approved' }, op: 'EQUAL', value: { booleanValue: true } }
+        },
+        limit: 1000
+      }
+    };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+      next: { revalidate: 3600 }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      for (const item of data) {
+        if (!item.document) continue;
+        const nameParts = item.document.name.split('/');
+        const id = nameParts[nameParts.length - 1];
+        const updateTime = item.document.updateTime;
+        packageUrls.push({
+          url: `${baseUrl}/package/${id}`,
+          lastModified: updateTime ? new Date(updateTime) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        });
+      }
     }
   } catch (error) {
-    console.error("Error fetching listings for sitemap:", error);
+    console.error("Error fetching listings for sitemap via REST:", error);
+  }
+
+  // Fallback to Firebase Admin if REST returned empty
+  if (packageUrls.length === 0) {
+    try {
+      initializeFirebase();
+      const db = getFirestore();
+      const snapshot = await db.collection('listings').get();
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        if (data.approved === false) continue;
+        const updateTime = data.updatedAt || data.createdAt || doc.updateTime;
+        packageUrls.push({
+          url: `${baseUrl}/package/${doc.id}`,
+          lastModified: updateTime ? new Date(updateTime.seconds ? updateTime.seconds * 1000 : updateTime) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching listings for sitemap via Admin SDK:", error);
+    }
   }
 
   return packageUrls;
@@ -41,30 +75,67 @@ async function fetchAllBlogs(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   const blogUrls: MetadataRoute.Sitemap = [];
 
   try {
-    initializeFirebase();
-    const db = getFirestore();
-
-    const snapshot = await db.collection('blogs').get();
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-
-      // Only include published blogs
-      if (data.published === false) continue;
-
-      const slug = data.slug || doc.id;
-      if (!slug || slug === 'undefined') continue;
-
-      const updatedAt = data.updatedAt || data.publishedAt || doc.updateTime;
-
-      blogUrls.push({
-        url: `${baseUrl}/blog/${slug}`,
-        lastModified: updatedAt ? new Date(updatedAt) : new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      });
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'blogs' }],
+        where: {
+          fieldFilter: { field: { fieldPath: 'published' }, op: 'EQUAL', value: { booleanValue: true } }
+        },
+        limit: 10000
+      }
+    };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+      next: { revalidate: 3600 }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      for (const item of data) {
+        if (!item.document) continue;
+        const fields = item.document.fields || {};
+        const slug = fields.slug?.stringValue;
+        const nameParts = item.document.name.split('/');
+        const id = nameParts[nameParts.length - 1];
+        const finalSlug = slug || id;
+        if (!finalSlug || finalSlug === 'undefined') continue;
+        const updatedAt = fields.updatedAt?.stringValue || fields.publishedAt?.stringValue || item.document.updateTime;
+        blogUrls.push({
+          url: `${baseUrl}/blog/${finalSlug}`,
+          lastModified: updatedAt ? new Date(updatedAt) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
+      }
     }
   } catch (error) {
-    console.error("Error fetching blogs for sitemap:", error);
+    console.error("Error fetching blogs for sitemap via REST:", error);
+  }
+
+  // Fallback to Firebase Admin if REST returned empty
+  if (blogUrls.length === 0) {
+    try {
+      initializeFirebase();
+      const db = getFirestore();
+      const snapshot = await db.collection('blogs').get();
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        if (data.published === false) continue;
+        const slug = data.slug || doc.id;
+        if (!slug || slug === 'undefined') continue;
+        const updatedAt = data.updatedAt || data.publishedAt || doc.updateTime;
+        blogUrls.push({
+          url: `${baseUrl}/blog/${slug}`,
+          lastModified: updatedAt ? new Date(updatedAt) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching blogs for sitemap via Admin SDK:", error);
+    }
   }
 
   return blogUrls;
