@@ -24,6 +24,7 @@ interface UserProfileProps {
   setProfilePhone: (val: string) => void;
   profilePhotoUrl: string | null;
   handleProfilePhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleDeleteProfilePhoto?: () => void;
   isEditingProfile: boolean;
   setIsEditingProfile: (val: boolean) => void;
   savingProfile: boolean;
@@ -45,6 +46,7 @@ export default function UserProfile({
   setProfilePhone,
   profilePhotoUrl,
   handleProfilePhotoChange,
+  handleDeleteProfilePhoto,
   isEditingProfile,
   setIsEditingProfile,
   savingProfile,
@@ -56,6 +58,18 @@ export default function UserProfile({
   const [showAddCoTraveller, setShowAddCoTraveller] = useState(false);
   const [newCompanion, setNewCompanion] = useState({ name: '', contact: '', relationship: 'Spouse' });
   const [realLocation, setRealLocation] = useState('');
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [profilePhotoUrl]);
+
+  const hasValidPhoto = Boolean(
+    profilePhotoUrl && 
+    typeof profilePhotoUrl === 'string' && 
+    profilePhotoUrl.trim() !== '' && 
+    !imageError
+  );
 
   // Fetch location if not present
   useEffect(() => {
@@ -166,22 +180,51 @@ export default function UserProfile({
           
           {/* Avatar & User Details */}
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-14 sm:-mt-16 text-center sm:text-left">
-            {/* Avatar with Upload Trigger */}
-            <div className="relative group shrink-0">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white bg-slate-900 shadow-md overflow-hidden flex items-center justify-center text-white select-none">
-                {profilePhotoUrl ? (
-                  <img src={profilePhotoUrl} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl sm:text-4xl font-black">{displayName.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-              <label
-                title="Change profile photo"
-                className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white cursor-pointer transition-opacity z-20 border-4 border-transparent"
-              >
-                <Camera className="w-6 h-6" />
-                <input type="file" accept="image/*" onChange={handleProfilePhotoChange} className="hidden" />
-              </label>
+            {/* Avatar with Internal Hover Controls */}
+            <div className="relative group shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white bg-slate-100 shadow-md overflow-hidden flex items-center justify-center select-none">
+              {hasValidPhoto ? (
+                <img
+                  src={profilePhotoUrl!}
+                  alt="Profile"
+                  onError={() => setImageError(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-500">
+                  <User className="w-12 h-12 sm:w-14 sm:h-14 text-slate-500" />
+                </div>
+              )}
+
+              {/* Hover overlay with Change and Delete actions (strictly contained inside the circle) */}
+              {hasValidPhoto ? (
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2.5 transition-opacity z-20">
+                  <label
+                    title="Change profile photo"
+                    className="p-2 rounded-full bg-white/20 hover:bg-white/35 text-white cursor-pointer transition-all hover:scale-110"
+                  >
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <input type="file" accept="image/*" onChange={handleProfilePhotoChange} className="hidden" />
+                  </label>
+                  {handleDeleteProfilePhoto && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteProfilePhoto}
+                      title="Delete profile photo"
+                      className="p-2 rounded-full bg-rose-600/90 hover:bg-rose-600 text-white cursor-pointer transition-all hover:scale-110 border-none"
+                    >
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <label
+                  title="Upload profile photo"
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white cursor-pointer transition-opacity z-20"
+                >
+                  <Camera className="w-6 h-6" />
+                  <input type="file" accept="image/*" onChange={handleProfilePhotoChange} className="hidden" />
+                </label>
+              )}
             </div>
 
             {/* Name & Metadata */}

@@ -1218,7 +1218,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       setProfileName(userData.name || userData.companyName || user.displayName || (user.email ? user.email.split('@')[0] : '') || '');
       setProfilePhone(userData.phone || userData.contactNumber || '');
       setProfileEmail(user.email || '');
-      setProfilePhotoUrl(userData.avatarUrl || user.photoURL || '');
+      setProfilePhotoUrl(typeof userData.avatarUrl === 'string' ? userData.avatarUrl.trim() : '');
       setProfileImageError(false);
       setCoTravellers(userData.coTravellers || []);
     }
@@ -1347,10 +1347,29 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
       setProfilePhotoUrl(downloadUrl);
       setProfileImageError(false);
-      alert('Profile picture updated successfully!');
     } catch (error) {
       console.error('Error uploading profile photo:', error);
       alert('Failed to upload profile picture.');
+    }
+  };
+
+  // Remove avatar from user profile and update user document in Firestore directly
+  const handleDeleteProfilePhoto = async () => {
+    if (!user) return;
+
+    const dbInstance = getDbInstance();
+    if (!dbInstance) return;
+
+    try {
+      await updateDoc(doc(dbInstance, 'users', user.uid), {
+        avatarUrl: ''
+      });
+
+      setProfilePhotoUrl('');
+      setProfileImageError(false);
+    } catch (error) {
+      console.error('Error removing profile photo:', error);
+      alert('Failed to remove profile photo.');
     }
   };
 
@@ -2458,16 +2477,20 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       const unsubscribe = onSnapshot(listingsQuery, async (snapshot) => {
         const listingsData = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
           const listingData = docSnapshot.data() as any;
-          // Get agency name
-          let agencyName = 'Unknown Agency';
-          let agencyData: any = null;
+          // Get agency name and logo
+          let agencyName = listingData.agencyName || 'Unknown Agency';
+          let agencyLogo = listingData.agencyLogo || listingData.logoUrl || null;
+          let agencyData: any = listingData.agencyData || null;
           try {
             const agencyDoc = await getDoc(doc(dbInstance, 'users', listingData.agencyId));
-            agencyData = agencyDoc.exists() ? agencyDoc.data() as any : null;
-            agencyName = agencyData?.companyName || 'Unknown Agency';
+            if (agencyDoc.exists()) {
+              agencyData = agencyDoc.data() as any;
+              agencyName = agencyData?.companyName || agencyData?.name || agencyData?.displayName || agencyName;
+              agencyLogo = agencyData?.logoUrl || agencyData?.agencyLogo || agencyData?.avatarUrl || agencyLogo;
+            }
           } catch {}
 
-          return { id: docSnapshot.id, ...listingData, agencyName, agencyData };
+          return { id: docSnapshot.id, ...listingData, agencyName, agencyLogo, agencyData };
         }));
         setListings(listingsData);
       }, (err) => {
@@ -4972,7 +4995,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       }}
                     >
                       {userData.avatarUrl ? (
-                        <img src={userData.avatarUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200" />
+                        <img
+                          src={userData.avatarUrl}
+                          alt="Profile"
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
                       ) : (
                         <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-slate-600 border border-gray-200">
                           <User className="h-4 w-4" />
@@ -6847,6 +6875,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   setProfilePhone={setProfilePhone}
                   profilePhotoUrl={profilePhotoUrl}
                   handleProfilePhotoChange={handleProfilePhotoChange}
+                  handleDeleteProfilePhoto={handleDeleteProfilePhoto}
                   isEditingProfile={isEditingProfile}
                   setIsEditingProfile={setIsEditingProfile}
                   savingProfile={savingProfile}

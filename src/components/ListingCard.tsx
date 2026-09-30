@@ -3,11 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from './ui/badge';
 import { useComparison } from '@/contexts/ComparisonContext';
-import { Star, MapPin, Calendar, DollarSign, Users, Eye, Edit, Trash2, Heart, Scale, CheckCircle2, Camera, Bus, Bed, Utensils, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Star, MapPin, Calendar, DollarSign, Users, Eye, Edit, Trash2, Heart, Scale, CheckCircle2, Camera, Bus, Bed, Utensils, ChevronLeft, ChevronRight, ShieldCheck, Building2 } from 'lucide-react';
 import { optimizeImageUrl, generateBlurPlaceholder, preloadImage } from '@/lib/imageOptimization';
 import { injectImageStyles } from '@/lib/imageStyles';
 import Link from 'next/link';
 import { event } from '@/lib/gtag';
+import { getDbInstance } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+
+// In-memory cache for agency profiles across cards to prevent duplicate queries
+const agencyProfileCache = new Map<string, any>();
+
 interface ListingCardProps {
   listing: any;
   onView?: (listing: any) => void;
@@ -255,6 +261,111 @@ export default function ListingCard({
   // Generate a blur placeholder SVG
   const blurPlaceholder = generateBlurPlaceholder(400, 300, '#f3f4f6');
 
+  // Dynamic Agency resolution with memory cache
+  const agencyId = listing.agencyId || listing.userId || listing.agencyData?.id || '';
+
+  const getInitialAgencyName = () => {
+    const direct = listing.agencyName || listing.agencyData?.companyName || listing.companyName || listing.agencyData?.name || listing.agencyData?.displayName;
+    if (direct && direct !== 'Travel Agency' && direct !== 'Verified Agency' && direct !== 'Unknown Agency' && direct !== 'Travel Partner') {
+      return direct;
+    }
+    if (agencyId && agencyProfileCache.has(agencyId)) {
+      const cached = agencyProfileCache.get(agencyId);
+      const cachedName = cached?.companyName || cached?.name || cached?.displayName || cached?.agencyName;
+      if (cachedName) return cachedName;
+    }
+    return direct || 'Travel Agency';
+  };
+
+  const getInitialAgencyLogo = () => {
+    const directLogo = listing.agencyLogo || listing.logoUrl || listing.agencyData?.logoUrl || listing.agencyData?.agencyLogo || listing.agencyData?.avatarUrl || listing.agencyData?.logo;
+    if (directLogo) return directLogo;
+    if (agencyId && agencyProfileCache.has(agencyId)) {
+      const cached = agencyProfileCache.get(agencyId);
+      const cachedLogo = cached?.logoUrl || cached?.agencyLogo || cached?.avatarUrl || cached?.logo;
+      if (cachedLogo) return cachedLogo;
+    }
+    return null;
+  };
+
+  const getInitialAgencyData = () => {
+    if (listing.agencyData && Object.keys(listing.agencyData).length > 0) {
+      return listing.agencyData;
+    }
+    if (agencyId && agencyProfileCache.has(agencyId)) {
+      return agencyProfileCache.get(agencyId);
+    }
+    return null;
+  };
+
+  const [agencyData, setAgencyData] = useState<any>(getInitialAgencyData);
+  const [agencyName, setAgencyName] = useState<string>(getInitialAgencyName);
+  const [agencyLogo, setAgencyLogo] = useState<string | null>(getInitialAgencyLogo);
+
+  useEffect(() => {
+    const name = getInitialAgencyName();
+    const logo = getInitialAgencyLogo();
+    const data = getInitialAgencyData();
+    if (name && name !== 'Travel Agency') setAgencyName(name);
+    if (logo) setAgencyLogo(logo);
+    if (data) setAgencyData(data);
+  }, [listing.id, listing.agencyId, listing.agencyName, listing.agencyLogo, listing.agencyData]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!agencyId) return;
+
+    const hasValidName = agencyName && agencyName !== 'Travel Agency' && agencyName !== 'Verified Agency' && agencyName !== 'Unknown Agency';
+    const hasLogo = !!agencyLogo;
+    if (hasValidName && hasLogo && agencyData) {
+      if (!agencyProfileCache.has(agencyId)) {
+        agencyProfileCache.set(agencyId, agencyData);
+      }
+      return;
+    }
+
+    if (agencyProfileCache.has(agencyId)) {
+      const cached = agencyProfileCache.get(agencyId);
+      if (isMounted) {
+        const resolvedName = cached?.companyName || cached?.name || cached?.displayName || cached?.agencyName || agencyName;
+        const resolvedLogo = cached?.logoUrl || cached?.agencyLogo || cached?.avatarUrl || cached?.logo || agencyLogo;
+        if (resolvedName) setAgencyName(resolvedName);
+        if (resolvedLogo) setAgencyLogo(resolvedLogo);
+        setAgencyData(cached);
+      }
+      return;
+    }
+
+    async function fetchAgencyProfile() {
+      try {
+        const dbInstance = getDbInstance();
+        if (!dbInstance) return;
+        const agencyDoc = await getDoc(doc(dbInstance, 'users', agencyId));
+        if (agencyDoc.exists()) {
+          const data = agencyDoc.data();
+          agencyProfileCache.set(agencyId, data);
+          if (isMounted) {
+            const resolvedName = data.companyName || data.name || data.displayName || data.agencyName || agencyName;
+            const resolvedLogo = data.logoUrl || data.agencyLogo || data.avatarUrl || data.logo || null;
+            if (resolvedName) setAgencyName(resolvedName);
+            if (resolvedLogo) setAgencyLogo(resolvedLogo);
+            setAgencyData(data);
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching agency info for card:', err);
+      }
+    }
+
+    fetchAgencyProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [agencyId, agencyName, agencyLogo, agencyData]);
+
+  const isAgencyVerified = !!(agencyData?.verified || listing.agencyData?.verified || listing.verified);
+
   const handleCompareToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isInComparison(listing.id)) {
@@ -282,9 +393,9 @@ export default function ListingCard({
         hotelTypes: listing.hotelTypes,
         inclusions: listing.inclusions,
         exclusions: listing.exclusions,
-        agencyName: listing.agencyName || listing.agencyData?.companyName || listing.companyName || listing.agencyData?.name || '',
-        agencyId: listing.agencyId || listing.userId || '',
-        agencyData: listing.agencyData,
+        agencyName: agencyName || listing.agencyName || listing.agencyData?.companyName || listing.companyName || listing.agencyData?.name || '',
+        agencyId: agencyId || listing.agencyId || listing.userId || '',
+        agencyData: agencyData || listing.agencyData,
         photos: listing.photos,
         rating: listing.rating,
         reviewsCount: listing.reviewsCount,
@@ -323,7 +434,7 @@ export default function ListingCard({
         )}
 
         {/* Verification badge */}
-        {listing.agencyData?.verified && listing.approved && (
+        {isAgencyVerified && listing.approved && (
           <Badge variant="outline" className="bg-white/90 backdrop-blur-md text-emerald-700 border-white/40 text-[10px] px-2 py-1 shadow-sm flex items-center gap-1" style={{ borderRadius: '6px' }}>
             <ShieldCheck className="h-3 w-3 text-emerald-600" />
             Verified
@@ -508,48 +619,86 @@ export default function ListingCard({
       </div>
 
       {/* Content Section */}
-      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between gap-3 sm:gap-4 min-w-0">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between gap-2.5 sm:gap-3.5 min-w-0">
         
-        {/* Title and Rating */}
-        <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-          <div className="min-h-[42px] sm:min-h-[48px] flex items-center overflow-hidden w-full">
-            {renderFormattedTitle(cardTitle)}
-          </div>
-          <div className="h-[20px] flex items-center">
-            {listing.title && location && (
-              <div className="flex items-center text-[11.5px] sm:text-[12px] font-bold tracking-wide text-slate-700 truncate w-full">
-                <span className="truncate" style={{ fontFamily: 'var(--font-outfit), var(--font-jakarta), sans-serif' }} title={location}>{location}</span>
+        {/* Top Content: Agency Header + Title + Location + Rating */}
+        <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0">
+          
+          {/* Agency Name with Logo Header */}
+          <div className="flex items-center justify-between gap-2 min-w-0 pb-1.5 border-b border-slate-100">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {/* Agency Logo Avatar */}
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden border border-slate-200/90 bg-gradient-to-br from-amber-50 to-orange-100 shrink-0 flex items-center justify-center shadow-2xs">
+                {agencyLogo ? (
+                  <img
+                    src={optimizeImageUrl(agencyLogo, { width: 48, quality: 80, format: 'auto', cacheBust: false })}
+                    alt={agencyName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-600" />
+                )}
               </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 mt-0.5 min-h-[20px] flex-wrap">
-            {ratingInfo.rating ? (
-              <>
-                <span className="font-bold text-[12px] sm:text-[12.5px] text-gray-900 leading-none">
-                  {ratingInfo.rating.toFixed(1)}
-                </span>
-                <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star 
-                      key={s} 
-                      className={`h-[12px] w-[12px] sm:h-[13px] sm:w-[13px] ${
-                        s <= Math.round(ratingInfo.rating!) ? 'fill-[#FFC107] text-[#FFC107]' : 'text-gray-200'
-                      }`} 
-                    />
-                  ))}
-                </div>
-                <span className="text-gray-500 font-medium text-[11px] sm:text-[11.5px] truncate">
-                  {ratingInfo.reviewsCount > 0 
-                    ? `(${ratingInfo.reviewsCount} ${ratingInfo.reviewsCount === 1 ? 'review' : 'reviews'})`
-                    : (ratingInfo.source || 'Rating')}
-                </span>
-              </>
-            ) : (
-              <span className="text-slate-400 text-[11px] sm:text-[11.5px] font-medium flex items-center gap-1">
-                <Star className="h-3 w-3 text-slate-300 fill-slate-300" />
-                No reviews yet
+
+              {/* Agency Name */}
+              <span
+                className="text-[12px] sm:text-[12.5px] font-bold text-slate-800 tracking-tight truncate"
+                title={agencyName}
+              >
+                {agencyName}
               </span>
-            )}
+
+              {/* Verified Shield Badge next to name */}
+              {isAgencyVerified && (
+                <span className="inline-flex items-center text-emerald-600 shrink-0" title="Verified Agency">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Title and Rating */}
+          <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+            <div className="min-h-[42px] sm:min-h-[48px] flex items-center overflow-hidden w-full">
+              {renderFormattedTitle(cardTitle)}
+            </div>
+            <div className="h-[20px] flex items-center">
+              {listing.title && location && (
+                <div className="flex items-center text-[11.5px] sm:text-[12px] font-bold tracking-wide text-slate-700 truncate w-full">
+                  <span className="truncate" style={{ fontFamily: 'var(--font-outfit), var(--font-jakarta), sans-serif' }} title={location}>{location}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5 min-h-[20px] flex-wrap">
+              {ratingInfo.rating ? (
+                <>
+                  <span className="font-bold text-[12px] sm:text-[12.5px] text-gray-900 leading-none">
+                    {ratingInfo.rating.toFixed(1)}
+                  </span>
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star 
+                        key={s} 
+                        className={`h-[12px] w-[12px] sm:h-[13px] sm:w-[13px] ${
+                          s <= Math.round(ratingInfo.rating!) ? 'fill-[#FFC107] text-[#FFC107]' : 'text-gray-200'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-gray-500 font-medium text-[11px] sm:text-[11.5px] truncate">
+                    {ratingInfo.reviewsCount > 0 
+                      ? `(${ratingInfo.reviewsCount} ${ratingInfo.reviewsCount === 1 ? 'review' : 'reviews'})`
+                      : (ratingInfo.source || 'Rating')}
+                  </span>
+                </>
+              ) : (
+                <span className="text-slate-400 text-[11px] sm:text-[11.5px] font-medium flex items-center gap-1">
+                  <Star className="h-3 w-3 text-slate-300 fill-slate-300" />
+                  No reviews yet
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -658,9 +807,14 @@ export default function ListingCard({
                       event({
                         action: 'chat_agent_click',
                         category: 'chat',
-                        label: listing.agencyName || cardTitle || listing.id,
+                        label: agencyName || listing.agencyName || cardTitle || listing.id,
                       });
-                      onChat?.(listing);
+                      onChat?.({
+                        ...listing,
+                        agencyName: agencyName || listing.agencyName,
+                        agencyData: agencyData || listing.agencyData,
+                        agencyLogo: agencyLogo || listing.agencyLogo || listing.logoUrl,
+                      });
                     }}
                     title="Chat with Agency"
                     aria-label="Chat with Agency"

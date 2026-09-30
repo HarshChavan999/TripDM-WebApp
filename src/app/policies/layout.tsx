@@ -16,6 +16,24 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // User name helpers matching HomeClient.tsx
+  const userFirstName =
+    userData?.name?.trim()?.split(' ')[0] ||
+    userData?.companyName?.trim()?.split(' ')[0] ||
+    user?.displayName?.trim()?.split(' ')[0] ||
+    (user?.email
+      ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1)
+      : 'User');
+
+  const userFullName =
+    userData?.name?.trim() ||
+    userData?.companyName?.trim() ||
+    user?.displayName?.trim() ||
+    (user?.email ? user.email.split('@')[0] : 'User');
+
+  const userInitial = userFirstName.charAt(0).toUpperCase() || 'U';
+  const userAvatar = (typeof userData?.avatarUrl === 'string' && userData.avatarUrl.trim() !== '') ? userData.avatarUrl.trim() : null;
+
   // Lock background scroll when mobile sidebar drawer is open & handle Escape key
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -87,19 +105,24 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
 
             {/* User Status Card */}
             <div className="p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border-b border-slate-100">
-              {user && userData ? (
+              {user ? (
                 <div className="flex items-center gap-3">
-                  {userData.avatarUrl ? (
-                    <img src={userData.avatarUrl} alt="Profile" className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm" />
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-slate-200"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
                   ) : (
-                    <div className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-base shadow-sm">
-                      {userData.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                    <div className="w-11 h-11 bg-gray-100 rounded-full flex items-center justify-center text-slate-600 border border-gray-200 shadow-xs">
+                      <User className="h-6 w-6" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-slate-500 font-medium">Signed in as</p>
-                    <h4 className="text-sm font-bold text-slate-900 truncate">{userData.name || 'User'}</h4>
-                    <p className="text-[11px] text-slate-400 truncate">{userData.email}</p>
+                    <h4 className="text-sm font-bold text-slate-900 truncate">{userFullName}</h4>
+                    <p className="text-[11px] text-slate-400 truncate">{user.email || userData?.email || ''}</p>
                   </div>
                 </div>
               ) : (
@@ -313,9 +336,9 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
             </span>
 
             {/* Profile / Sign In */}
-            {user && userData ? (
+            {user ? (
               <div className="flex items-center gap-3 ml-2 border-l border-gray-200 pl-4">
-                {userData.role === 'agency' && (
+                {userData?.role === 'agency' && (
                   <a
                     href="/agencytripdm"
                     className="cursor-pointer text-[15px] font-medium flex items-center gap-1.5 text-slate-800 shrink-0"
@@ -328,14 +351,19 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
                   className="flex items-center gap-2 cursor-pointer text-[15px] font-medium text-slate-800"
                   onClick={() => router.push('/?section=profile')}
                 >
-                  {userData.avatarUrl ? (
-                    <img src={userData.avatarUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover" />
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
                   ) : (
-                    <div className="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 border border-gray-200">
+                    <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-slate-600 border border-gray-200">
                       <User className="h-4 w-4" />
                     </div>
                   )}
-                  <span>Hi, {userData?.name ? userData.name.split(' ')[0] : 'User'}</span>
+                  <span>Hi, {userFirstName}</span>
                 </div>
                 
                 <span
@@ -387,17 +415,17 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
               Explore
             </button>
 
-            {user && userData ? (
+            {user ? (
               <button
                 onClick={() => router.push('/?section=profile')}
                 className="p-0.5 rounded-full ring-2 ring-orange-400"
                 aria-label="User profile"
               >
-                {userData.avatarUrl ? (
-                  <img src={userData.avatarUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover" />
+                {userAvatar ? (
+                  <img src={userAvatar} alt="Profile" className="w-7 h-7 rounded-full object-cover" />
                 ) : (
                   <div className="w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                    {userInitial}
                   </div>
                 )}
               </button>

@@ -24,24 +24,69 @@ async function getApprovedListings() {
       }
     };
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(query),
-      next: { revalidate: 30 } // Cache for 30 seconds
-    });
+    const usersQuery = {
+      structuredQuery: {
+        from: [{ collectionId: "users" }],
+        limit: 1000
+      }
+    };
 
-    if (!res.ok) {
-      console.error("Error fetching listings from REST API:", await res.text());
+    const [listingsRes, usersRes] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(query),
+        next: { revalidate: 30 } // Cache for 30 seconds
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(usersQuery),
+        next: { revalidate: 60 }
+      }).catch(() => null)
+    ]);
+
+    if (!listingsRes.ok) {
+      console.error("Error fetching listings from REST API:", await listingsRes.text());
       return [];
     }
 
-    const data = await res.json();
+    const data = await listingsRes.json();
     
+    // Build agency map
+    const agencyMap: Record<string, any> = {};
+    if (usersRes && usersRes.ok) {
+      try {
+        const usersData = await usersRes.json();
+        if (Array.isArray(usersData)) {
+          usersData.forEach((item: any) => {
+            if (item.document) {
+              const u = parseFirestoreDocument(item.document);
+              if (u && u.id) {
+                agencyMap[u.id] = u;
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Error parsing users for SSR listings:", err);
+      }
+    }
+
     // runQuery returns an array of { document: { name, fields, ... } }
     const listings = data
       .filter((item: any) => item.document)
-      .map((item: any) => parseFirestoreDocument(item.document));
+      .map((item: any) => {
+        const parsed = parseFirestoreDocument(item.document);
+        const agencyId = parsed.agencyId || parsed.userId;
+        const ag = agencyId ? agencyMap[agencyId] : null;
+        return {
+          ...parsed,
+          agencyName: parsed.agencyName || ag?.companyName || ag?.name || ag?.displayName || 'Travel Agency',
+          agencyLogo: parsed.agencyLogo || parsed.logoUrl || ag?.logoUrl || ag?.agencyLogo || ag?.avatarUrl || null,
+          agencyData: parsed.agencyData || ag || null,
+        };
+      });
       
     return listings;
   } catch (error) {

@@ -642,6 +642,20 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
 
       console.log('Main photo URL:', mainPhoto);
 
+      // Fetch agency profile to embed branding directly in listing document
+      const dbInstance = getDbInstance();
+      let agencyProfile: any = null;
+      if (dbInstance && agencyId) {
+        try {
+          const userDoc = await getDoc(doc(dbInstance, 'users', agencyId));
+          if (userDoc.exists()) {
+            agencyProfile = userDoc.data();
+          }
+        } catch (e) {
+          console.warn('Could not load agency profile for listing:', e);
+        }
+      }
+
       const listingData = {
         ...data,
         stateName: data.packageType === 'domestic' && data.stateNames ? data.stateNames.join(', ') : '',
@@ -658,6 +672,16 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
           : (data.exclusions || ''),
         photos: mainPhoto ? [mainPhoto] : [], // Add main photo for backward compatibility
         agencyId,
+        agencyName: agencyProfile?.companyName || agencyProfile?.name || agencyProfile?.displayName || 'Travel Agency',
+        agencyLogo: agencyProfile?.logoUrl || agencyProfile?.agencyLogo || agencyProfile?.avatarUrl || '',
+        logoUrl: agencyProfile?.logoUrl || agencyProfile?.agencyLogo || '',
+        agencyData: agencyProfile ? {
+          companyName: agencyProfile.companyName || agencyProfile.name || '',
+          name: agencyProfile.name || '',
+          logoUrl: agencyProfile.logoUrl || agencyProfile.agencyLogo || '',
+          verified: !!agencyProfile.verified,
+          phone: agencyProfile.phone || agencyProfile.contactNumber || '',
+        } : undefined,
         approved: false, // Requires admin approval
         createdAt: new Date(),
         updatedAt: new Date()
@@ -685,8 +709,6 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
 
       // Debug: Log the final listing data
       console.log('Final listing data:', sanitizedListingData);
-
-      const dbInstance = getDbInstance();
       
       if (!dbInstance) {
         throw new Error('Database instance not available');
