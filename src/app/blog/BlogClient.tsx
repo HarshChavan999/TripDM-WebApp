@@ -274,52 +274,36 @@ export default function BlogClient({ initialBlogs }: { initialBlogs: Blog[] }) {
                   <article
                     className="featured-card"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      borderRadius: '6px',
+                      borderRadius: '8px',
                       overflow: 'hidden',
                       border: '1px solid rgba(0,0,0,0.07)',
                       background: '#fff',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
                       cursor: 'pointer',
+                      padding: '32px 36px',
                     }}
                   >
-                    {/* Image */}
-                    <div style={{ position: 'relative', overflow: 'hidden', minHeight: 340 }}>
-                      {featured.coverImage ? (
-                        <img
-                          src={featured.coverImage}
-                          alt={featured.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: 340, display: 'block' }}
-                        />
-                      ) : (
-                        <div style={{ height: '100%', minHeight: 340, background: FALLBACK_GRADIENTS[0], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <img src="/tripdm-logo.png" alt="TripDM" style={{ width: 120, opacity: 0.18, objectFit: 'contain' }} />
-                        </div>
-                      )}
-                    </div>
-
                     {/* Content */}
-                    <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                       {(() => {
                         const p = CATEGORY_PALETTE[featured.category] || CATEGORY_PALETTE.default;
                         return (
-                          <span style={{ display: 'inline-block', background: p.bg, color: p.text, border: `1px solid ${p.border}`, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: '6px', marginBottom: 14, alignSelf: 'flex-start', letterSpacing: 0.3 }}>
+                          <span style={{ display: 'inline-block', background: p.bg, color: p.text, border: `1px solid ${p.border}`, fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: '6px', marginBottom: 14, alignSelf: 'flex-start', letterSpacing: 0.3 }}>
                             {featured.category}
                           </span>
                         );
                       })()}
 
-                      <h2 style={{ fontSize: 'clamp(18px,2.2vw,26px)', fontWeight: 800, color: '#0f172a', lineHeight: 1.3, marginBottom: 14, letterSpacing: '-0.4px' }}>
+                      <h2 style={{ fontSize: 'clamp(20px,2.4vw,28px)', fontWeight: 800, color: '#0f172a', lineHeight: 1.3, marginBottom: 12, letterSpacing: '-0.4px' }}>
                         {featured.title}
                       </h2>
-                      <p style={{ color: '#475569', fontSize: 14, lineHeight: 1.75, marginBottom: 28 }}>
+                      <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.7, marginBottom: 24, maxWidth: 900 }}>
                         {featured.excerpt}
                       </p>
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#f97316,#ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 18, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#f97316,#ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
                             {featured.author.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -329,7 +313,7 @@ export default function BlogClient({ initialBlogs }: { initialBlogs: Blog[] }) {
                             )}
                           </div>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#ea580c' }}>Read Article →</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 600, color: '#ea580c' }}>Read Article →</span>
                       </div>
                     </div>
                   </article>
@@ -350,7 +334,7 @@ export default function BlogClient({ initialBlogs }: { initialBlogs: Blog[] }) {
                   </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                   {restBlogs.map((blog, i) => {
                     const palette = CATEGORY_PALETTE[blog.category] || CATEGORY_PALETTE.default;
                     return (
@@ -360,67 +344,54 @@ export default function BlogClient({ initialBlogs }: { initialBlogs: Blog[] }) {
                           style={{
                             background: '#fff',
                             border: '1px solid rgba(0,0,0,0.07)',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             overflow: 'hidden',
                             cursor: 'pointer',
                             height: '100%',
                             display: 'flex',
                             flexDirection: 'column',
+                            padding: '24px 24px 20px',
                           }}
                         >
-                          {/* Thumbnail */}
-                          <div style={{ position: 'relative', height: 190, overflow: 'hidden', flexShrink: 0 }}>
-                            {blog.coverImage ? (
-                              <img
-                                src={blog.coverImage}
-                                alt={blog.title}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                              />
-                            ) : (
-                              <div style={{ width: '100%', height: '100%', background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <img src="/tripdm-logo.png" alt="TripDM" style={{ width: 80, opacity: 0.18, objectFit: 'contain' }} />
-                              </div>
-                            )}
+                          {/* Category badge */}
+                          <div style={{ marginBottom: 12 }}>
                             <span style={{
-                              position: 'absolute',
-                              top: 12,
-                              left: 12,
+                              display: 'inline-block',
                               background: palette.bg,
                               color: palette.text,
                               border: `1px solid ${palette.border}`,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: 700,
-                              padding: '3px 9px',
+                              padding: '3px 10px',
                               borderRadius: '6px',
-                              backdropFilter: 'blur(10px)',
-                              backgroundColor: 'rgba(255,255,255,0.88)',
+                              letterSpacing: 0.3,
                             }}>
                               {blog.category}
                             </span>
                           </div>
 
                           {/* Body */}
-                          <div style={{ padding: '18px 20px 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: 0 }}>
-                            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', lineHeight: 1.45, marginBottom: 8, letterSpacing: '-0.2px' }}>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', lineHeight: 1.45, marginBottom: 10, letterSpacing: '-0.2px' }}>
                               {blog.title}
                             </h3>
-                            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65, marginBottom: 16, flex: 1 }}>
-                              {blog.excerpt?.slice(0, 110)}{(blog.excerpt?.length ?? 0) > 110 ? '…' : ''}
+                            <p style={{ fontSize: 13.5, color: '#64748b', lineHeight: 1.65, marginBottom: 20, flex: 1 }}>
+                              {blog.excerpt?.slice(0, 130)}{(blog.excerpt?.length ?? 0) > 130 ? '…' : ''}
                             </p>
 
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 13, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#f97316,#ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#f97316,#ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
                                   {blog.author.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                  <div style={{ fontSize: 12, color: '#334155', fontWeight: 500 }}>{blog.author}</div>
+                                  <div style={{ fontSize: 12, color: '#334155', fontWeight: 600 }}>{blog.author}</div>
                                   {blog.publishedAt && (
                                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{formatDate(blog.publishedAt)}</div>
                                   )}
                                 </div>
                               </div>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#ea580c' }}>Read →</span>
+                              <span style={{ fontSize: 12.5, fontWeight: 600, color: '#ea580c' }}>Read →</span>
                             </div>
                           </div>
                         </article>

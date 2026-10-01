@@ -140,8 +140,8 @@ export default async function BlogPage() {
         body { font-family: 'Inter', sans-serif; background: #f8fafc; }
         .blog-card { transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
         .blog-card:hover { transform: translateY(-3px); border-color: rgba(249,115,22,0.22) !important; box-shadow: 0 16px 40px rgba(0,0,0,0.08) !important; }
-        .featured-card { transition: box-shadow 0.25s ease; }
-        .featured-card:hover { box-shadow: 0 24px 60px rgba(0,0,0,0.09) !important; }
+        .featured-card { transition: box-shadow 0.25s ease, transform 0.25s ease; }
+        .featured-card:hover { box-shadow: 0 20px 50px rgba(0,0,0,0.08) !important; transform: translateY(-2px); }
         .nav-link:hover { color: #0f172a !important; }
         .search-bar-wrap:focus-within { border-color: rgba(234,88,12,0.45) !important; box-shadow: 0 0 0 3px rgba(234,88,12,0.08) !important; }
         /* Hide scrollbar on category row */

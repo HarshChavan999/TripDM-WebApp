@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import BlogViewTracker from '@/components/BlogViewTracker';
 import BlogShareBar from '@/components/BlogShareBar';
 import BlogComments from '@/components/BlogComments';
+import { getBlogCoverImage, getDestinationHeaderBg } from '@/lib/blogImages';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
@@ -305,7 +306,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!blog) return { title: 'Blog Not Found | TripDM', robots: { index: false, follow: false } };
   const title = blog.metaTitle || blog.title;
   const description = blog.metaDescription || blog.excerpt;
-  const image = blog.coverImage || 'https://tripdm.com/og-default.jpg';
+  const image = getBlogCoverImage(blog);
   return {
     title: `${title} | TripDM Travel Field Report`,
     description,
@@ -902,13 +903,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'Article',
     headline: blog.title, description: blog.metaDescription || blog.excerpt,
-    image: blog.coverImage ? [blog.coverImage] : [],
+    image: [getBlogCoverImage(blog)],
     author: { '@type': 'Person', name: blog.author },
     publisher: { '@type': 'Organization', name: 'TripDM', url: 'https://tripdm.com', logo: { '@type': 'ImageObject', url: 'https://tripdm.com/logo.png' } },
     datePublished: blog.publishedAt, dateModified: blog.updatedAt || blog.publishedAt,
     mainEntityOfPage: { '@type': 'WebPage', '@id': `https://tripdm.com/blog/${blog.slug}` },
     keywords: blog.tags?.join(', '), articleSection: blog.category,
   };
+
+  const destinationBg = getDestinationHeaderBg(blog);
 
   return (
     <>
@@ -2357,60 +2360,77 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         </nav>
 
-        {/* MAIN CONTAINER */}
-        <main className="bp-container">
-          {/* BREADCRUMB ROW */}
-          <div className="bp-breadcrumb-row">
-            <div className="bp-breadcrumbs">
-              <Link href="/">Home</Link>
-              <span>/</span>
-              <Link href="/blog">Blog</Link>
-              <span>/</span>
-              <span>{blog.category}</span>
+        {/* STATE / DESTINATION ATMOSPHERIC HERO HEADER */}
+        <section style={{ position: 'relative', overflow: 'hidden', padding: '44px 24px 36px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          {/* Panoramic State-Specific Background Image */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url(${destinationBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 35%',
+            opacity: 0.22,
+            filter: 'saturate(1.25) contrast(1.05)',
+            pointerEvents: 'none',
+          }} />
+          {/* Smooth editorial gradient overlay for crisp contrast & seamless page blend */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to bottom, rgba(248,250,252,0.78) 0%, rgba(248,250,252,0.45) 50%, #f8fafc 100%)',
+            pointerEvents: 'none',
+          }} />
+          {/* Soft warm sun glow */}
+          <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 750, height: 300, background: 'radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1160, margin: '0 auto' }}>
+            {/* BREADCRUMB ROW */}
+            <div className="bp-breadcrumb-row" style={{ marginBottom: 18 }}>
+              <div className="bp-breadcrumbs">
+                <Link href="/">Home</Link>
+                <span>/</span>
+                <Link href="/blog">Blog</Link>
+                <span>/</span>
+                <span>{blog.category}</span>
+              </div>
             </div>
+
+            {/* ARTICLE HEADER */}
+            <header className="bp-header" style={{ maxWidth: 960, margin: 0 }}>
+              {blog.category && <span className="bp-category-badge">{blog.category}</span>}
+              <h1 className="bp-title">{blog.title}</h1>
+              {blog.excerpt && <p className="bp-lead-excerpt">{blog.excerpt}</p>}
+
+              {/* AUTHOR MASTHEAD ROW */}
+              <div className="bp-author-masthead" style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(12px)', padding: '14px 20px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.07)' }}>
+                <div className="bp-author-left">
+                  <div className="bp-author-avatar">
+                    {blog.author.charAt(0)}
+                  </div>
+                  <div className="bp-author-info">
+                    <div className="bp-author-name-row">
+                      <span className="bp-author-name">By {blog.author}</span>
+                    </div>
+                    <div className="bp-meta-sub">
+                      <span>{formatDate(blog.publishedAt)}</span>
+                      <span>•</span>
+                      <span>{blog.readTime || '8 min read'}</span>
+                      <span>•</span>
+                      <BlogViewTracker slug={blog.slug} blogId={blog.id} initialViews={blog.views} fallbackViewsText={mainViews} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bp-author-right">
+                  <BlogShareBar url={`https://tripdm.com/blog/${blog.slug}`} title={blog.title} />
+                </div>
+              </div>
+            </header>
           </div>
+        </section>
 
-          {/* ARTICLE HEADER (ABOVE HERO) */}
-          <header className="bp-header">
-            {blog.category && <span className="bp-category-badge">{blog.category}</span>}
-            <h1 className="bp-title">{blog.title}</h1>
-            {blog.excerpt && <p className="bp-lead-excerpt">{blog.excerpt}</p>}
-
-            {/* AUTHOR MASTHEAD ROW */}
-            <div className="bp-author-masthead">
-              <div className="bp-author-left">
-                <div className="bp-author-avatar">
-                  {blog.author.charAt(0)}
-                </div>
-                <div className="bp-author-info">
-                  <div className="bp-author-name-row">
-                    <span className="bp-author-name">By {blog.author}</span>
-                  </div>
-                  <div className="bp-meta-sub">
-                    <span>{formatDate(blog.publishedAt)}</span>
-                    <span>•</span>
-                    <span>{blog.readTime || '8 min read'}</span>
-                    <span>•</span>
-                    <BlogViewTracker slug={blog.slug} blogId={blog.id} initialViews={blog.views} fallbackViewsText={mainViews} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bp-author-right">
-                <BlogShareBar url={`https://tripdm.com/blog/${blog.slug}`} title={blog.title} />
-              </div>
-            </div>
-          </header>
-
-          {/* COVER HERO (Rendered when cover image is present) */}
-          {blog.coverImage && (
-            <div className="bp-hero-container">
-              <div className="bp-hero-box">
-                <img src={blog.coverImage} alt={blog.title} className="bp-hero-img" />
-              </div>
-            </div>
-          )}
-
+        {/* MAIN CONTAINER */}
+        <main className="bp-container" style={{ paddingTop: 36 }}>
           {/* TWO-COLUMN ASYMMETRIC MAGAZINE GRID */}
           <div className="bp-magazine-grid">
             {/* COLUMN A: 720PX READING COLUMN */}
@@ -2491,21 +2511,27 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
               <div className="bp-recommended-grid">
                 {recommendedBlogs.map((item) => (
-                  <Link key={item.id} href={`/blog/${item.slug}`} className="bp-rec-card">
-                    <div className="bp-rec-img-box">
-                      <img
-                        src={item.coverImage || 'https://images.unsplash.com/photo-1506461883276-594a12b11ce3?auto=format&fit=crop&w=600&q=80'}
-                        alt={item.title}
-                        className="bp-rec-img"
-                      />
-                      {item.category && <span className="bp-rec-cat">{item.category}</span>}
-                    </div>
-                    <div className="bp-rec-body">
-                      <h3 className="bp-rec-title">{item.title}</h3>
-                      {item.excerpt && <p className="bp-rec-excerpt">{item.excerpt}</p>}
-                      <div className="bp-rec-meta">
-                        <span>{item.readTime || '6 min read'}</span>
-                        <span className="bp-rec-arrow">Read Guide →</span>
+                  <Link key={item.id} href={`/blog/${item.slug}`} className="bp-rec-card" style={{ padding: '22px 24px', textDecoration: 'none' }}>
+                    <div className="bp-rec-body" style={{ padding: 0 }}>
+                      {item.category && (
+                        <span style={{
+                          display: 'inline-block',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#ea580c',
+                          background: 'rgba(249, 115, 22, 0.1)',
+                          padding: '3px 10px',
+                          borderRadius: '6px',
+                          marginBottom: '12px'
+                        }}>
+                          {item.category}
+                        </span>
+                      )}
+                      <h3 className="bp-rec-title" style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', marginBottom: '8px', lineHeight: 1.4 }}>{item.title}</h3>
+                      {item.excerpt && <p className="bp-rec-excerpt" style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.6, marginBottom: '16px' }}>{item.excerpt}</p>}
+                      <div className="bp-rec-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{item.readTime || '6 min read'}</span>
+                        <span className="bp-rec-arrow" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ea580c' }}>Read Guide →</span>
                       </div>
                     </div>
                   </Link>
