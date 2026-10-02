@@ -380,6 +380,36 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const searchParams = useSearchParams();
   const sectionParam = searchParams.get('section');
 
+  const handleSignOut = async () => {
+    setUserActiveSection('listings');
+    setCurrentChatAgency('');
+    setCurrentChatAgencyName('');
+    setSelectedChatPackageId(null);
+    setViewingListing(null);
+    setShowComparison(false);
+    setChatInput('');
+    setShowAuthModal(false);
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('Sign out error:', e);
+    }
+  };
+
+  // Immediate auto-redirect to landing page on sign out / unauthenticated state if on a protected section
+  useEffect(() => {
+    if (!user && !loading) {
+      if (userActiveSection === 'chat' || userActiveSection === 'profile' || userActiveSection === 'bookings' || userActiveSection === 'agencyDashboard') {
+        setUserActiveSection('listings');
+        setCurrentChatAgency('');
+        setCurrentChatAgencyName('');
+        setSelectedChatPackageId(null);
+        setViewingListing(null);
+        setShowComparison(false);
+      }
+    }
+  }, [user, loading, userActiveSection]);
+
   // Auto-trigger welcome modal on first-ever agency dashboard visit
   useEffect(() => {
     if (loading || !user) return;
@@ -510,6 +540,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   });
   const [currentChatAgencyIsOnline, setCurrentChatAgencyIsOnline] = useState<boolean>(false);
   const [currentChatAgencyLogo, setCurrentChatAgencyLogo] = useState<string | null>(null);
+  const [selectedChatPackageId, setSelectedChatPackageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   const [chatSearchQuery, setChatSearchQuery] = useState<string>('');
   const [showInChatSearch, setShowInChatSearch] = useState<boolean>(false);
@@ -840,10 +871,15 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       let shouldCleanUrl = false;
 
       if (chatAgencyId) {
+        const chatPackageId = urlParams.get('packageId');
+        if (chatPackageId) {
+          setSelectedChatPackageId(chatPackageId);
+        }
         if (!user) {
           sessionStorage.setItem('pending_chat_target', JSON.stringify({
             agencyId: chatAgencyId,
-            agencyName: 'Travel Agency'
+            agencyName: 'Travel Agency',
+            packageId: chatPackageId || null
           }));
           setAuthModalTab('login');
           setShowAuthModal(true);
@@ -946,10 +982,21 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       }
 
       if (action === 'chat' && agencyId) {
+        const packageId = params.get('packageId');
+        const packageTitle = params.get('packageTitle');
+        const packageDuration = params.get('packageDuration');
+        const packagePrice = params.get('packagePrice');
+        if (packageId) {
+          setSelectedChatPackageId(packageId);
+        }
         if (!user) {
           sessionStorage.setItem('pending_chat_target', JSON.stringify({
             agencyId,
-            agencyName: agencyName || 'Travel Agency'
+            agencyName: agencyName || 'Travel Agency',
+            packageId: packageId || null,
+            packageTitle: packageTitle || '',
+            packageDuration: packageDuration || '',
+            packagePrice: packagePrice || ''
           }));
           setAuthModalTab('login');
           setShowAuthModal(true);
@@ -957,6 +1004,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           setUserActiveSection('chat');
           setCurrentChatAgency(agencyId);
           setCurrentChatAgencyName(agencyName || 'Travel Agency');
+          if (packageTitle) {
+            const durText = packageDuration ? ` (${packageDuration})` : '';
+            const priceText = packagePrice ? ` at ${packagePrice.startsWith('₹') || packagePrice.startsWith('$') ? packagePrice : `₹${packagePrice}`}` : '';
+            setChatInput(`Hi, I am interested in "${packageTitle}"${durText}${priceText}. Could you please share more details?`);
+          }
         }
         window.history.replaceState({}, '', window.location.pathname);
       } else if (view === 'compare') {
@@ -1527,11 +1579,19 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         if (pending) {
           sessionStorage.removeItem('pending_chat_target');
           const target = JSON.parse(pending);
+          if (target.packageId) {
+            setSelectedChatPackageId(target.packageId);
+          }
           if (target.agencyId) {
             setCurrentChatAgency(target.agencyId);
             setCurrentChatAgencyName(target.agencyName || 'Travel Agency');
             const matchedConv = userConversations.find(c => c.agencyId === target.agencyId);
             setCurrentChatAgencyIsOnline(matchedConv ? matchedConv.isOnline : false);
+            if (target.packageTitle) {
+              const durText = target.packageDuration ? ` (${target.packageDuration})` : '';
+              const priceText = target.packagePrice ? ` at ${target.packagePrice.startsWith('₹') || target.packagePrice.startsWith('$') ? target.packagePrice : `₹${target.packagePrice}`}` : '';
+              setChatInput(`Hi, I am interested in "${target.packageTitle}"${durText}${priceText}. Could you please share more details?`);
+            }
             setUserActiveSection('chat');
             setShowComparison(false);
             setViewingListing(null);
@@ -1549,6 +1609,42 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
     const agencyId = listingData?.agencyId || listingData?.userId;
     const agencyName = listingData?.agencyName || 'Travel Agency';
+    const packageId = listingData?.id || null;
+
+    // Calculate duration
+    let duration = '';
+    if (listingData?.duration && typeof listingData.duration === 'string' && (listingData.duration.toLowerCase().includes('day') || listingData.duration.toLowerCase().includes('d') || listingData.duration.toLowerCase().includes('night') || listingData.duration.toLowerCase().includes('n'))) {
+      duration = listingData.duration;
+    } else if (listingData?.duration && !isNaN(Number(listingData.duration))) {
+      const d = Number(listingData.duration);
+      const n = d > 1 ? d - 1 : 0;
+      duration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+    } else if (Array.isArray(listingData?.itinerary) && listingData.itinerary.length > 0) {
+      const d = listingData.itinerary.length;
+      const n = d > 1 ? d - 1 : 0;
+      duration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+    } else if (listingData?.days) {
+      const d = Number(listingData.days);
+      const n = listingData.nights || (d > 1 ? d - 1 : 0);
+      duration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+    }
+
+    // Calculate price
+    const rawPrice = listingData?.cost || listingData?.price || listingData?.startingPrice || listingData?.pricing;
+    let formattedPrice = '';
+    const currencySymbol = listingData?.packageType === 'international' ? '$' : '₹';
+    if (rawPrice !== undefined && rawPrice !== null && rawPrice !== '' && rawPrice !== 'N/A') {
+      const numPrice = Number(rawPrice);
+      if (!isNaN(numPrice) && numPrice > 0) {
+        formattedPrice = `${currencySymbol}${Math.round(numPrice).toLocaleString('en-IN')}`;
+      } else if (typeof rawPrice === 'string' && rawPrice.trim()) {
+        formattedPrice = rawPrice.startsWith('₹') || rawPrice.startsWith('$') ? rawPrice : `${currencySymbol}${rawPrice}`;
+      }
+    }
+
+    if (packageId) {
+      setSelectedChatPackageId(packageId);
+    }
 
     // Check if user is logged in
     if (!user) {
@@ -1556,7 +1652,10 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         sessionStorage.setItem('pending_chat_target', JSON.stringify({
           agencyId,
           agencyName,
-          packageTitle: listingData?.title || ''
+          packageId: packageId || null,
+          packageTitle: listingData?.title || '',
+          packageDuration: duration,
+          packagePrice: formattedPrice
         }));
       }
       setAuthModalTab('login');
@@ -1581,6 +1680,9 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     setCurrentChatAgencyName(agencyName);
     const matchedConv = userConversations.find(c => c.agencyId === agencyId);
     setCurrentChatAgencyIsOnline(matchedConv ? matchedConv.isOnline : false);
+    if (listingData?.title) {
+      setChatInput(`Hi, I am interested in "${listingData.title}"${duration ? ` (${duration})` : ''}${formattedPrice ? ` at ${formattedPrice}` : ''}. Could you please share more details?`);
+    }
     setUserActiveSection('chat');
     setViewingListing(null);
     setShowComparison(false);
@@ -3344,7 +3446,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   <span>View Website</span>
                 </a>
                 <span className="text-sm text-gray-600">Welcome, {userData.name}</span>
-                <Button variant="outline" size="sm" onClick={signOut}>Sign Out</Button>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>Sign Out</Button>
               </div>
             </header>
 
@@ -4850,7 +4952,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     <button
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        signOut();
+                        handleSignOut();
                       }}
                       className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
                     >
@@ -5022,7 +5124,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       className="text-[13px] text-slate-600 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        signOut();
+                        handleSignOut();
                       }}
                     >
                       Sign Out
@@ -6310,33 +6412,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 </div>
               )}
 
-              {userActiveSection === 'chat' && (
-                !user ? (
-                  <div className="min-h-[70vh] flex items-center justify-center p-6 bg-gray-50/50">
-                    <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center space-y-5 animate-in fade-in duration-300">
-                      <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20">
-                        <MessageSquare className="w-8 h-8" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Login to Chat</h3>
-                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                          Please log in or create an account to start chatting with verified travel agencies and receive personalized tour plans.
-                        </p>
-                      </div>
-                      <div className="pt-2">
-                        <button
-                          onClick={() => {
-                            setAuthModalTab('login');
-                            setShowAuthModal(true);
-                          }}
-                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition-all hover:scale-[1.02] cursor-pointer"
-                        >
-                          Sign In / Register
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
+              {userActiveSection === 'chat' && user && (
                 <div className="flex flex-col md:flex-row flex-1 min-h-0 min-w-0 w-full h-full bg-white overflow-hidden">
                   {/* Left Column: Conversations List */}
                   <div className={`w-full md:w-80 md:min-w-[20rem] md:max-w-[20rem] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full z-10 min-w-0 overflow-hidden ${currentChatAgency ? 'hidden md:flex' : 'flex'}`}>
@@ -6730,41 +6806,128 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                         {/* Message Input Box & Quick Replies */}
                         <div className="bg-white flex flex-col shrink-0 min-w-0 w-full overflow-hidden">
-                          {/* Quick Replies Carousel */}
+                          {/* Agency Packages Quick Selection Carousel */}
                           {(() => {
-                            const currentChatMsgs = chatMessages.filter(msg => msg.chatId === [user?.uid, currentChatAgency].sort().join('_'));
-                            const mySentTexts = new Set(currentChatMsgs.filter(msg => msg.sender === user?.uid).map(msg => msg.text));
-                            const baseBuyerReplies = [...BUYER_QUICK_REPLIES, ...adminBuyerReplies];
-                            if (profilePhone) {
-                              baseBuyerReplies.push(`Here is my contact number: ${profilePhone}`);
-                            } else if (profileEmail) {
-                              baseBuyerReplies.push(`Please contact me at ${profileEmail}`);
-                            }
-                            const availableBuyerReplies = baseBuyerReplies.filter(reply => !mySentTexts.has(reply));
-                            
-                            if (availableBuyerReplies.length === 0) return null;
+                            if (!currentChatAgency) return null;
+                            const agencyPackages = listings.filter(l => 
+                              l.agencyId === currentChatAgency || 
+                              l.userId === currentChatAgency
+                            );
+                            if (agencyPackages.length === 0) return null;
+
+                            // Determine active package: if selectedChatPackageId matches one of agency's packages, select it, else auto-select first
+                            const activePackageId = selectedChatPackageId && agencyPackages.some(p => p.id === selectedChatPackageId)
+                              ? selectedChatPackageId
+                              : agencyPackages[0]?.id;
+
+                            // Sort so that the active/selected package comes FIRST at index 0
+                            const sortedPackages = [...agencyPackages].sort((a, b) => {
+                              if (a.id === activePackageId) return -1;
+                              if (b.id === activePackageId) return 1;
+                              return 0;
+                            });
+
                             return (
-                              <div className="px-4 pt-2.5 pb-2 bg-[#f0f2f5] border-t border-gray-200/80 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth w-full max-w-full min-w-0 shrink-0">
-                                {availableBuyerReplies.map((reply, idx) => (
-                                  <button
-                                    key={idx}
-                                    onClick={async () => {
-                                      if (!user) return;
-                                      const messageData = {
-                                        from_user_id: user.uid,
-                                        to_user_id: currentChatAgency,
-                                        content: reply,
-                                        timestamp: Date.now(),
-                                        status: 'sent'
-                                      };
-                                      const dbInstance = getDbInstance();
-                                      if (dbInstance) await addDoc(collection(dbInstance, 'chat_messages'), messageData);
-                                    }}
-                                    className="shrink-0 px-3 py-1.5 bg-white hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300 text-xs rounded-full whitespace-nowrap transition-all shadow-2xs active:scale-95 font-medium"
-                                  >
-                                    {reply}
-                                  </button>
-                                ))}
+                              <div className="px-3 sm:px-4 pt-2.5 pb-2 bg-[#f0f2f5] border-t border-gray-200/80 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth w-full max-w-full min-w-0 shrink-0">
+                                <div className="flex items-center gap-1.5 shrink-0 text-[11px] font-bold text-slate-500 uppercase tracking-wider pr-1">
+                                  <Package className="w-3.5 h-3.5 text-orange-500" />
+                                  <span className="hidden sm:inline">Packages:</span>
+                                </div>
+                                {sortedPackages.map((pkg) => {
+                                  const isSelected = activePackageId === pkg.id;
+
+                                  // Extract Price with all fallbacks
+                                  const rawPrice = pkg.cost || pkg.price || pkg.startingPrice || pkg.pricing;
+                                  let formattedPrice = '';
+                                  const currencySymbol = pkg.packageType === 'international' ? '$' : '₹';
+                                  if (rawPrice !== undefined && rawPrice !== null && rawPrice !== '' && rawPrice !== 'N/A') {
+                                    const numPrice = Number(rawPrice);
+                                    if (!isNaN(numPrice) && numPrice > 0) {
+                                      formattedPrice = `${currencySymbol}${Math.round(numPrice).toLocaleString('en-IN')}`;
+                                    } else if (typeof rawPrice === 'string' && rawPrice.trim()) {
+                                      formattedPrice = rawPrice.startsWith('₹') || rawPrice.startsWith('$') ? rawPrice : `${currencySymbol}${rawPrice}`;
+                                    }
+                                  }
+
+                                  // Extract Duration / Days with all fallbacks
+                                  let pkgDuration = '';
+                                  if (pkg.duration && typeof pkg.duration === 'string' && (pkg.duration.toLowerCase().includes('day') || pkg.duration.toLowerCase().includes('d') || pkg.duration.toLowerCase().includes('night') || pkg.duration.toLowerCase().includes('n'))) {
+                                    pkgDuration = pkg.duration;
+                                  } else if (pkg.duration && !isNaN(Number(pkg.duration))) {
+                                    const d = Number(pkg.duration);
+                                    const n = d > 1 ? d - 1 : 0;
+                                    pkgDuration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+                                  } else if (Array.isArray(pkg.itinerary) && pkg.itinerary.length > 0) {
+                                    const d = pkg.itinerary.length;
+                                    const n = d > 1 ? d - 1 : 0;
+                                    pkgDuration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+                                  } else if (pkg.days) {
+                                    const d = Number(pkg.days);
+                                    const n = pkg.nights || (d > 1 ? d - 1 : 0);
+                                    pkgDuration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+                                  }
+
+                                  // Extract Image
+                                  const getPkgImage = () => {
+                                    if (Array.isArray(pkg.images) && pkg.images.length > 0 && pkg.images[0]) return pkg.images[0];
+                                    if (Array.isArray(pkg.imageUrls) && pkg.imageUrls.length > 0 && pkg.imageUrls[0]) return pkg.imageUrls[0];
+                                    if (Array.isArray(pkg.photos) && pkg.photos.length > 0 && pkg.photos[0]) return pkg.photos[0];
+                                    if (Array.isArray(pkg.itinerary)) {
+                                      for (const day of pkg.itinerary) {
+                                        if (Array.isArray(day?.imageUrls) && day.imageUrls.length > 0 && day.imageUrls[0]) return day.imageUrls[0];
+                                        if (day?.imageUrl) return day.imageUrl;
+                                      }
+                                    }
+                                    if (Array.isArray(pkg.placesCovered) && pkg.placesCovered.length > 0) {
+                                      if (Array.isArray(pkg.placesCovered[0]?.imageUrls) && pkg.placesCovered[0].imageUrls.length > 0) {
+                                        return pkg.placesCovered[0].imageUrls[0];
+                                      }
+                                    }
+                                    if (pkg.imageUrl) return pkg.imageUrl;
+                                    return null;
+                                  };
+                                  const pkgImage = getPkgImage();
+
+                                  return (
+                                    <button
+                                      key={pkg.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedChatPackageId(pkg.id);
+                                        setChatInput(`Hi, I am interested in "${pkg.title}"${pkgDuration ? ` (${pkgDuration})` : ''}${formattedPrice ? ` at ${formattedPrice}` : ''}. Could you please share more details?`);
+                                      }}
+                                      className={`shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer border select-none ${
+                                        isSelected
+                                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-orange-600 shadow-md ring-2 ring-orange-400/50 font-semibold'
+                                          : 'bg-white hover:bg-orange-50 text-slate-800 hover:text-orange-700 border-slate-200 hover:border-orange-300 font-medium shadow-2xs'
+                                      }`}
+                                      title={`Click to select & inquire about: ${pkg.title}`}
+                                    >
+                                      {pkgImage && (
+                                        <img 
+                                          src={pkgImage} 
+                                          alt="" 
+                                          className={`w-5 h-5 rounded-full object-cover shrink-0 ${isSelected ? 'ring-1 ring-white' : 'ring-1 ring-slate-200'}`}
+                                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                      )}
+                                      <span className="truncate max-w-[150px] sm:max-w-[220px]">{pkg.title}</span>
+                                      {pkgDuration && (
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 font-medium ${isSelected ? 'bg-black/25 text-white font-bold' : 'bg-slate-100 text-slate-600'}`}>
+                                          {pkgDuration}
+                                        </span>
+                                      )}
+                                      {formattedPrice && (
+                                        <span className={`text-[11px] shrink-0 font-bold ${isSelected ? 'text-amber-100' : 'text-orange-600'}`}>
+                                          {formattedPrice}
+                                        </span>
+                                      )}
+                                      {isSelected && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 ml-0.5 animate-pulse" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             );
                           })()}
@@ -6835,7 +6998,6 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     )}
                   </div>
                 </div>
-                )
               )}
 
               {userActiveSection === 'wishlist' && (
@@ -7702,7 +7864,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   <span>Back to Website</span>
                 </a>
                 <button
-                  onClick={signOut}
+                  onClick={handleSignOut}
                   className="w-full text-left px-3.5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-3 text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
                   style={{ borderRadius: '6px' }}
                 >
@@ -7942,7 +8104,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 </a>
                 <span className="hidden md:flex text-xs text-gray-600 items-center gap-1">Status: {userData?.approved ? <span className="flex items-center gap-1 text-emerald-700 font-semibold"><CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Approved</span> : <span className="flex items-center gap-1 text-amber-700 font-semibold"><Clock className="h-3.5 w-3.5 text-amber-600" /> Pending</span>}</span>
                 <button
-                  onClick={signOut}
+                  onClick={handleSignOut}
                   className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold bg-white/90 text-slate-700 hover:bg-red-50 hover:text-red-600 border border-slate-200/80 hover:border-red-200 hover:shadow-xs transition-all duration-200 cursor-pointer"
                   style={{ borderRadius: '6px' }}
                 >

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Upload, ClipboardList, X, Globe, Palmtree } from 'lucide-react';
 import { getDbInstance } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { compressImage } from '@/lib/imageUtils';
 
 interface Place {
   id: string;
@@ -489,8 +490,22 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
           const cleanPlaceName = sanitizeFileName(placeNameOnly || cleanPackageTitle);
 
           try {
+            // Auto-compress large DSLR / high-res images before upload to ensure ultra-fast and reliable upload
+            let fileToUpload = file;
+            try {
+              fileToUpload = await compressImage(file, {
+                maxSizeMB: 2.5,
+                maxWidthOrHeight: 2560,
+                useWebWorker: true,
+                quality: 0.85
+              });
+            } catch (compErr) {
+              console.warn('Image compression fallback to original:', compErr);
+              fileToUpload = file;
+            }
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileToUpload);
             formData.append('category', 'listings');
             formData.append('userId', agencyId);
             formData.append('subfolder', `${cleanState}/${cleanPlaceName}`);
@@ -547,8 +562,22 @@ export default function AgencyListingForm({ agencyId, onSuccess, onCancel, initi
         const cleanPlace = sanitizeFileName(placeNameOnly || `Day-${day.day}`);
 
         try {
+          // Auto-compress large DSLR / high-res images before upload to ensure ultra-fast and reliable upload
+          let fileToUpload = file;
+          try {
+            fileToUpload = await compressImage(file, {
+              maxSizeMB: 2.5,
+              maxWidthOrHeight: 2560,
+              useWebWorker: true,
+              quality: 0.85
+            });
+          } catch (compErr) {
+            console.warn('Image compression fallback to original:', compErr);
+            fileToUpload = file;
+          }
+
           const formData = new FormData();
-          formData.append('file', file);
+          formData.append('file', fileToUpload);
           formData.append('category', 'listings');
           formData.append('userId', agencyId);
           formData.append('subfolder', `itinerary/${cleanState}/${cleanPlace}`);

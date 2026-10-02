@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, User, Menu, X, Heart, Scale, MessageSquare, Palmtree, ChevronRight, LogOut, FileText, Briefcase, Shield } from 'lucide-react';
+import { ArrowLeft, User, Menu, X, Heart, Scale, MessageSquare, Palmtree, ChevronRight, LogOut, FileText, Briefcase, Shield, Building2 } from 'lucide-react';
 import PackageDetailView from '@/components/PackageDetailView';
 import AuthModal from '@/components/AuthModal';
 import { useState, useEffect } from 'react';
@@ -179,7 +179,8 @@ export default function PackageClientView({ listing }: { listing: any }) {
           sessionStorage.removeItem('pending_chat_target');
           const pending = JSON.parse(pendingRaw);
           if (pending && pending.agencyId) {
-            router.push(`/?action=chat&agencyId=${pending.agencyId}&agencyName=${encodeURIComponent(pending.agencyName || 'Travel Agency')}`);
+            const pkgQuery = pending.packageId ? `&packageId=${encodeURIComponent(pending.packageId)}&packageTitle=${encodeURIComponent(pending.packageTitle || '')}&packageDuration=${encodeURIComponent(pending.packageDuration || '')}&packagePrice=${encodeURIComponent(pending.packagePrice || '')}` : '';
+            router.push(`/?action=chat&agencyId=${pending.agencyId}&agencyName=${encodeURIComponent(pending.agencyName || 'Travel Agency')}${pkgQuery}`);
           }
         }
       } catch (e) {
@@ -417,60 +418,43 @@ export default function PackageClientView({ listing }: { listing: any }) {
       )}
 
       {/* Top Header */}
-      <header className="sticky top-0 z-[100] bg-white/95 backdrop-blur-md text-slate-800 h-16 flex items-center border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-3 sm:px-4 w-full h-full">
-          {/* Left: Mobile Hamburger & Logo */}
-          <div className="flex items-center gap-2 sm:gap-4 h-full">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 rounded-xl transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-            <div 
-              className="flex items-center gap-1 sm:gap-2 font-black tracking-tight cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => router.push('/')}
-            >
-              <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 sm:h-12 md:h-16 w-auto object-contain py-1" />
-            </div>
+      <header className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
+        {/* Desktop Header Layout */}
+        <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-6 px-4 h-16 w-full">
+          {/* Logo */}
+          <div
+            className="flex items-center gap-1 sm:gap-2 font-extrabold tracking-tight cursor-pointer shrink-0"
+            onClick={() => router.push('/')}
+          >
+            <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain py-1" />
           </div>
 
-          {/* Right Links - Desktop & Mobile */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Explore Link */}
-            <button
-              onClick={() => router.push('/')}
-              className="hidden sm:inline-flex text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Explore Packages
-            </button>
-
-            {/* Compare Link */}
-            <button
-              onClick={() => router.push('/?section=compare')}
-              className="hidden sm:inline-flex text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors items-center gap-1.5"
-            >
-              <Scale className="h-3.5 w-3.5 text-slate-600" />
-              <span>Compare</span>
-              {comparisonList.length > 0 && (
-                <span className="bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">
-                  {comparisonList.length}
-                </span>
-              )}
-            </button>
-
-            {user ? (
-              <div className="flex items-center gap-2 sm:gap-3">
-                {userData?.role === 'agency' && (
+          {/* Right: Agency Portal / Profile / Login */}
+          <div className="flex items-center gap-4 lg:gap-6 shrink-0">
+            {user && userData ? (
+              <div className="flex items-center gap-4">
+                {/* ONLY VISIBLE TO LOGGED-IN AGENCIES */}
+                {userData.role === 'agency' && (
                   <a
                     href="/agencytripdm"
-                    className="cursor-pointer transition-all text-xs font-semibold flex items-center gap-1.5 text-slate-700 hover:text-slate-900 px-2.5 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
+                    className="cursor-pointer text-[15px] font-medium flex items-center gap-1.5 text-slate-800 shrink-0 hover:text-orange-600 transition-colors"
+                    title="Go to Agency Portal"
                   >
-                    <Briefcase className="h-3.5 w-3.5 text-slate-500" />
-                    <span className="hidden sm:inline">Agency Portal</span>
+                    <Building2 className="h-4 w-4 text-slate-600" />
+                    <span>Agency Portal</span>
                   </a>
                 )}
+                {userData.role === 'admin' && (
+                  <a
+                    href="/admin"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
+                    title="Go to Admin Dashboard"
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>Admin Portal</span>
+                  </a>
+                )}
+
                 <div
                   className="flex items-center gap-2 cursor-pointer text-[15px] font-medium text-slate-800"
                   onClick={() => router.push('/?section=profile')}
@@ -487,20 +471,75 @@ export default function PackageClientView({ listing }: { listing: any }) {
                       <User className="h-4 w-4" />
                     </div>
                   )}
-                  <span>Hi, {userFirstName}</span>
+                  <span>
+                    Hi, {userFirstName}
+                  </span>
                 </div>
                 
                 <span
-                  className="text-xs text-slate-500 hover:text-rose-600 cursor-pointer border-l border-gray-200 pl-3 transition-colors font-medium hidden sm:inline"
+                  className="text-[13px] text-slate-600 hover:text-rose-600 cursor-pointer transition-colors border-l border-gray-200 pl-3"
                   onClick={() => signOut?.()}
                 >
                   Sign Out
                 </span>
               </div>
             ) : (
+              <span
+                onClick={() => setShowAuthModal(true)}
+                className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 hover:text-orange-600 transition-colors"
+              >
+                <User className="h-4 w-4 text-slate-600" /> Login
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Header Layout */}
+        <div className="flex md:hidden items-center justify-between px-3 sm:px-4 h-16 w-full">
+          {/* Left: Hamburger Button & Logo */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 -ml-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+
+            <div
+              className="cursor-pointer flex items-center"
+              onClick={() => router.push('/')}
+            >
+              <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 sm:h-12 w-auto object-contain py-1" />
+            </div>
+          </div>
+
+          {/* Right: Profile / Login */}
+          <div className="flex items-center gap-2">
+            {user && userData ? (
+              <button
+                onClick={() => router.push('/?section=profile')}
+                className="p-1 rounded-full hover:ring-2 hover:ring-orange-500/20 transition-all"
+                aria-label="User Profile"
+              >
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-orange-500/20 shadow-xs"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-xs border border-orange-200 shadow-xs">
+                    {userInitial}
+                  </div>
+                )}
+              </button>
+            ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="px-3 py-1.5 text-xs sm:text-sm font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center gap-1.5"
+                aria-label="Login"
               >
                 <User className="h-4 w-4 text-orange-500" /> Login
               </button>
@@ -517,16 +556,44 @@ export default function PackageClientView({ listing }: { listing: any }) {
           onChat={() => {
             const agencyId = enrichedListing.agencyId || enrichedListing.userId;
             const agencyName = enrichedListing.agencyName || 'Travel Agency';
+            const rawPrice = enrichedListing.cost || enrichedListing.price || '';
+            let packagePrice = '';
+            if (rawPrice !== undefined && rawPrice !== null && rawPrice !== '' && rawPrice !== 'N/A') {
+              const numPrice = Number(rawPrice);
+              if (!isNaN(numPrice) && numPrice > 0) {
+                packagePrice = Math.round(numPrice).toString();
+              } else {
+                packagePrice = String(rawPrice);
+              }
+            }
+            let packageDuration = '';
+            if (enrichedListing.duration && typeof enrichedListing.duration === 'string') {
+              packageDuration = enrichedListing.duration;
+            } else if (Array.isArray(enrichedListing.itinerary) && enrichedListing.itinerary.length > 0) {
+              const d = enrichedListing.itinerary.length;
+              const n = d > 1 ? d - 1 : 0;
+              packageDuration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+            } else if (enrichedListing.days) {
+              const d = Number(enrichedListing.days);
+              const n = enrichedListing.nights || (d > 1 ? d - 1 : 0);
+              packageDuration = n > 0 ? `${d}D/${n}N` : `${d} Days`;
+            }
+
             if (!user) {
               sessionStorage.setItem('pending_chat_target', JSON.stringify({
                 agencyId,
                 agencyName,
-                packageTitle: enrichedListing.title || ''
+                packageId: enrichedListing.id,
+                packageTitle: enrichedListing.title || '',
+                packageDuration,
+                packagePrice
               }));
               setShowAuthModal(true);
               return;
             }
-            router.push(`/?action=chat&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName)}`);
+            const durParam = packageDuration ? `&packageDuration=${encodeURIComponent(packageDuration)}` : '';
+            const priceParam = packagePrice ? `&packagePrice=${encodeURIComponent(packagePrice)}` : '';
+            router.push(`/?action=chat&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName)}&packageId=${enrichedListing.id}&packageTitle=${encodeURIComponent(enrichedListing.title || '')}${durParam}${priceParam}`);
           }}
           onWishlist={handleWishlistToggle}
           isWishlisted={wishlist.includes(enrichedListing?.id)}
