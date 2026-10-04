@@ -86,6 +86,10 @@ export async function POST(request: NextRequest) {
         timestamp: String(now),
       },
       webpush: {
+        headers: {
+          Urgency: 'high',
+          TTL: '86400',
+        },
         fcmOptions: {
           link: deepLinkUrl,
         },
@@ -96,6 +100,10 @@ export async function POST(request: NextRequest) {
           renotify: true,
           requireInteraction: true,
         }
+      },
+      android: {
+        priority: 'high',
+        ttl: 86400 * 1000,
       }
     };
 
