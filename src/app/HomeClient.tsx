@@ -651,6 +651,35 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const selectedConversationRef = useRef<any>(null);
   selectedConversationRef.current = selectedConversation;
   const hasManuallyClosedChatRef = useRef(false);
+  const [locallyUnlockedAgencyUsers, setLocallyUnlockedAgencyUsers] = useState<string[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = sessionStorage.getItem('locally_unlocked_agency_users');
+        return saved ? JSON.parse(saved) : [];
+      }
+    } catch {}
+    return [];
+  });
+
+  const isTravelerUnlocked = (targetId: string | undefined): boolean => {
+    if (!targetId) return false;
+    const cleanTarget = String(targetId).trim().toLowerCase();
+    if (locallyUnlockedAgencyUsers.some(id => String(id).trim().toLowerCase() === cleanTarget)) {
+      return true;
+    }
+    const list = userData?.unlockedUsers || [];
+    return (list as any[]).some((u: any) => {
+      if (!u) return false;
+      if (typeof u === 'string') return u.trim().toLowerCase() === cleanTarget;
+      const uid = String(u.userId || u.targetUserId || u.id || u.travelerId || '').trim().toLowerCase();
+      if (uid === cleanTarget) {
+        if (!u.expiresAt) return true;
+        const exp = Number(u.expiresAt);
+        return isNaN(exp) || exp > Date.now();
+      }
+      return false;
+    });
+  };
   // Cache for user profile data - persists across re-renders so we don't re-fetch on every message update
   const agencyUserProfileCacheRef = useRef<Map<string, { name: string; logo: string | null }>>(new Map());
   const [agencyChatSearchQuery, setAgencyChatSearchQuery] = useState<string>('');
@@ -1785,14 +1814,30 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       timestamp: Date.now()
     };
     
+    const cleanUserId = userId.trim();
     const expiryTimestamp = Date.now() + 15 * 24 * 60 * 60 * 1000; // 15 days
-    const unlockRecord = { userId: userId, expiresAt: expiryTimestamp };
+    const unlockRecord = { userId: cleanUserId, targetUserId: cleanUserId, expiresAt: expiryTimestamp };
+
+    // Deduplicate any existing/stale record for this user
+    const updatedUnlocked = (unlockedList as any[]).filter((u: any) => {
+      if (!u) return false;
+      if (typeof u === 'string') return u.trim().toLowerCase() !== cleanUserId.toLowerCase();
+      const uid = String(u.userId || u.targetUserId || u.id || u.travelerId || '').trim().toLowerCase();
+      return uid !== cleanUserId.toLowerCase();
+    }).concat(unlockRecord);
 
     try {
       await updateDoc(doc(dbInstance, 'users', user.uid), {
         credits: updatedCredits,
-        unlockedUsers: [...unlockedList, unlockRecord],
+        unlockedUsers: updatedUnlocked,
         creditHistory: [newTransaction, ...(userData.creditHistory || [])]
+      });
+
+      // Immediately mark as locally unlocked so UI responds without delay
+      setLocallyUnlockedAgencyUsers(prev => {
+        const next = [...prev, cleanUserId];
+        try { sessionStorage.setItem('locally_unlocked_agency_users', JSON.stringify(next)); } catch {}
+        return next;
       });
 
       alert(`Successfully unlocked connection with ${userName}!`);
@@ -8805,11 +8850,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           <div className="flex flex-col h-full relative min-w-0 min-h-0 overflow-hidden">
                             {/* Conversation Header */}
                             {(() => {
-                              const unlockRecord = (userData?.unlockedUsers as any[] || []).find((u: any) => typeof u === 'string' ? u === selectedConversation.userId : u.userId === selectedConversation.userId);
-                              const isUnlocked = unlockRecord ? (typeof unlockRecord === 'string' ? true : (unlockRecord as any).expiresAt > Date.now()) : false;
-                              const daysRemaining = (isUnlocked && unlockRecord && typeof unlockRecord !== 'string') 
-                                ? Math.ceil(((unlockRecord as any).expiresAt - Date.now()) / (1000 * 60 * 60 * 24)) 
-                                : null;
+                              const isUnlocked = isTravelerUnlocked(selectedConversation.userId);
+                              const unlockRecord = (userData?.unlockedUsers as any[] || []).find((u: any) => {
+                                if (!u) return false;
+                                if (typeof u === 'string') return u.trim().toLowerCase() === selectedConversation.userId?.trim().toLowerCase();
+                                const uid = String(u.userId || u.targetUserId || u.id || '').trim().toLowerCase();
+                                return uid === selectedConversation.userId?.trim().toLowerCase();
+                              });
+                              const daysRemaining = (isUnlocked && unlockRecord && typeof unlockRecord !== 'string' && unlockRecord.expiresAt) 
+                                ? Math.max(1, Math.ceil((Number(unlockRecord.expiresAt) - Date.now()) / (1000 * 60 * 60 * 24))) 
+                                : (isUnlocked ? 15 : null);
 
                               return (
                                 <div className="px-4 md:px-6 py-3 bg-[#f0f2f5] border-b border-gray-200 flex items-center justify-between shadow-2xs z-10 shrink-0">
@@ -9082,13 +9132,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                             {/* Message Input / Unlock Box */}
                             {(() => {
-                              const checkIsUnlocked = (unlockedUsersList: any[], targetId: string) => {
-                                const record = (unlockedUsersList || []).find((u: any) => typeof u === 'string' ? u === targetId : u.userId === targetId);
-                                if (!record) return false;
-                                if (typeof record === 'string') return true;
-                                return (record as any).expiresAt > Date.now();
-                              };
-                              const isUnlocked = checkIsUnlocked(userData?.unlockedUsers || [], selectedConversation.userId);
+                              const isUnlocked = isTravelerUnlocked(selectedConversation.userId);
                               const isFreePlan = (userData?.role as string) === 'agency' && (userData?.plan === 'free' || !userData?.plan);
                               const hasPhoneInInput = isFreePlan && agencyChatInput.replace(/\D/g, '').length >= 10;
                               return isUnlocked ? (
@@ -9701,7 +9745,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Unlocked Travelers</span>
                                     <span className="font-semibold text-gray-800">
-                                      {(userData?.unlockedUsers || []).filter((u: any) => typeof u === 'string' || u.expiresAt > Date.now()).length} Travelers
+                                      {Array.from(new Set([
+                                        ...(userData?.unlockedUsers || []).filter((u: any) => {
+                                          if (!u) return false;
+                                          if (typeof u === 'string') return true;
+                                          return !u.expiresAt || Number(u.expiresAt) > Date.now();
+                                        }).map((u: any) => typeof u === 'string' ? u : (u.userId || u.id || '')),
+                                        ...locallyUnlockedAgencyUsers
+                                      ].filter(Boolean))).length} Travelers
                                     </span>
                                   </div>
                                 </div>

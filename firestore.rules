@@ -35,6 +35,16 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isOwner(userId) || (isAdmin() && request.auth.uid != userId);
       allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Allow users to read and write to their own subcollections (e.g. transactions)
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // FCM tokens collection
+    match /fcm_tokens/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
     // Listings collection - authenticated users can read approved listings, agencies can manage their own, admins can manage all
@@ -91,6 +101,12 @@ service cloud.firestore {
     // Settings collection - any user can read, admins can write
     match /settings/{settingId} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Coupons collection - authenticated users can read to validate coupons, admins can write
+    match /coupons/{couponId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
