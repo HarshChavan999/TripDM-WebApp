@@ -66,6 +66,13 @@ export const getRtdbInstance = (): Database | null => {
   return _rtdb;
 };
 
+export const getFirebaseAppInstance = (): FirebaseApp | null => {
+  initializeFirebaseApp();
+  return app;
+};
+
+export { getFirebaseConfig };
+
 // For backward compatibility, but these will be null during SSR/build time
 export const auth = getAuthInstance();
 export const db = getDbInstance();

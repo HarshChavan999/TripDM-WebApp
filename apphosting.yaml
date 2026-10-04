@@ -34,4 +34,16 @@ env:
     value: TripDM <support@tripdm.com>
   - variable: NEXT_PUBLIC_APP_URL
     value: https://tripdm.com
+  - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
+    value: BNzm2vGbAdsH4f5ecaGPQjxl2i_rQRj1U4-_nwe2_54No8s1VOVjox7tvd3t7ZFwxdcSKgBc2A9X4mvmAH_A0zU
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyBBRmuO-xfWP-1bxiP5Ex1aSOo3dWu4Mhs
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: travel-agent-management-29c27.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: travel-agent-management-29c27
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "387994411670"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:387994411670:web:5591a4bc9e4befb09f18b7"
 

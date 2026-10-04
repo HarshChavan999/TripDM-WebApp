@@ -662,68 +662,7 @@ export default function LandingDiscovery({
                     );
                   }
 
-                  // Scenario B: Exactly 4 destinations -> 4-Column Balanced Grid
-                  if (destinations.length === 4) {
-                    return (
-                      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                        {destinations.map((dest) => (
-                          <div
-                            key={dest.name}
-                            onClick={() => setSearchTerm(dest.name)}
-                            className="group cursor-pointer relative overflow-hidden bg-slate-900 border border-slate-200/80 shadow-2xs hover:shadow-xl transition-all duration-300 h-52 sm:h-60 flex flex-col justify-between p-5"
-                            style={{ borderRadius: '6px' }}
-                          >
-                            {dest.coverImage ? (
-                              <img
-                                src={dest.coverImage}
-                                alt={dest.name}
-                                className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-108 transition-transform duration-700"
-                              />
-                            ) : (
-                              <div className="absolute inset-0 bg-slate-800 flex items-center justify-center text-slate-500">
-                                <MapPin className="w-10 h-10" />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/35 to-transparent opacity-85 group-hover:opacity-75 transition-opacity" />
-
-                            <div className="relative z-10 flex items-center justify-between" />
-
-                            <div className="relative z-10">
-                              <h4 className="text-lg sm:text-xl font-black text-white tracking-tight drop-shadow-sm line-clamp-1 mb-1.5">
-                                {dest.name}
-                              </h4>
-                              {dest.discoveredPlaces && dest.discoveredPlaces.length > 0 && (
-                                <p className="text-xs font-semibold text-slate-200/90 line-clamp-1 mb-3">
-                                  {dest.discoveredPlaces.join(' • ')}
-                                </p>
-                              )}
-                              <div className="flex items-center justify-between pt-2.5 border-t border-white/15">
-                                {dest.startingPrice ? (
-                                  <div>
-                                    <p className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">Starting from</p>
-                                    <p className="text-sm sm:text-base font-black text-amber-300">
-                                      ₹{dest.startingPrice.toLocaleString('en-IN')}
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <span className="text-[11px] text-slate-300 font-bold">Verified Packages</span>
-                                )}
-                                <span
-                                  className="text-xs font-bold text-white bg-white/20 group-hover:bg-orange-500 px-3.5 py-1.5 transition-all flex items-center gap-1.5 shadow-xs"
-                                  style={{ borderRadius: '6px' }}
-                                >
-                                  <span>Explore</span>
-                                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-
-                  // Scenario C: 6 destinations, 3 destinations, or other counts -> Uniform 3-Column Balanced Grid
+                  // Default: Uniform 3-Column Balanced Grid (3 cards per line)
                   return (
                     <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                       {destinations.map((dest) => (

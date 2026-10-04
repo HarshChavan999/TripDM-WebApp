@@ -32,6 +32,8 @@ import AdminDestinationStories from '@/components/AdminDestinationStories';
 import CheckoutModal from '@/components/CheckoutModal';
 import AgencyWelcomeModal from '@/components/AgencyWelcomeModal';
 import LandingDiscovery from '@/components/LandingDiscovery';
+import NotificationPermissionPrompt from '@/components/NotificationPermissionPrompt';
+import { sendVendorReplyNotification, autoSyncFcmTokenIfGranted, listenToForegroundMessages } from '@/lib/fcmNotifications';
 import { normalizeExperienceName } from '@/lib/discoveryEngine';
 import { useComparison } from '@/contexts/ComparisonContext';
 import { 
@@ -426,6 +428,20 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       }
     }
   }, [user, userData?.role, routeMode, loading]);
+
+  // Auto-sync FCM Push Notification token and listen for foreground messages
+  useEffect(() => {
+    if (!loading && user?.uid) {
+      autoSyncFcmTokenIfGranted(user.uid);
+      let unsubscribe: (() => void) | undefined;
+      listenToForegroundMessages().then((unsub) => {
+        unsubscribe = unsub;
+      });
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [user?.uid, loading]);
   
   useEffect(() => {
     if (loading) return;
@@ -841,6 +857,36 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     } catch {}
   }, [currentChatAgency, currentChatAgencyName]);
 
+  // Auto-mark incoming messages as 'read' (double blue tick) when traveler is actively viewing the conversation
+  useEffect(() => {
+    if (userActiveSection === 'chat' && currentChatAgency && chatMessages.length > 0 && typeof document !== 'undefined' && document.hasFocus() && !document.hidden) {
+      const unreadMsgs = chatMessages.filter(m => m.sender === currentChatAgency && m.status !== 'read');
+      if (unreadMsgs.length > 0) {
+        unreadMsgs.forEach(async (m) => {
+          try {
+            const coll = m.isMobile ? 'chat_messages' : 'messages';
+            await updateDoc(doc(getDbInstance()!, coll, m.id), { status: 'read' });
+          } catch (e) {}
+        });
+      }
+    }
+  }, [chatMessages, currentChatAgency, userActiveSection]);
+
+  // Auto-mark incoming messages as 'read' (double blue tick) when agency is actively viewing the conversation
+  useEffect(() => {
+    if (selectedConversation?.userId && agencyChatMessages.length > 0 && typeof document !== 'undefined' && document.hasFocus() && !document.hidden) {
+      const unreadMsgs = agencyChatMessages.filter(m => m.sender === selectedConversation.userId && m.status !== 'read');
+      if (unreadMsgs.length > 0) {
+        unreadMsgs.forEach(async (m) => {
+          try {
+            const coll = m.isMobile ? 'chat_messages' : 'messages';
+            await updateDoc(doc(getDbInstance()!, coll, m.id), { status: 'read' });
+          } catch (e) {}
+        });
+      }
+    }
+  }, [agencyChatMessages, selectedConversation?.userId]);
+
   // Synchronize current chat agency details when conversations change
   useEffect(() => {
     if (currentChatAgency && userConversations.length > 0) {
@@ -859,33 +905,45 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     }
   }, [userConversations, currentChatAgency]);
 
-  // Deep linking for Chat, Book, and Wishlist from SEO routes
+  // Deep linking for Chat, Book, and Wishlist from SEO routes & Push Notifications
   useEffect(() => {
     if (loading) return;
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      const chatAgencyId = urlParams.get('chat');
+      const chatAgencyId = urlParams.get('chat') || urlParams.get('agencyId');
+      const actionParam = urlParams.get('action');
+      const sectionParam = urlParams.get('section');
+      const agencyNameParam = urlParams.get('agencyName');
       const bookListingId = urlParams.get('book');
       const wishlistListingId = urlParams.get('wishlist');
       
       let shouldCleanUrl = false;
 
-      if (chatAgencyId) {
+      if (chatAgencyId || actionParam === 'chat' || sectionParam === 'chat' || sectionParam === 'messages') {
+        const targetAgencyId = chatAgencyId || '';
+        const targetAgencyName = agencyNameParam || 'Travel Agency';
         const chatPackageId = urlParams.get('packageId');
         if (chatPackageId) {
           setSelectedChatPackageId(chatPackageId);
         }
         if (!user) {
-          sessionStorage.setItem('pending_chat_target', JSON.stringify({
-            agencyId: chatAgencyId,
-            agencyName: 'Travel Agency',
-            packageId: chatPackageId || null
-          }));
+          if (targetAgencyId) {
+            sessionStorage.setItem('pending_chat_target', JSON.stringify({
+              agencyId: targetAgencyId,
+              agencyName: targetAgencyName,
+              packageId: chatPackageId || null
+            }));
+          }
           setAuthModalTab('login');
           setShowAuthModal(true);
         } else {
           setUserActiveSection('chat');
-          setCurrentChatAgency(chatAgencyId);
+          if (targetAgencyId) {
+            setCurrentChatAgency(targetAgencyId);
+            if (agencyNameParam) {
+              setCurrentChatAgencyName(agencyNameParam);
+            }
+          }
         }
         shouldCleanUrl = true;
       }
@@ -2962,6 +3020,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       }
     }
 
+    const msgContent = agencyChatInput;
+    const recipientUserId = selectedConversation.userId;
+    const agencySenderId = user.uid;
+    const agencyDisplayName = userData?.companyName || userData?.name || 'Travel Agent';
+
     // Send to mobile app's "chat_messages" collection with correct format
     const messageData = {
       from_user_id: user.uid,
@@ -2975,6 +3038,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     if (!dbInstance) return;
     await addDoc(collection(dbInstance, 'chat_messages'), messageData);
     setAgencyChatInput('');
+
+    // Trigger FCM Web Push Notification strictly to that specific customer
+    sendVendorReplyNotification({
+      senderId: agencySenderId,
+      senderName: agencyDisplayName,
+      recipientId: recipientUserId,
+      messageContent: msgContent,
+    }).catch(err => console.error('[FCM] Push dispatch error:', err));
   };
 
   const selectConversation = (conversation: any) => {
@@ -6527,6 +6598,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
                   {/* Right Column: Chat Content */}
                   <div className={`flex-1 flex flex-col h-full chat-travel-bg min-w-0 min-h-0 overflow-hidden ${!currentChatAgency ? 'hidden md:flex' : 'flex'}`}>
+                    {/* Customer Push Notification Permission Prompt Banner */}
+                    <div className="px-3 pt-2.5 bg-white border-b border-gray-100 shrink-0">
+                      <NotificationPermissionPrompt userId={user?.uid} variant="banner" />
+                    </div>
+
                     {currentChatAgency ? (
                       <div className="flex flex-col h-full relative min-w-0 min-h-0 overflow-hidden">
                         {/* Conversation Header */}
@@ -9046,6 +9122,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                                               };
                                               const dbInstance = getDbInstance();
                                               if (dbInstance) await addDoc(collection(dbInstance, 'chat_messages'), messageData);
+                                              
+                                              // Trigger FCM Web Push Notification strictly to that specific customer
+                                              sendVendorReplyNotification({
+                                                senderId: user.uid,
+                                                senderName: userData?.companyName || userData?.name || 'Travel Agent',
+                                                recipientId: selectedConversation.userId,
+                                                messageContent: reply,
+                                              }).catch(err => console.error('[FCM] Quick reply push error:', err));
                                             }}
                                             className="shrink-0 px-3 py-1.5 bg-white hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300 text-xs rounded-full whitespace-nowrap transition-all shadow-2xs active:scale-95 font-medium"
                                           >
@@ -10250,3 +10334,4 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     </div>
   );
 }
+
