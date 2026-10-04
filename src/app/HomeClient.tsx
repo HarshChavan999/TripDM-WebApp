@@ -8021,8 +8021,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
             )}
           </div>
 
-          {/* Desktop Sidebar */}
-          <div className={`hidden md:flex md:w-64 bg-white border-r border-gray-200 flex-col z-20 shrink-0 ${agencyActiveSection === 'chat' ? 'hidden' : ''}`}>
+          {/* Desktop Sidebar - Hidden when Customer Chat is open for immersive full-width messaging */}
+          <div className={`${agencyActiveSection === 'chat' ? 'hidden' : 'hidden md:flex md:w-64'} bg-white border-r border-gray-200 flex-col z-20 shrink-0`}>
             <div className="p-6 border-b border-gray-200 flex flex-col items-center text-center shrink-0">
               <div className="w-28 h-20 flex items-center justify-center mb-3 shrink-0">
                 {(agencyLogoUrl || userData?.logoUrl || userData?.agencyLogo) ? (
@@ -8186,10 +8186,11 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 {agencyActiveSection === 'chat' && (
                   <button
                     onClick={() => setAgencyActiveSection('listings')}
-                    className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-xs mr-0.5 sm:mr-2 shrink-0"
+                    className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200/80 shadow-2xs mr-1 sm:mr-2 shrink-0 font-semibold text-xs cursor-pointer"
                     title="Back to Dashboard"
                   >
-                    ←
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Dashboard</span>
                   </button>
                 )}
                 <h1 className="text-sm sm:text-lg md:text-xl font-bold text-gray-900 truncate">
