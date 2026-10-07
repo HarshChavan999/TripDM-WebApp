@@ -8,15 +8,15 @@ let _auth: Auth | null = null;
 let _db: Firestore | null = null;
 let _rtdb: Database | null = null;
 
-function getFirebaseConfig() {
+export function getFirebaseConfig() {
   return {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'travel-agent-management-29c27.firebaseapp.com',
     databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || `https://travel-agent-management-29c27-default-rtdb.firebaseio.com/`,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27',
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'travel-agent-management-29c27.appspot.com',
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '387994411670',
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:387994411670:web:5591a4bc9e4befb09f18b7',
   };
 }
 
@@ -26,13 +26,19 @@ function initializeFirebaseApp() {
       app = getApps().length > 0 ? getApps()[0] : initializeApp(getFirebaseConfig());
     }
   }
+  return app;
 }
+
+export const getFirebaseAppInstance = (): FirebaseApp | null => {
+  initializeFirebaseApp();
+  return app;
+};
 
 export const getAuthInstance = (): Auth | null => {
   if (!_auth) {
-    initializeFirebaseApp();
-    if (app) {
-      _auth = getAuth(app);
+    const firebaseApp = initializeFirebaseApp();
+    if (firebaseApp) {
+      _auth = getAuth(firebaseApp);
     }
   }
   return _auth;
@@ -40,16 +46,16 @@ export const getAuthInstance = (): Auth | null => {
 
 export const getDbInstance = (): Firestore | null => {
   if (!_db) {
-    initializeFirebaseApp();
-    if (app) {
+    const firebaseApp = initializeFirebaseApp();
+    if (firebaseApp) {
       try {
         // Use long-polling to prevent 10s backend connection timeouts caused by WebChannel streaming
         // issues with certain ISPs, VPNs, proxies, antivirus, or browser extensions
-        _db = initializeFirestore(app, {
+        _db = initializeFirestore(firebaseApp, {
           experimentalForceLongPolling: true,
         });
       } catch {
-        _db = getFirestore(app);
+        _db = getFirestore(firebaseApp);
       }
     }
   }
@@ -58,23 +64,25 @@ export const getDbInstance = (): Firestore | null => {
 
 export const getRtdbInstance = (): Database | null => {
   if (!_rtdb) {
-    initializeFirebaseApp();
-    if (app) {
-      _rtdb = getDatabase(app);
+    const firebaseApp = initializeFirebaseApp();
+    if (firebaseApp) {
+      _rtdb = getDatabase(firebaseApp);
     }
   }
   return _rtdb;
 };
 
-export const getFirebaseAppInstance = (): FirebaseApp | null => {
-  initializeFirebaseApp();
-  return app;
+export const getMessagingInstance = async () => {
+  if (typeof window === 'undefined') return null;
+  const { getMessaging, isSupported } = await import('firebase/messaging');
+  const supported = await isSupported();
+  if (!supported) return null;
+  const firebaseApp = initializeFirebaseApp();
+  if (!firebaseApp) return null;
+  return getMessaging(firebaseApp);
 };
-
-export { getFirebaseConfig };
 
 // For backward compatibility, but these will be null during SSR/build time
 export const auth = getAuthInstance();
 export const db = getDbInstance();
 export const rtdb = getRtdbInstance();
-

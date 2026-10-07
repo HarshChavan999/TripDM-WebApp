@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { getAuthInstance, getDbInstance } from '@/lib/firebase';
+import { registerPushNotifications, initForegroundNotificationListener } from '@/lib/pushNotifications';
 
 interface UserData {
   role: 'admin' | 'agency' | 'user';
@@ -78,6 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (firebaseUser) {
         setUser(firebaseUser);
+        // Register Web Push notification token and listeners
+        registerPushNotifications(firebaseUser.uid).catch((err) =>
+          console.warn('[Push] Registration error:', err)
+        );
+        initForegroundNotificationListener();
+
         // Fetch user data from Firestore with real-time updates
         const dbInstance = getDbInstance();
         if (dbInstance) {

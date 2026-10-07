@@ -3050,6 +3050,21 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     const dbInstance = getDbInstance();
     if (!dbInstance) return;
     await addDoc(collection(dbInstance, 'chat_messages'), messageData);
+
+    // Trigger FCM Web Push Notification to recipient agency
+    if (currentChatAgency) {
+      fetch('/api/notifications/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentChatAgency,
+          title: `New message from ${userData?.name || user.email || 'Traveler'}`,
+          body: chatInput,
+          url: '/?tab=chat'
+        })
+      }).catch(err => console.error('[Push] Send notification error:', err));
+    }
+
     setChatInput('');
   };
 
@@ -3082,6 +3097,21 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     const dbInstance = getDbInstance();
     if (!dbInstance) return;
     await addDoc(collection(dbInstance, 'chat_messages'), messageData);
+
+    // Trigger FCM Web Push Notification to recipient user
+    if (selectedConversation.userId) {
+      fetch('/api/notifications/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedConversation.userId,
+          title: `New message from ${userData?.companyName || userData?.name || 'Travel Agent'}`,
+          body: agencyChatInput,
+          url: '/?tab=chat'
+        })
+      }).catch(err => console.error('[Push] Send notification error:', err));
+    }
+
     setAgencyChatInput('');
 
     // Trigger FCM Web Push Notification strictly to that specific customer
