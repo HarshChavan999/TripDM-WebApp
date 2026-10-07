@@ -4,20 +4,37 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
+// Parse query params if supplied during dynamic registration
+const urlParams = new URLSearchParams(self.location.search);
+const apiKey = urlParams.get('apiKey') || 'AIzaSyBBRmuO-xfWP-1bxiP5Ex1aSOo3dWu4Mhs';
+const projectId = urlParams.get('projectId') || 'travel-agent-management-29c27';
+const messagingSenderId = urlParams.get('messagingSenderId') || '387994411670';
+const appId = urlParams.get('appId') || '1:387994411670:web:5591a4bc9e4befb09f18b7';
+
 // Default Firebase Configuration for Service Worker
 const firebaseConfig = {
-  apiKey: 'AIzaSyBBRmuO-xfWP-1bxiP5Ex1aSOo3dWu4Mhs',
-  authDomain: 'travel-agent-management-29c27.firebaseapp.com',
-  projectId: 'travel-agent-management-29c27',
-  messagingSenderId: '387994411670',
-  appId: '1:387994411670:web:5591a4bc9e4befb09f18b7',
+  apiKey,
+  authDomain: `${projectId}.firebaseapp.com`,
+  projectId,
+  storageBucket: `${projectId}.appspot.com`,
+  messagingSenderId,
+  appId,
 };
 
 if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+  try {
+    firebase.initializeApp(firebaseConfig);
+  } catch (err) {
+    console.error('[TripDM FCM SW] Init error:', err);
+  }
 }
 
-const messaging = firebase.messaging();
+let messaging = null;
+try {
+  messaging = firebase.messaging();
+} catch (err) {
+  console.warn('[TripDM FCM SW] Messaging setup note:', err);
+}
 
 function buildNotificationOptions(payload) {
   const data = payload.data || {};
@@ -39,6 +56,7 @@ function buildNotificationOptions(payload) {
       tag: agencyId ? `chat_${agencyId}` : 'tripdm_chat_reply',
       renotify: true,
       requireInteraction: true,
+      vibrate: [200, 100, 200],
       data: {
         url: targetUrl,
         agencyId: agencyId,
@@ -56,11 +74,13 @@ function buildNotificationOptions(payload) {
 }
 
 // Handle background messages via Firebase Compat
-messaging.onBackgroundMessage((payload) => {
-  console.log('[TripDM FCM SW] Received background push message:', payload);
-  const { title, options } = buildNotificationOptions(payload);
-  return self.registration.showNotification(title, options);
-});
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[TripDM FCM SW] Received background push message:', payload);
+    const { title, options } = buildNotificationOptions(payload);
+    return self.registration.showNotification(title, options);
+  });
+}
 
 // Fallback listener for raw push events
 self.addEventListener('push', (event) => {

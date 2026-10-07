@@ -52,6 +52,7 @@ R2_PUBLIC_URL=https://pub-72f938952ddd47cc95bd3efcf3b9419c.r2.dev,\
 RESEND_API_KEY="${RESEND_API_KEY}",\
 RESEND_FROM_EMAIL=TripDM <support@tripdm.com>,\
 NEXT_PUBLIC_APP_URL=https://tripdm.com,\
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=BJUyaQwurGW88dG-jbYwPMEws_f8nuWDfuHwusLisJMyn6fWn0X2F2fR7vZ2ay0Tbd30-do2IqBR9EwQDYCQdU8,\
 NODE_ENV=production"
 
 echo "✅ Cloud Run deployment completed successfully"
