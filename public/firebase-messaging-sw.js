@@ -4,31 +4,49 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
+// Parse query params if supplied during dynamic registration
+const urlParams = new URLSearchParams(self.location.search);
+const apiKey = urlParams.get('apiKey') || 'AIzaSyBBRmuO-xfWP-1bxiP5Ex1aSOo3dWu4Mhs';
+const projectId = urlParams.get('projectId') || 'travel-agent-management-29c27';
+const messagingSenderId = urlParams.get('messagingSenderId') || '387994411670';
+const appId = urlParams.get('appId') || '1:387994411670:web:5591a4bc9e4befb09f18b7';
+
 // Default Firebase Configuration for Service Worker
 const firebaseConfig = {
-  apiKey: 'AIzaSyBBRmuO-xfWP-1bxiP5Ex1aSOo3dWu4Mhs',
-  authDomain: 'travel-agent-management-29c27.firebaseapp.com',
-  projectId: 'travel-agent-management-29c27',
-  messagingSenderId: '387994411670',
-  appId: '1:387994411670:web:5591a4bc9e4befb09f18b7',
+  apiKey,
+  authDomain: `${projectId}.firebaseapp.com`,
+  projectId,
+  storageBucket: `${projectId}.appspot.com`,
+  messagingSenderId,
+  appId,
 };
 
 if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+  try {
+    firebase.initializeApp(firebaseConfig);
+  } catch (err) {
+    console.error('[TripDM FCM SW] Init error:', err);
+  }
 }
 
-const messaging = firebase.messaging();
+let messaging = null;
+try {
+  messaging = firebase.messaging();
+} catch (err) {
+  console.warn('[TripDM FCM SW] Messaging setup note:', err);
+}
 
 function buildNotificationOptions(payload) {
   const data = payload.data || {};
   const notification = payload.notification || {};
 
-  const title = notification.title || data.title || '🔔 New reply to your enquiry';
-  const body = notification.body || data.body || 'A travel agent has sent you a new message.';
+  const agencyName = data.agencyName || '';
+  const fallbackTitle = agencyName ? `${agencyName} (TripDM)` : 'TripDM';
+  const title = notification.title || data.title || fallbackTitle;
+  const body = notification.body || data.body || 'You have received a new message.';
   const icon = notification.icon || data.icon || '/tripdm-logo.png';
   const agencyId = data.agencyId || '';
-  const agencyName = data.agencyName || 'Travel Agency';
-  const targetUrl = data.url || (agencyId ? `/?action=chat&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName)}` : '/?section=chat');
+  const targetUrl = data.url || (agencyId ? `/?action=chat&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName || 'Travel Agency')}` : '/?section=chat');
 
   return {
     title,
@@ -36,9 +54,8 @@ function buildNotificationOptions(payload) {
       body: body,
       icon: icon,
       badge: '/tripdm-logo.png',
-      tag: agencyId ? `chat_${agencyId}` : 'tripdm_chat_reply',
-      renotify: true,
-      requireInteraction: true,
+      renotify: false,
+      requireInteraction: false,
       data: {
         url: targetUrl,
         agencyId: agencyId,
@@ -48,32 +65,34 @@ function buildNotificationOptions(payload) {
       actions: [
         {
           action: 'open_chat',
-          title: '💬 View Conversation'
+          title: 'View Conversation'
         }
       ]
     }
   };
 }
 
-// Handle background messages via Firebase Compat
-messaging.onBackgroundMessage((payload) => {
-  console.log('[TripDM FCM SW] Received background push message:', payload);
-  const { title, options } = buildNotificationOptions(payload);
-  return self.registration.showNotification(title, options);
-});
-
-// Fallback listener for raw push events
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-  try {
-    const rawData = event.data.json();
-    console.log('[TripDM FCM SW] Raw push event received:', rawData);
-    const { title, options } = buildNotificationOptions(rawData);
-    event.waitUntil(self.registration.showNotification(title, options));
-  } catch (err) {
-    console.warn('[TripDM FCM SW] Push event parsing note:', err);
-  }
-});
+// Handle background messages via Firebase Compat or fallback
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[TripDM FCM SW] Received background push message:', payload);
+    const { title, options } = buildNotificationOptions(payload);
+    return self.registration.showNotification(title, options);
+  });
+} else {
+  // Fallback listener for raw push events only if messaging compat is not active
+  self.addEventListener('push', (event) => {
+    if (!event.data) return;
+    try {
+      const rawData = event.data.json();
+      console.log('[TripDM FCM SW] Raw push event received:', rawData);
+      const { title, options } = buildNotificationOptions(rawData);
+      event.waitUntil(self.registration.showNotification(title, options));
+    } catch (err) {
+      console.warn('[TripDM FCM SW] Push event parsing note:', err);
+    }
+  });
+}
 
 // Handle notification click -> open or focus the exact chat conversation window
 self.addEventListener('notificationclick', (event) => {

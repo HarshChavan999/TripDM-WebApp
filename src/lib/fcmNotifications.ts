@@ -69,7 +69,7 @@ export async function requestAndSaveFcmToken(userId: string): Promise<{ success:
       return { success: false, error: 'Failed to generate FCM registration token.' };
     }
 
-    // Save token to Firestore under the user's document using setDoc + merge
+    // Save token to Firestore under both users and user_fcm_tokens collections using setDoc + merge
     const db = getDbInstance();
     if (db && userId) {
       const userRef = doc(db, 'users', userId);
@@ -77,6 +77,20 @@ export async function requestAndSaveFcmToken(userId: string): Promise<{ success:
         fcmTokens: arrayUnion(token),
         pushNotificationsEnabled: true,
         lastTokenUpdate: Date.now()
+      }, { merge: true });
+
+      const userTokenRef = doc(db, 'user_fcm_tokens', userId);
+      await setDoc(userTokenRef, {
+        userId,
+        tokens: arrayUnion(token),
+        lastUpdated: Date.now()
+      }, { merge: true });
+
+      const tokenRef = doc(db, 'fcm_tokens', token);
+      await setDoc(tokenRef, {
+        userId,
+        token,
+        updatedAt: Date.now()
       }, { merge: true });
     }
 
@@ -124,8 +138,10 @@ export async function listenToForegroundMessages(onMessageReceived?: (payload: a
       const isViewingThisChat = isWindowActive && currentChatAgency && currentChatAgency === payload.data?.agencyId;
 
       if (!isViewingThisChat && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-        const title = payload.notification?.title || payload.data?.title || '🔔 New reply to your enquiry';
-        const body = payload.notification?.body || payload.data?.body || 'A travel agent replied to your message.';
+        const agencyName = payload.data?.agencyName || '';
+        const fallbackTitle = agencyName ? `${agencyName} (TripDM)` : 'TripDM';
+        const title = payload.notification?.title || payload.data?.title || fallbackTitle;
+        const body = payload.notification?.body || payload.data?.body || 'You have received a new message.';
         try {
           const n = new Notification(title, {
             body,

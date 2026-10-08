@@ -50,6 +50,7 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "TripDM: Direct Message. Better Travel.",
   description: "TripDM connects travelers directly with trusted travel agents through instant messaging.",
+  manifest: "/manifest.json",
   verification: {
     google: "w1V-GlWBQftzDwWc-qjkfD9-W384Q5be7h465tV5cF4",
   },

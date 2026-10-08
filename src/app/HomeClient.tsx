@@ -431,7 +431,8 @@ export default function HomeClient({
 
   // Immediate auto-redirect to landing page on sign out / unauthenticated state if on a protected section
   useEffect(() => {
-    if (!user && !loading) {
+    const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+    if (!user && !loading && !hasCachedAuth) {
       if (userActiveSection === 'chat' || userActiveSection === 'profile' || userActiveSection === 'bookings' || userActiveSection === 'agencyDashboard') {
         setUserActiveSection('home');
         setCurrentChatAgency('');
@@ -511,7 +512,8 @@ export default function HomeClient({
       } else if (sectionParam === 'home') {
         setUserActiveSection('home');
       } else if (sectionParam === 'chat' || sectionParam === 'messages') {
-        if (!user) {
+        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+        if (!user && !hasCachedAuth) {
           setAuthModalTab('login');
           setShowAuthModal(true);
         } else {
@@ -1017,7 +1019,8 @@ export default function HomeClient({
         if (chatPackageId) {
           setSelectedChatPackageId(chatPackageId);
         }
-        if (!user) {
+        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+        if (!user && !hasCachedAuth) {
           if (targetAgencyId) {
             sessionStorage.setItem('pending_chat_target', JSON.stringify({
               agencyId: targetAgencyId,
@@ -3112,6 +3115,21 @@ export default function HomeClient({
     const dbInstance = getDbInstance();
     if (!dbInstance) return;
     await addDoc(collection(dbInstance, 'chat_messages'), messageData);
+
+    // Trigger FCM Web Push Notification to recipient agency
+    if (currentChatAgency) {
+      fetch('/api/notifications/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentChatAgency,
+          title: `New message from ${userData?.name || user.email || 'Traveler'}`,
+          body: chatInput,
+          url: '/?tab=chat'
+        })
+      }).catch(err => console.error('[Push] Send notification error:', err));
+    }
+
     setChatInput('');
   };
 
@@ -3144,6 +3162,21 @@ export default function HomeClient({
     const dbInstance = getDbInstance();
     if (!dbInstance) return;
     await addDoc(collection(dbInstance, 'chat_messages'), messageData);
+
+    // Trigger FCM Web Push Notification to recipient user
+    if (selectedConversation.userId) {
+      fetch('/api/notifications/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedConversation.userId,
+          title: `New message from ${userData?.companyName || userData?.name || 'Travel Agent'}`,
+          body: agencyChatInput,
+          url: '/?tab=chat'
+        })
+      }).catch(err => console.error('[Push] Send notification error:', err));
+    }
+
     setAgencyChatInput('');
 
     // Trigger FCM Web Push Notification strictly to that specific customer
