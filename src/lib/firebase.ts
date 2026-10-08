@@ -1,5 +1,5 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 import { initializeFirestore, getFirestore, type Firestore } from 'firebase/firestore';
 import { getDatabase, type Database } from 'firebase/database';
 
@@ -39,6 +39,11 @@ export const getAuthInstance = (): Auth | null => {
     const firebaseApp = initializeFirebaseApp();
     if (firebaseApp) {
       _auth = getAuth(firebaseApp);
+      if (typeof window !== 'undefined') {
+        setPersistence(_auth, browserLocalPersistence).catch((err) => {
+          console.warn('[Firebase Auth] Persistence configuration notice:', err);
+        });
+      }
     }
   }
   return _auth;

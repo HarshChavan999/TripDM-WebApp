@@ -400,7 +400,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
   // Immediate auto-redirect to landing page on sign out / unauthenticated state if on a protected section
   useEffect(() => {
-    if (!user && !loading) {
+    const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+    if (!user && !loading && !hasCachedAuth) {
       if (userActiveSection === 'chat' || userActiveSection === 'profile' || userActiveSection === 'bookings' || userActiveSection === 'agencyDashboard') {
         setUserActiveSection('listings');
         setCurrentChatAgency('');
@@ -450,7 +451,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         setUserActiveSection('listings');
         setShowComparison(true);
       } else if (sectionParam === 'chat' || sectionParam === 'messages') {
-        if (!user) {
+        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+        if (!user && !hasCachedAuth) {
           setAuthModalTab('login');
           setShowAuthModal(true);
         } else {
@@ -955,7 +957,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
         if (chatPackageId) {
           setSelectedChatPackageId(chatPackageId);
         }
-        if (!user) {
+        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+        if (!user && !hasCachedAuth) {
           if (targetAgencyId) {
             sessionStorage.setItem('pending_chat_target', JSON.stringify({
               agencyId: targetAgencyId,
