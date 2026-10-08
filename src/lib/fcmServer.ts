@@ -11,6 +11,47 @@ export interface SendPushNotificationOptions {
   data?: Record<string, string>;
 }
 
+export async function getUserFcmTokens(db: admin.firestore.Firestore, userId: string): Promise<string[]> {
+  const tokenSet = new Set<string>();
+
+  try {
+    // 1. Check user_fcm_tokens/{userId}
+    const userTokenDoc = await db.collection('user_fcm_tokens').doc(userId).get();
+    if (userTokenDoc.exists) {
+      const data = userTokenDoc.data();
+      if (data && Array.isArray(data.tokens)) {
+        data.tokens.forEach((t: string) => {
+          if (typeof t === 'string' && t.trim().length > 10) tokenSet.add(t.trim());
+        });
+      }
+    }
+  } catch (e) {
+    console.warn(`[FCM Server] user_fcm_tokens lookup note for ${userId}:`, e);
+  }
+
+  try {
+    // 2. Check users/{userId}
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      const data = userDoc.data();
+      if (data) {
+        if (Array.isArray(data.fcmTokens)) {
+          data.fcmTokens.forEach((t: string) => {
+            if (typeof t === 'string' && t.trim().length > 10) tokenSet.add(t.trim());
+          });
+        }
+        if (typeof data.fcmToken === 'string' && data.fcmToken.trim().length > 10) {
+          tokenSet.add(data.fcmToken.trim());
+        }
+      }
+    }
+  } catch (e) {
+    console.warn(`[FCM Server] users doc lookup note for ${userId}:`, e);
+  }
+
+  return Array.from(tokenSet);
+}
+
 export async function sendWebPushNotification(options: SendPushNotificationOptions) {
   const { userId, title, body, icon = '/tripdm-logo.png', url = '/', data = {} } = options;
 
@@ -18,20 +59,10 @@ export async function sendWebPushNotification(options: SendPushNotificationOptio
 
   let targetTokens: string[] = options.tokens || [];
 
-  // If userId is provided, look up tokens from Firestore
+  // If userId is provided, look up tokens from all collections in Firestore
   if (userId && targetTokens.length === 0) {
-    try {
-      const db = admin.firestore();
-      const userTokenDoc = await db.collection('user_fcm_tokens').doc(userId).get();
-      if (userTokenDoc.exists) {
-        const userData = userTokenDoc.data();
-        if (userData && Array.isArray(userData.tokens)) {
-          targetTokens = userData.tokens;
-        }
-      }
-    } catch (err) {
-      console.error(`[FCM Server] Error fetching tokens for user ${userId}:`, err);
-    }
+    const db = admin.firestore();
+    targetTokens = await getUserFcmTokens(db, userId);
   }
 
   if (targetTokens.length === 0) {
