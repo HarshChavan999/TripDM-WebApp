@@ -997,7 +997,7 @@ export default function AgencyProfileView({
                 </p>
               </div>
 
-              <div className="space-y-2 pt-1">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={handleChat}
@@ -1007,58 +1007,6 @@ export default function AgencyProfileView({
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Chat with Agent</span>
                 </button>
-
-                {agency.phone && (
-                  <a
-                    href={`tel:${agency.phone}`}
-                    className="w-full bg-white border border-slate-200 hover:border-orange-500 hover:text-[#FF5500] text-slate-700 font-bold py-2 text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                    style={{ borderRadius: '6px' }}
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Request a Callback</span>
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Card 2: Contact Information */}
-            <div
-              id="section-contact"
-              className="bg-white border border-slate-200/90 p-4 shadow-2xs space-y-2.5"
-              style={{ borderRadius: '8px' }}
-            >
-              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-900 pb-2 border-b border-slate-100">
-                Contact Information
-              </h4>
-
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-[#FF5500] shrink-0 mt-0.5" />
-                  <span className="text-[11px]">{agency.location || `${agency.city || 'India'}, India`}</span>
-                </div>
-
-                {agency.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a href={`tel:${agency.phone}`} className="hover:text-[#FF5500] font-medium text-[11px]">
-                      {agency.phone}
-                    </a>
-                  </div>
-                )}
-
-                {agency.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a href={`mailto:${agency.email}`} className="hover:text-[#FF5500] font-medium text-[11px] truncate">
-                      {agency.email}
-                    </a>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>Mon - Sat, 9:00 AM - 7:00 PM</span>
-                </div>
               </div>
             </div>
 
