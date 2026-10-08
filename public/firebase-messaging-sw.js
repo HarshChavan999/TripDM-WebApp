@@ -40,12 +40,13 @@ function buildNotificationOptions(payload) {
   const data = payload.data || {};
   const notification = payload.notification || {};
 
-  const title = notification.title || data.title || '🔔 New reply to your enquiry';
-  const body = notification.body || data.body || 'A travel agent has sent you a new message.';
+  const agencyName = data.agencyName || '';
+  const fallbackTitle = agencyName ? `${agencyName} (TripDM)` : 'TripDM';
+  const title = notification.title || data.title || fallbackTitle;
+  const body = notification.body || data.body || 'You have received a new message.';
   const icon = notification.icon || data.icon || '/tripdm-logo.png';
   const agencyId = data.agencyId || '';
-  const agencyName = data.agencyName || 'Travel Agency';
-  const targetUrl = data.url || (agencyId ? `/?action=chat&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName)}` : '/?section=chat');
+  const targetUrl = data.url || (agencyId ? `/?action=chat&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName || 'Travel Agency')}` : '/?section=chat');
 
   return {
     title,
@@ -53,10 +54,8 @@ function buildNotificationOptions(payload) {
       body: body,
       icon: icon,
       badge: '/tripdm-logo.png',
-      tag: agencyId ? `chat_${agencyId}` : 'tripdm_chat_reply',
-      renotify: true,
-      requireInteraction: true,
-      vibrate: [200, 100, 200],
+      renotify: false,
+      requireInteraction: false,
       data: {
         url: targetUrl,
         agencyId: agencyId,
@@ -66,7 +65,7 @@ function buildNotificationOptions(payload) {
       actions: [
         {
           action: 'open_chat',
-          title: '💬 View Conversation'
+          title: 'View Conversation'
         }
       ]
     }
@@ -81,7 +80,7 @@ if (messaging) {
     return self.registration.showNotification(title, options);
   });
 } else {
-  // Fallback listener for raw push events if messaging compat is not active
+  // Fallback listener for raw push events only if messaging compat is not active
   self.addEventListener('push', (event) => {
     if (!event.data) return;
     try {

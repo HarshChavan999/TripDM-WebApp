@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const fcmPayload: admin.messaging.MulticastMessage = {
       tokens: validTokens,
       notification: {
-        title: `🔔 ${agencyDisplayName} replied to your enquiry`,
+        title: `${agencyDisplayName} (TripDM)`,
         body: previewText,
       },
       data: {
@@ -57,28 +57,27 @@ export async function POST(request: NextRequest) {
       },
       webpush: {
         headers: {
-          Urgency: 'high',
+          Urgency: 'normal',
           TTL: '86400',
         },
         fcmOptions: {
           link: deepLinkUrl,
         },
         notification: {
-          title: `🔔 ${agencyDisplayName} replied to your enquiry`,
+          title: `${agencyDisplayName} (TripDM)`,
           body: previewText,
           icon: '/tripdm-logo.png',
           badge: '/tripdm-logo.png',
           tag: `chat_${senderId}`,
-          renotify: true,
-          requireInteraction: true,
-          vibrate: [200, 100, 200]
+          renotify: false,
+          requireInteraction: false,
         }
       },
       android: {
         priority: 'high',
         ttl: 86400 * 1000,
         notification: {
-          title: `🔔 ${agencyDisplayName} replied to your enquiry`,
+          title: `${agencyDisplayName} (TripDM)`,
           body: previewText,
           icon: 'icon',
           color: '#2563eb',
