@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, Fragment } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -32,9 +33,15 @@ import AdminDestinationStories from '@/components/AdminDestinationStories';
 import CheckoutModal from '@/components/CheckoutModal';
 import AgencyWelcomeModal from '@/components/AgencyWelcomeModal';
 import LandingDiscovery from '@/components/LandingDiscovery';
+import LandingHome from '@/components/LandingHome';
+import TravelAgentsView from '@/components/TravelAgentsView';
+import HowItWorksView from '@/components/HowItWorksView';
+import AgencyProfileView from '@/components/AgencyProfileView';
+import DestinationAgentsSearchView from '@/components/DestinationAgentsSearchView';
 import NotificationPermissionPrompt from '@/components/NotificationPermissionPrompt';
 import { sendVendorReplyNotification, autoSyncFcmTokenIfGranted, listenToForegroundMessages } from '@/lib/fcmNotifications';
 import { normalizeExperienceName } from '@/lib/discoveryEngine';
+import { resolveDestinationWithAutocorrect } from '@/lib/destinationResolver';
 import { useComparison } from '@/contexts/ComparisonContext';
 import { 
   User, 
@@ -330,7 +337,17 @@ const HERO_IMAGES = [
 ];
 
 
-export default function HomeClient({ initialListings = [], routeMode }: { initialListings?: any[], routeMode?: string }) {
+export default function HomeClient({
+  initialListings = [],
+  initialAgencies = [],
+  defaultSection,
+  routeMode
+}: {
+  initialListings?: any[];
+  initialAgencies?: any[];
+  defaultSection?: string;
+  routeMode?: string;
+}) {
   const { user, userData, loading, signIn, signInWithGoogle, signOut, register } = useAuth();
   
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
@@ -370,12 +387,26 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const [declarationChecked, setDeclarationChecked] = useState(false);
   const [pendingAgencies, setPendingAgencies] = useState<any[]>([]);
   const [activeSection, setActiveSection] = useState('overview');
-  const [allAgencies, setAllAgencies] = useState<any[]>([]);
+  const [allAgencies, setAllAgencies] = useState<any[]>(() => {
+    if (initialAgencies && initialAgencies.length > 0) return initialAgencies;
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('tripdm_agency_users_cache');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (_) {}
+    }
+    return [];
+  });
   const [pendingListings, setPendingListings] = useState<any[]>([]);
   const [agencyActiveSection, setAgencyActiveSection] = useState('listings');
-  const [userActiveSection, setUserActiveSection] = useState('listings');
+  const [userActiveSection, setUserActiveSection] = useState(defaultSection || (routeMode === 'agency' ? 'agencyDashboard' : routeMode === 'admin' ? 'adminDashboard' : 'home'));
+  const [selectedCurrency, setSelectedCurrency] = useState('INR');
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showAgencyWelcomeModal, setShowAgencyWelcomeModal] = useState(false);
-  const [fromSection, setFromSection] = useState('listings');
+  const [fromSection, setFromSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [agencyMobileMenuOpen, setAgencyMobileMenuOpen] = useState(false);
   const [pricingConfig, setPricingConfig] = useState({ starterPrice: 2000, premiumPrice: 5000, vipPrice: 10000, addonCreditPrice: 1 });
@@ -383,7 +414,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const sectionParam = searchParams.get('section');
 
   const handleSignOut = async () => {
-    setUserActiveSection('listings');
+    setUserActiveSection('home');
     setCurrentChatAgency('');
     setCurrentChatAgencyName('');
     setSelectedChatPackageId(null);
@@ -402,7 +433,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   useEffect(() => {
     if (!user && !loading) {
       if (userActiveSection === 'chat' || userActiveSection === 'profile' || userActiveSection === 'bookings' || userActiveSection === 'agencyDashboard') {
-        setUserActiveSection('listings');
+        setUserActiveSection('home');
         setCurrentChatAgency('');
         setCurrentChatAgencyName('');
         setSelectedChatPackageId(null);
@@ -411,6 +442,31 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
       }
     }
   }, [user, loading, userActiveSection]);
+
+  // Pre-fetch & synchronize registered agency users on mount for instant zero-latency loading
+  useEffect(() => {
+    if (initialAgencies && initialAgencies.length > 0) {
+      setAllAgencies(initialAgencies);
+      try {
+        sessionStorage.setItem('tripdm_agency_users_cache', JSON.stringify(initialAgencies));
+      } catch (_) {}
+    } else {
+      const dbInstance = getDbInstance();
+      if (!dbInstance) return;
+      const q = query(collection(dbInstance, 'users'), where('role', '==', 'agency'));
+      getDocs(q).then((snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (list.length > 0) {
+          setAllAgencies(list);
+          try {
+            sessionStorage.setItem('tripdm_agency_users_cache', JSON.stringify(list));
+          } catch (_) {}
+        }
+      }).catch((err) => {
+        console.warn('Could not pre-fetch agency users in HomeClient:', err);
+      });
+    }
+  }, [initialAgencies]);
 
   // Auto-trigger welcome modal on first-ever agency dashboard visit
   useEffect(() => {
@@ -447,8 +503,13 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
     if (loading) return;
     if (sectionParam) {
       if (sectionParam === 'compare') {
-        setUserActiveSection('listings');
+        setUserActiveSection('destinations');
         setShowComparison(true);
+      } else if (sectionParam === 'destinations') {
+        setUserActiveSection('destinations');
+        setDashboardViewMode('categories');
+      } else if (sectionParam === 'home') {
+        setUserActiveSection('home');
       } else if (sectionParam === 'chat' || sectionParam === 'messages') {
         if (!user) {
           setAuthModalTab('login');
@@ -693,6 +754,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingListing, setEditingListing] = useState<any>(null);
   const [viewingListing, setViewingListing] = useState<any>(null);
+  const [selectedAgencyProfile, setSelectedAgencyProfile] = useState<any>(null);
   const [tempPhotoFiles, setTempPhotoFiles] = useState<File[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [bookingListing, setBookingListing] = useState<any>(null);
@@ -3361,7 +3423,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
 
   // For agency routes, handle loading and auth verification
   if (routeMode === 'agency') {
-    if (loading || (user && !userData)) {
+    if (loading || (user && !userData) || (userData && userData.role === 'agency' && !user)) {
       return <PageLoader text="Loading Agency Portal..." />;
     }
     if (!user || (!userData || userData.role !== 'agency')) {
@@ -4797,11 +4859,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 <div className="p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border-b border-slate-100">
                   {user && userData ? (
                     <div className="flex items-center gap-3">
-                      {userData.avatarUrl ? (
-                        <img src={userData.avatarUrl} alt="Profile" className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm" />
+                      {(profilePhotoUrl || userData?.avatarUrl) ? (
+                        <img 
+                          src={profilePhotoUrl || userData?.avatarUrl} 
+                          alt="Profile" 
+                          className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
                       ) : (
-                        <div className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-base shadow-sm">
-                          {userData.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                        <div className="w-11 h-11 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center border border-slate-200 shadow-sm">
+                          <User className="w-6 h-6 text-slate-600" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -4832,7 +4899,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   {/* Direct Agency Portal Redirect Card for Mobile Drawer */}
                   {user && userData && userData.role === 'agency' && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
-                      <a
+                      <Link
                         href="/agencytripdm"
                         className="w-full flex items-center justify-between p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-semibold transition-all"
                       >
@@ -4841,7 +4908,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                           <span>Go to Agency Portal</span>
                         </div>
                         <ChevronRight className="h-4 w-4 text-gray-400" />
-                      </a>
+                      </Link>
                     </div>
                   )}
 
@@ -4870,7 +4937,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     value={searchTerm}
                     onChange={(val) => setSearchTerm(val)}
                     onSelect={(val) => {
-                      setSearchTerm(val);
+                      const resolved = resolveDestinationWithAutocorrect(val);
+                      setSearchTerm(resolved.displayName);
                       setUserActiveSection('listings');
                       setViewingListing(null);
                       setShowComparison(false);
@@ -4887,56 +4955,115 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1 sidebar-scroll">
                   <p className="text-[10px] uppercase font-bold text-slate-400 px-3 pt-1 pb-1 tracking-wider">Main Navigation</p>
 
-                  {/* Explore Packages */}
+                  {/* Home */}
                   <button
                     onClick={() => {
                       setFromSection(userActiveSection);
-                      setUserActiveSection('listings');
+                      setUserActiveSection('home');
                       setViewingListing(null);
                       setShowBookingForm(false);
                       setShowComparison(false);
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                      userActiveSection === 'listings' && !showComparison && !viewingListing
+                      userActiveSection === 'home' && !showComparison && !viewingListing
                         ? 'bg-orange-50 text-orange-600 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Palmtree className="h-4 w-4 text-orange-500" />
-                      <span>Explore Packages</span>
+                      <Compass className="h-4 w-4 text-orange-500" />
+                      <span>Home</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
                   </button>
 
-                  {/* Compare Packages */}
+                  {/* Destinations (Explore Popular Destinations) */}
                   <button
                     onClick={() => {
                       setFromSection(userActiveSection);
-                      setUserActiveSection('listings');
-                      setShowComparison(true);
+                      setUserActiveSection('destinations');
+                      setViewingListing(null);
+                      setSelectedCategoryFilter(null);
+                      setDashboardViewMode('categories');
+                      setSearchTerm('');
+                      setShowBookingForm(false);
+                      setShowComparison(false);
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                      showComparison
+                      (userActiveSection === 'destinations' || userActiveSection === 'listings') && !showComparison && !viewingListing
                         ? 'bg-orange-50 text-orange-600 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Scale className="h-4 w-4 text-blue-500" />
-                      <span>Compare Packages</span>
+                      <MapPin className="h-4 w-4 text-orange-500" />
+                      <span>Destinations</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {comparisonList.length > 0 && (
-                        <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                          {comparisonList.length}
-                        </span>
-                      )}
-                      <ChevronRight className="h-4 w-4 text-slate-300" />
-                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
                   </button>
+
+                  {/* Travel Agents */}
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setUserActiveSection('agents');
+                      setViewingListing(null);
+                      setShowBookingForm(false);
+                      setShowComparison(false);
+                      setSelectedStory(null);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                      userActiveSection === 'agents'
+                        ? 'bg-orange-50 text-[#FF5500] font-bold'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Building2 className={`h-4 w-4 ${userActiveSection === 'agents' ? 'text-[#FF5500]' : 'text-blue-500'}`} />
+                      <span>Travel Agents</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                  </button>
+
+                  {/* How It Works */}
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setUserActiveSection('how-it-works');
+                      setViewingListing(null);
+                      setShowBookingForm(false);
+                      setShowComparison(false);
+                      setSelectedStory(null);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                      userActiveSection === 'how-it-works'
+                        ? 'bg-orange-50 text-[#FF5500] font-bold'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Sparkles className={`h-4 w-4 ${userActiveSection === 'how-it-works' ? 'text-[#FF5500]' : 'text-amber-500'}`} />
+                      <span>How It Works</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                  </button>
+
+                  {/* Travel Stories */}
+                  <a
+                    href="/blog"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-purple-500" />
+                      <span>Travel Stories</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                  </a>
 
                   {/* Wishlist */}
                   <button
@@ -4971,31 +5098,33 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     </div>
                   </button>
 
-                  {/* Messages */}
-                  <button
-                    onClick={() => {
-                      if (!user) {
-                        setAuthModalTab('login');
-                        setShowAuthModal(true);
+                  {/* Messages (Only for non-agency users / travelers) */}
+                  {(!userData || userData.role !== 'agency') && (
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          setAuthModalTab('login');
+                          setShowAuthModal(true);
+                          setMobileMenuOpen(false);
+                          return;
+                        }
+                        setFromSection(userActiveSection);
+                        setUserActiveSection('chat');
                         setMobileMenuOpen(false);
-                        return;
-                      }
-                      setFromSection(userActiveSection);
-                      setUserActiveSection('chat');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                      userActiveSection === 'chat'
-                        ? 'bg-orange-50 text-orange-600 font-bold'
-                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <MessageSquare className="h-4 w-4 text-emerald-500" />
-                      <span>Messages & Enquiries</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-slate-300" />
-                  </button>
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        userActiveSection === 'chat'
+                          ? 'bg-orange-50 text-orange-600 font-bold'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <MessageSquare className="h-4 w-4 text-emerald-500" />
+                        <span>Messages & Enquiries</span>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-300" />
+                    </button>
+                  )}
 
                   {/* Profile */}
                   <button
@@ -5035,7 +5164,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
                     </a>
-                    <a
+                    <Link
                       href="/agencytripdm"
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         userData?.role === 'agency'
@@ -5048,7 +5177,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                         <span>{userData?.role === 'agency' ? 'Agency Portal Dashboard' : 'For Travel Agencies'}</span>
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
-                    </a>
+                    </Link>
                     <a
                       href="/policies/conditions-of-use"
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
@@ -5083,12 +5212,12 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           {/* Top Navigation Bar */}
           <header className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
             {/* Desktop Header Layout */}
-            <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-6 px-4 h-16 w-full">
+            <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-8 px-4 sm:px-6 h-16 md:h-[70px] w-full">
               {/* Logo */}
               <div
-                className="flex items-center gap-1 sm:gap-2 font-extrabold tracking-tight cursor-pointer shrink-0"
+                className="flex items-center cursor-pointer shrink-0 py-1"
                 onClick={() => {
-                  setUserActiveSection('listings');
+                  setUserActiveSection('home');
                   setViewingListing(null);
                   setSelectedCategoryFilter(null);
                   setDashboardViewMode('categories');
@@ -5102,102 +5231,113 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   setSelectedStory(null);
                 }}
               >
-                <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain py-1" />
+                <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-12 sm:h-[54px] md:h-[60px] w-auto object-contain" />
               </div>
 
-              {/* Search Bar - Center balanced to fill space */}
-              <div className="flex-1 max-w-2xl mx-2 lg:mx-6">
-                <AutocompleteSearch
-                  placeholder="Search for destination"
-                  typewriterPrefix="Search for "
-                  typewriter={["Rajasthan", "Kerala", "Kashmir", "Goa", "Himachal Pradesh", "Dubai", "Assam", "Thailand"]}
-                  value={searchTerm}
-                  onChange={(val) => setSearchTerm(val)}
-                  onSelect={(val) => {
-                    setSearchTerm(val);
+              {/* Center Navigation Links */}
+              <nav className="flex items-center gap-5 lg:gap-8 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserActiveSection('destinations');
+                    setViewingListing(null);
+                    setSelectedCategoryFilter(null);
+                    setDashboardViewMode('categories');
+                    setSearchTerm('');
+                    setAdvancedFilters({
+                      styles: [],
+                      duration: null,
+                    });
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
                   }}
-                  suggestions={allDestinations}
-                  inputClassName="w-full pl-10 pr-4 py-2 rounded-md text-slate-900 bg-slate-50/90 focus:bg-white focus:ring-2 focus:ring-amber-500/40 focus:outline-none border border-slate-200/90 text-sm h-10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-slate-300 transition-all font-medium"
-                  inputStyle={{ borderRadius: '6px' }}
-                  iconClassName="left-3.5 top-3 text-slate-400"
-                />
-              </div>
+                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                >
+                  Destinations
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserActiveSection('agents');
+                    setSelectedAgencyProfile(null);
+                    setViewingListing(null);
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                >
+                  Travel Agents
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserActiveSection('how-it-works');
+                    setViewingListing(null);
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                >
+                  How It Works
+                </button>
+
+                <a
+                  href="/blog"
+                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                >
+                  Travel Stories
+                </a>
+              </nav>
 
               {/* Right Links */}
-              <div className="flex items-center gap-4 lg:gap-6 shrink-0">
-                {/* Compare */}
-                <span
-                  className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
-                  onClick={() => {
-                    setFromSection(userActiveSection);
-                    setUserActiveSection('listings');
-                    setShowComparison(true);
-                  }}
-                >
-                  <Scale className="h-4 w-4 text-slate-600" /> Compare
-                  {comparisonList.length > 0 && (
-                    <span className="bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">
-                      {comparisonList.length}
-                    </span>
-                  )}
-                </span>
-
-                {/* Wishlist */}
-                <span
-                  className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
-                  onClick={() => {
-                    if (!user) {
-                      setAuthModalTab('login');
-                      setShowAuthModal(true);
-                      return;
-                    }
-                    setFromSection(userActiveSection);
-                    setUserActiveSection('wishlist');
-                    setShowComparison(false);
-                  }}
-                >
-                  <Heart className="h-4 w-4 text-slate-600" /> Wishlist
-                  {wishlist.length > 0 && (
-                    <span className="bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">
-                      {wishlist.length}
-                    </span>
-                  )}
-                </span>
-
-                {/* Messages */}
-                <span
-                  className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
-                  onClick={() => {
-                    if (!user) {
-                      setAuthModalTab('login');
-                      setShowAuthModal(true);
-                      return;
-                    }
-                    setFromSection(userActiveSection);
-                    setUserActiveSection('chat');
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4 text-slate-600" /> Messages
-                </span>
+              <div className="flex items-center gap-4 lg:gap-5 shrink-0">
+                {/* Messages (Only for non-agency users / travelers) */}
+                {(!userData || userData.role !== 'agency') && (
+                  <button
+                    type="button"
+                    className="cursor-pointer text-slate-700 hover:text-slate-950 relative p-1.5 transition-colors"
+                    style={{ borderRadius: '6px' }}
+                    onClick={() => {
+                      if (!user) {
+                        setAuthModalTab('login');
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      setFromSection(userActiveSection);
+                      setUserActiveSection('chat');
+                    }}
+                    aria-label="Messages"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                  </button>
+                )}
 
                 {/* Profile / Sign In */}
                 {user && userData ? (
-                  <div className="flex items-center gap-3 ml-2 border-l border-gray-200 pl-4">
+                  <div className="flex items-center gap-3 ml-1 border-l border-gray-200 pl-4">
                     {/* ONLY VISIBLE TO LOGGED-IN AGENCIES */}
                     {userData.role === 'agency' && (
-                      <a
+                      <Link
                         href="/agencytripdm"
-                        className="cursor-pointer text-[15px] font-medium flex items-center gap-1.5 text-slate-800 shrink-0"
+                        className="cursor-pointer text-[14px] font-semibold flex items-center gap-1.5 text-slate-800 hover:text-slate-950 shrink-0"
                         title="Go to Agency Portal"
                       >
                         <Building2 className="h-4 w-4 text-slate-600" />
                         <span>Agency Portal</span>
-                      </a>
+                      </Link>
                     )}
                     {userData.role === 'admin' && (
                       <a
                         href="/admin"
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
+                        style={{ borderRadius: '6px' }}
                         title="Go to Admin Dashboard"
                       >
                         <Shield className="h-3.5 w-3.5" />
@@ -5206,22 +5346,22 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     )}
 
                     <div
-                      className="flex items-center gap-2 cursor-pointer text-[15px] font-medium text-slate-800"
+                      className="flex items-center gap-2 cursor-pointer text-[14px] font-semibold text-slate-800"
                       onClick={() => {
                         setFromSection(userActiveSection);
                         setUserActiveSection('profile');
                       }}
                     >
-                      {userData.avatarUrl ? (
+                      {(profilePhotoUrl || userData?.avatarUrl) ? (
                         <img
-                          src={userData.avatarUrl}
+                          src={profilePhotoUrl || userData?.avatarUrl}
                           alt="Profile"
                           className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       ) : (
-                        <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-slate-600 border border-gray-200">
-                          <User className="h-4 w-4" />
+                        <div className="w-7 h-7 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center border border-slate-200">
+                          <User className="w-4 h-4 text-slate-600" />
                         </div>
                       )}
                       <span>
@@ -5237,7 +5377,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     </div>
                     
                     <span
-                      className="text-[13px] text-slate-600 cursor-pointer"
+                      className="text-[13px] text-slate-600 hover:text-rose-600 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSignOut();
@@ -5247,12 +5387,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     </span>
                   </div>
                 ) : (
-                  <span
+                  <button
+                    type="button"
                     onClick={() => { setAuthModalTab('login'); setShowAuthModal(true); }}
-                    className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 ml-2 border-l border-gray-200 pl-4"
+                    className="cursor-pointer text-[15px] font-semibold text-slate-800 flex items-center gap-1.5 ml-1 select-none"
                   >
-                    <User className="h-4 w-4 text-slate-600" /> Login
-                  </span>
+                    <User className="h-4 w-4 text-slate-700" />
+                    <span>Login</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -5282,7 +5424,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                     setSelectedStory(null);
                   }}
                 >
-                  <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 sm:h-12 w-auto object-contain py-1" />
+                  <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-11 sm:h-[50px] w-auto object-contain py-0.5" />
                 </div>
               </div>
 
@@ -5306,58 +5448,37 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   )}
                 </button>
 
-                {/* Wishlist Icon with Badge */}
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      setAuthModalTab('login');
-                      setShowAuthModal(true);
-                      return;
-                    }
-                    setFromSection(userActiveSection);
-                    setUserActiveSection('wishlist');
-                    setShowComparison(false);
-                  }}
-                  className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors relative"
-                  aria-label="View wishlist"
-                >
-                  <Heart className="h-5 w-5" />
-                  {wishlist.length > 0 && (
-                    <span className="absolute top-1 right-1 bg-slate-900 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
-                      {wishlist.length}
-                    </span>
-                  )}
-                </button>
-
-                {/* Messages Icon */}
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      setAuthModalTab('login');
-                      setShowAuthModal(true);
-                      return;
-                    }
-                    setFromSection(userActiveSection);
-                    setUserActiveSection('chat');
-                  }}
-                  className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                  aria-label="View messages"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                </button>
+                {/* Messages Icon (Only for non-agency users / travelers) */}
+                {(!userData || userData.role !== 'agency') && (
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        setAuthModalTab('login');
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      setFromSection(userActiveSection);
+                      setUserActiveSection('chat');
+                    }}
+                    className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                    aria-label="View messages"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                  </button>
+                )}
 
                 {/* Profile / Login Avatar */}
                 {user && userData ? (
                   <div className="flex items-center gap-1.5">
                     {userData.role === 'agency' && (
-                      <a
+                      <Link
                         href="/agencytripdm"
                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 transition-all shrink-0"
                         title="Go to Agency Portal"
                       >
                         <Building2 className="h-3.5 w-3.5 text-gray-600" />
                         <span>Portal</span>
-                      </a>
+                      </Link>
                     )}
                     {userData.role === 'admin' && (
                       <a
@@ -5377,11 +5498,16 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       className="ml-0.5 p-0.5 rounded-full ring-2 ring-orange-400 focus:outline-none"
                       aria-label="User Profile"
                     >
-                      {userData.avatarUrl ? (
-                        <img src={userData.avatarUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover" />
+                      {(profilePhotoUrl || userData?.avatarUrl) ? (
+                        <img 
+                          src={profilePhotoUrl || userData?.avatarUrl} 
+                          alt="Profile" 
+                          className="w-7 h-7 rounded-full object-cover" 
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
                       ) : (
-                        <div className="w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                          {(userData?.name || userData?.companyName || profileName || user?.displayName || user?.email || 'U').charAt(0).toUpperCase()}
+                        <div className="w-7 h-7 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center border border-slate-200">
+                          <User className="w-4 h-4 text-slate-600" />
                         </div>
                       )}
                     </button>
@@ -5409,7 +5535,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 value={searchTerm}
                 onChange={(val) => setSearchTerm(val)}
                 onSelect={(val) => {
-                  setSearchTerm(val);
+                  const resolved = resolveDestinationWithAutocorrect(val);
+                  setSearchTerm(resolved.displayName);
                   setUserActiveSection('listings');
                   setViewingListing(null);
                   setShowComparison(false);
@@ -5430,14 +5557,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
             }`}
             id="user-dashboard-scroll-container"
           >
-            <main className={`${(userActiveSection === 'chat' || (showComparison && userActiveSection === 'listings')) ? 'w-full flex-1 flex flex-col min-h-0 min-w-0 !p-0 !max-w-none' : (userActiveSection === 'profile' || userActiveSection === 'comparison' || userActiveSection === 'wishlist' || userActiveSection === 'listings') ? 'w-full max-w-[1600px] mx-auto px-4 sm:px-8' : 'px-6 max-w-7xl mx-auto w-full'} ${userActiveSection === 'chat' ? '' : (userActiveSection === 'wishlist' && wishlist.length === 0) ? 'pb-0' : (userActiveSection === 'comparison' || (showComparison && userActiveSection === 'listings') || userActiveSection === 'profile') ? 'pb-0' : 'pb-10'}`}>
-              {/* Header logic adjusted for non-listings sections (excludes bookings and profile which have their own layouts) */}
-              {userActiveSection !== 'listings' && userActiveSection !== 'bookings' && userActiveSection !== 'profile' && userActiveSection !== 'comparison' && userActiveSection !== 'wishlist' && userActiveSection !== 'chat' && (
+            <main className={`${(userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || userActiveSection === 'chat' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations'))) ? 'w-full flex-1 flex flex-col min-h-0 min-w-0 !p-0 !max-w-none' : (userActiveSection === 'profile' || userActiveSection === 'comparison' || userActiveSection === 'wishlist' || userActiveSection === 'listings' || userActiveSection === 'destinations') ? 'w-full max-w-[1600px] mx-auto px-4 sm:px-8' : 'px-6 max-w-7xl mx-auto w-full'} ${userActiveSection === 'chat' || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') ? '' : (userActiveSection === 'wishlist' && wishlist.length === 0) ? 'pb-0' : (userActiveSection === 'comparison' || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations')) || userActiveSection === 'profile') ? 'pb-0' : 'pb-10'}`}>
+              {/* Header logic adjusted for non-listings sections (excludes bookings, profile, how-it-works which have their own layouts) */}
+              {userActiveSection !== 'home' && userActiveSection !== 'agents' && userActiveSection !== 'how-it-works' && userActiveSection !== 'listings' && userActiveSection !== 'destinations' && userActiveSection !== 'bookings' && userActiveSection !== 'profile' && userActiveSection !== 'comparison' && userActiveSection !== 'wishlist' && userActiveSection !== 'chat' && (
                 <div className="mb-6 mt-6 px-6 max-w-7xl mx-auto flex justify-between items-center border-b pb-4 border-gray-200">
                   <div className="flex items-center gap-3">
                     {userActiveSection === 'wishlist' && (
                       <button
-                        onClick={() => setUserActiveSection(fromSection === 'wishlist' ? 'listings' : fromSection)}
+                        onClick={() => setUserActiveSection(fromSection === 'wishlist' ? 'home' : fromSection)}
                         className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 hover:bg-gray-100 text-gray-750 transition-all hover:scale-105 active:scale-95 text-lg font-bold shadow-sm"
                         title="Go back"
                       >
@@ -5452,8 +5579,197 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 </div>
               )}
 
-              {userActiveSection === 'listings' && !viewingListing && !showBookingForm && !showComparison && (
-                <div className={`relative z-10 w-full ${selectedStory ? 'pt-0' : 'pt-4'}`}>
+              {/* ─── MAIN LANDING PAGE HERO & HOW IT WORKS (TripDM Home) ─── */}
+              {userActiveSection === 'home' && !viewingListing && !showBookingForm && !showComparison && (
+                <LandingHome
+                  listings={listings}
+                  allDestinations={allDestinations}
+                  onNavigateToDestinations={(targetSearch) => {
+                    setUserActiveSection('destinations');
+                    setViewingListing(null);
+                    setSelectedCategoryFilter(null);
+                    if (targetSearch) {
+                      const resolved = resolveDestinationWithAutocorrect(targetSearch);
+                      setSearchTerm(resolved.displayName);
+                      setDashboardViewMode('all');
+                    } else {
+                      setSearchTerm('');
+                      setDashboardViewMode('categories');
+                    }
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateToAgents={() => {
+                    setUserActiveSection('agents');
+                    setViewingListing(null);
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateToHowItWorks={() => {
+                    setUserActiveSection('how-it-works');
+                    setViewingListing(null);
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateToStories={() => {
+                    window.location.href = '/blog';
+                  }}
+                  onViewListing={setViewingListing}
+                />
+              )}
+
+              {/* ─── HOW IT WORKS PAGE VIEW ─── */}
+              {userActiveSection === 'how-it-works' && !viewingListing && !showBookingForm && !showComparison && (
+                <HowItWorksView
+                  onNavigateToDestinations={(targetSearch) => {
+                    setUserActiveSection('destinations');
+                    setViewingListing(null);
+                    setSelectedCategoryFilter(null);
+                    if (targetSearch) {
+                      const resolved = resolveDestinationWithAutocorrect(targetSearch);
+                      setSearchTerm(resolved.displayName);
+                      setDashboardViewMode('all');
+                    } else {
+                      setSearchTerm('');
+                      setDashboardViewMode('categories');
+                    }
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateToAgents={(targetDestination) => {
+                    setUserActiveSection('agents');
+                    setViewingListing(null);
+                    setShowBookingForm(false);
+                    setShowComparison(false);
+                    setSelectedStory(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onInitiateChat={(data) => {
+                    handleInitiateChat(data);
+                  }}
+                />
+              )}
+
+              {/* ─── TRAVEL AGENTS DISCOVERY OR AGENCY PROFILE VIEW ─── */}
+              {userActiveSection === 'agents' && !viewingListing && !showBookingForm && !showComparison && (
+                selectedAgencyProfile ? (
+                  <AgencyProfileView
+                    agency={selectedAgencyProfile}
+                    listings={listings}
+                    wishlist={wishlist}
+                    onBack={() => {
+                      setSelectedAgencyProfile(null);
+                      if (fromSection) {
+                        setUserActiveSection(fromSection);
+                        setFromSection('home');
+                      }
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onViewListing={(listing) => {
+                      setViewingListing(listing);
+                      setShowComparison(false);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onInitiateChat={(data) => {
+                      handleInitiateChat(data);
+                    }}
+                    onBook={startBooking}
+                    onWishlistToggle={handleWishlistToggle}
+                    onNavigateToDestinations={(targetSearch) => {
+                      setUserActiveSection('destinations');
+                      setSelectedAgencyProfile(null);
+                      setViewingListing(null);
+                      setSelectedCategoryFilter(null);
+                      if (targetSearch) {
+                        const resolved = resolveDestinationWithAutocorrect(targetSearch);
+                        setSearchTerm(resolved.displayName);
+                        setDashboardViewMode('all');
+                      } else {
+                        setSearchTerm('');
+                        setDashboardViewMode('categories');
+                      }
+                      setShowBookingForm(false);
+                      setShowComparison(false);
+                      setSelectedStory(null);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
+                ) : (
+                  <TravelAgentsView
+                    listings={listings}
+                    initialAgencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
+                    wishlist={wishlist}
+                    onWishlistToggle={handleWishlistToggle}
+                    onInitiateChat={(data) => {
+                      handleInitiateChat(data);
+                    }}
+                    onViewAgencyProfile={(agency) => {
+                      setFromSection('agents');
+                      setSelectedAgencyProfile(agency);
+                      setUserActiveSection('agents');
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onViewAgencyPackages={(agencyId, agencyName) => {
+                      setUserActiveSection('destinations');
+                      setSearchTerm(agencyName);
+                      setDashboardViewMode('all');
+                      setViewingListing(null);
+                      setShowComparison(false);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onViewListing={(listing) => {
+                      setViewingListing(listing);
+                      setShowComparison(false);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
+                )
+              )}
+
+              {/* ─── DESTINATIONS & PACKAGE DISCOVERY VIEW ─── */}
+              {(userActiveSection === 'listings' || userActiveSection === 'destinations') && !viewingListing && !showBookingForm && !showComparison && (
+                searchTerm.trim() !== '' ? (
+                  <DestinationAgentsSearchView
+                    destination={searchTerm}
+                    listings={listings}
+                    initialAgencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
+                    onInitiateChat={(data) => {
+                      handleInitiateChat(data);
+                    }}
+                    onViewAgencyProfile={(agency) => {
+                      setFromSection(userActiveSection);
+                      setSelectedAgencyProfile(agency);
+                      setUserActiveSection('agents');
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onViewListing={(listing) => {
+                      setViewingListing(listing);
+                      setShowComparison(false);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onNavigateHome={() => {
+                      setUserActiveSection('home');
+                      setSearchTerm('');
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onSearchDestination={(dest) => {
+                      const resolved = resolveDestinationWithAutocorrect(dest);
+                      setSearchTerm(resolved.displayName);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    wishlist={wishlist}
+                    onWishlistToggle={handleWishlistToggle}
+                  />
+                ) : (
+                  <div className={`relative z-10 w-full ${selectedStory ? 'pt-0' : 'pt-4'}`}>
 
                   {/* Compute active filter count & summary for mobile button (Hidden when story is open) */}
                   {!selectedStory && (() => {
@@ -5881,9 +6197,10 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   )}
 
                 </div>
+                )
               )}
 
-              {showBookingForm && userActiveSection === 'listings' && (
+              {showBookingForm && (userActiveSection === 'listings' || userActiveSection === 'destinations' || userActiveSection === 'home') && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
@@ -6201,7 +6518,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                 </Card>
               )}
 
-              {viewingListing && userActiveSection === 'listings' && !showComparison && (
+              {viewingListing && (userActiveSection === 'listings' || userActiveSection === 'destinations' || userActiveSection === 'home' || userActiveSection === 'agents') && !showComparison && (
                 <PackageDetailView
                   listing={viewingListing}
                   onBack={() => setViewingListing(null)}
@@ -6217,7 +6534,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
               )}
 
               {/* Package Comparison View */}
-              {showComparison && userActiveSection === 'listings' && (
+              {showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations' || userActiveSection === 'home') && (
                 <PackageComparison
                   listings={listings}
                   onBack={() => {
@@ -6227,14 +6544,14 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                       window.location.href = returnUrl;
                     } else {
                       setShowComparison(false);
-                      setUserActiveSection('listings');
+                      setUserActiveSection('destinations');
                       setDashboardViewMode('categories');
                       setSelectedCategoryFilter(null);
                     }
                   }}
                   onBrowsePackages={() => {
                     setShowComparison(false);
-                    setUserActiveSection('listings');
+                    setUserActiveSection('destinations');
                     setDashboardViewMode('categories');
                     setSelectedCategoryFilter(null);
                   }}
@@ -7150,8 +7467,8 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   user={user}
                   userData={userData}
                   wishlist={wishlist}
-                  coTravellers={coTravellers}
-                  setCoTravellers={setCoTravellers}
+                  listings={listings}
+                  agencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
                   profileName={profileName}
                   setProfileName={setProfileName}
                   profilePhone={profilePhone}
@@ -7163,14 +7480,30 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
                   setIsEditingProfile={setIsEditingProfile}
                   savingProfile={savingProfile}
                   handleSaveProfile={handleSaveProfile}
-                  onNavigateToWishlist={() => {
-                    setFromSection('profile');
-                    setUserActiveSection('wishlist');
+                  onWishlistToggle={handleWishlistToggle}
+                  onInitiateChat={handleInitiateChat}
+                  onViewAgencyProfile={(agency) => {
+                    setSelectedAgencyProfile(agency);
+                    setUserActiveSection('agents');
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  onNavigateToCompare={() => {
-                    setFromSection('profile');
-                    setUserActiveSection('listings');
-                    setShowComparison(true);
+                  onViewAgencyPackages={(agencyId, agencyName) => {
+                    setUserActiveSection('destinations');
+                    setSearchTerm(agencyName);
+                    setDashboardViewMode('all');
+                    setViewingListing(null);
+                    setShowComparison(false);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onViewListing={(listing) => {
+                    setViewingListing(listing);
+                    setShowComparison(false);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onExploreAgents={() => {
+                    setUserActiveSection('agents');
+                    setSelectedAgencyProfile(null);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   onNavigateToChat={() => {
                     setFromSection('profile');
@@ -7385,7 +7718,7 @@ export default function HomeClient({ initialListings = [], routeMode }: { initia
           </div>
 
           {/* Standard Bottom Compare Dock */}
-          {comparisonList.length > 0 && !showComparison && !viewingListing && userActiveSection === 'listings' && (
+          {comparisonList.length > 0 && !showComparison && !viewingListing && (userActiveSection === 'listings' || userActiveSection === 'destinations' || userActiveSection === 'home') && (
             <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom duration-300">
               <div className="max-w-7xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-6">
                 

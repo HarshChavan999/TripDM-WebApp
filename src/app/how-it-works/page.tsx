@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
-import HomeClient from './HomeClient';
+import HomeClient from '../HomeClient';
 import { parseFirestoreDocument } from '@/lib/firestoreParser';
+import { Suspense } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
@@ -36,7 +38,7 @@ async function getInitialData() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(query),
-        next: { revalidate: 30 } // Cache for 30 seconds
+        next: { revalidate: 30 }
       }),
       fetch(url, {
         method: 'POST',
@@ -47,13 +49,11 @@ async function getInitialData() {
     ]);
 
     if (!listingsRes.ok) {
-      console.error("Error fetching listings from REST API:", await listingsRes.text());
       return { listings: [], agencies: [] };
     }
 
     const data = await listingsRes.json();
     
-    // Build agency map
     const agencyMap: Record<string, any> = {};
     if (usersRes && usersRes.ok) {
       try {
@@ -75,7 +75,6 @@ async function getInitialData() {
 
     const agencies = Object.values(agencyMap).filter((u: any) => u.role === 'agency');
 
-    // runQuery returns an array of { document: { name, fields, ... } }
     const listings = data
       .filter((item: any) => item.document)
       .map((item: any) => {
@@ -98,38 +97,29 @@ async function getInitialData() {
 }
 
 export const metadata: Metadata = {
-  title: "TripDM: Direct Message. Better Travel.",
-  description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  title: "How It Works | TripDM - Book Directly with Verified Travel Agents",
+  description: "Learn how TripDM connects you with multiple verified travel agents in 3 simple steps. Search destinations, compare options, chat directly, and book with zero commission.",
   alternates: {
-    canonical: 'https://tripdm.com',
+    canonical: 'https://tripdm.com/how-it-works',
   },
   openGraph: {
-    title: "TripDM: Direct Message. Better Travel.",
-    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
-    url: 'https://tripdm.com',
+    title: "How It Works | TripDM - Book Directly with Verified Travel Agents",
+    description: "Learn how TripDM connects you with multiple verified travel agents in 3 simple steps. Search destinations, compare options, chat directly, and book with zero commission.",
+    url: 'https://tripdm.com/how-it-works',
     siteName: 'TripDM',
     type: 'website',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: "TripDM: Direct Message. Better Travel.",
-    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
-  },
 };
 
-import { Suspense } from 'react';
-import PageLoader from '@/components/PageLoader';
-
-export default async function HomePage() {
-  // Fetch initial data on the server for pure HTML SSR
+export default async function HowItWorksPage() {
   const { listings, agencies } = await getInitialData();
 
-  // Render the client component monolith, passing the server-fetched data as initial state
   return (
-    <Suspense fallback={<PageLoader text="Fetching details..." />}>
+    <Suspense fallback={<PageLoader text="Loading..." />}>
       <HomeClient
         initialListings={listings}
         initialAgencies={agencies}
+        defaultSection="how-it-works"
         routeMode="user"
       />
     </Suspense>

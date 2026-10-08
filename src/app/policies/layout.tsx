@@ -198,20 +198,22 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
                 <ChevronRight className="h-4 w-4 text-slate-300" />
               </button>
 
-              {/* Messages */}
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  router.push('/?section=chat');
-                }}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-4 w-4 text-emerald-500" />
-                  <span>Messages & Enquiries</span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-300" />
-              </button>
+              {/* Messages (Only for non-agency users / travelers) */}
+              {(!userData || userData.role !== 'agency') && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    router.push('/?section=chat');
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="h-4 w-4 text-emerald-500" />
+                    <span>Messages & Enquiries</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                </button>
+              )}
 
               {/* Profile */}
               <button
@@ -327,25 +329,27 @@ export default function PoliciesLayout({ children }: { children: React.ReactNode
               <Heart className="h-4 w-4 text-slate-600" /> Wishlist
             </span>
 
-            {/* Messages */}
-            <span
-              className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
-              onClick={() => router.push('/?section=chat')}
-            >
-              <MessageSquare className="h-4 w-4 text-slate-600" /> Messages
-            </span>
+            {/* Messages (Only for non-agency users / travelers) */}
+            {(!userData || userData.role !== 'agency') && (
+              <span
+                className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 select-none"
+                onClick={() => router.push('/?section=chat')}
+              >
+                <MessageSquare className="h-4 w-4 text-slate-600" /> Messages
+              </span>
+            )}
 
             {/* Profile / Sign In */}
             {user ? (
               <div className="flex items-center gap-3 ml-2 border-l border-gray-200 pl-4">
                 {userData?.role === 'agency' && (
-                  <a
+                  <Link
                     href="/agencytripdm"
                     className="cursor-pointer text-[15px] font-medium flex items-center gap-1.5 text-slate-800 shrink-0"
                   >
                     <Briefcase className="h-4 w-4 text-slate-600" />
                     <span>Agency Portal</span>
-                  </a>
+                  </Link>
                 )}
                 <div
                   className="flex items-center gap-2 cursor-pointer text-[15px] font-medium text-slate-800"

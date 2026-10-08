@@ -1,12 +1,14 @@
 import { Metadata } from 'next';
-import HomeClient from './HomeClient';
+import HomeClient from '../HomeClient';
 import { parseFirestoreDocument } from '@/lib/firestoreParser';
+import { Suspense } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
 export const revalidate = 60;
 
-async function getInitialData() {
+async function getApprovedListings() {
   try {
     const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
     
@@ -36,7 +38,7 @@ async function getInitialData() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(query),
-        next: { revalidate: 30 } // Cache for 30 seconds
+        next: { revalidate: 30 }
       }),
       fetch(url, {
         method: 'POST',
@@ -48,7 +50,7 @@ async function getInitialData() {
 
     if (!listingsRes.ok) {
       console.error("Error fetching listings from REST API:", await listingsRes.text());
-      return { listings: [], agencies: [] };
+      return [];
     }
 
     const data = await listingsRes.json();
@@ -73,9 +75,6 @@ async function getInitialData() {
       }
     }
 
-    const agencies = Object.values(agencyMap).filter((u: any) => u.role === 'agency');
-
-    // runQuery returns an array of { document: { name, fields, ... } }
     const listings = data
       .filter((item: any) => item.document)
       .map((item: any) => {
@@ -90,48 +89,34 @@ async function getInitialData() {
         };
       });
       
-    return { listings, agencies };
+    return listings;
   } catch (error) {
     console.error("Exception fetching listings:", error);
-    return { listings: [], agencies: [] };
+    return [];
   }
 }
 
 export const metadata: Metadata = {
-  title: "TripDM: Direct Message. Better Travel.",
-  description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
+  title: "Explore Popular Destinations | TripDM",
+  description: "Browse curated travel destinations, packages, and custom itineraries crafted by verified travel agents.",
   alternates: {
-    canonical: 'https://tripdm.com',
+    canonical: 'https://tripdm.com/destinations',
   },
   openGraph: {
-    title: "TripDM: Direct Message. Better Travel.",
-    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
-    url: 'https://tripdm.com',
+    title: "Explore Popular Destinations | TripDM",
+    description: "Browse curated travel destinations, packages, and custom itineraries crafted by verified travel agents.",
+    url: 'https://tripdm.com/destinations',
     siteName: 'TripDM',
     type: 'website',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: "TripDM: Direct Message. Better Travel.",
-    description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
-  },
 };
 
-import { Suspense } from 'react';
-import PageLoader from '@/components/PageLoader';
+export default async function DestinationsPage() {
+  const initialListings = await getApprovedListings();
 
-export default async function HomePage() {
-  // Fetch initial data on the server for pure HTML SSR
-  const { listings, agencies } = await getInitialData();
-
-  // Render the client component monolith, passing the server-fetched data as initial state
   return (
-    <Suspense fallback={<PageLoader text="Fetching details..." />}>
-      <HomeClient
-        initialListings={listings}
-        initialAgencies={agencies}
-        routeMode="user"
-      />
+    <Suspense fallback={<PageLoader text="Loading destinations..." />}>
+      <HomeClient initialListings={initialListings} defaultSection="destinations" routeMode="user" />
     </Suspense>
   );
 }
