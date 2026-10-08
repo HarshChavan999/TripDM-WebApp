@@ -64,16 +64,28 @@ export async function POST(request: NextRequest) {
           link: deepLinkUrl,
         },
         notification: {
+          title: `🔔 ${agencyDisplayName} replied to your enquiry`,
+          body: previewText,
           icon: '/tripdm-logo.png',
           badge: '/tripdm-logo.png',
           tag: `chat_${senderId}`,
           renotify: true,
           requireInteraction: true,
+          vibrate: [200, 100, 200]
         }
       },
       android: {
         priority: 'high',
         ttl: 86400 * 1000,
+        notification: {
+          title: `🔔 ${agencyDisplayName} replied to your enquiry`,
+          body: previewText,
+          icon: 'icon',
+          color: '#2563eb',
+          sound: 'default',
+          priority: 'high',
+          visibility: 'public'
+        }
       }
     };
 
