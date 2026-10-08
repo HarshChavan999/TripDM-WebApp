@@ -138,8 +138,10 @@ export async function listenToForegroundMessages(onMessageReceived?: (payload: a
       const isViewingThisChat = isWindowActive && currentChatAgency && currentChatAgency === payload.data?.agencyId;
 
       if (!isViewingThisChat && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-        const title = payload.notification?.title || payload.data?.title || '🔔 New reply to your enquiry';
-        const body = payload.notification?.body || payload.data?.body || 'A travel agent replied to your message.';
+        const agencyName = payload.data?.agencyName || '';
+        const fallbackTitle = agencyName ? `${agencyName} (TripDM)` : 'TripDM';
+        const title = payload.notification?.title || payload.data?.title || fallbackTitle;
+        const body = payload.notification?.body || payload.data?.body || 'You have received a new message.';
         try {
           const n = new Notification(title, {
             body,
