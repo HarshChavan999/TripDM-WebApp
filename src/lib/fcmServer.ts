@@ -108,6 +108,19 @@ export async function sendWebPushNotification(options: SendPushNotificationOptio
       body,
       icon,
       timestamp: Date.now().toString()
+    },
+    android: {
+      priority: 'high',
+      ttl: 86400 * 1000,
+      notification: {
+        title,
+        body,
+        icon: 'icon',
+        color: '#2563eb',
+        sound: 'default',
+        priority: 'high',
+        visibility: 'public'
+      }
     }
   };
 

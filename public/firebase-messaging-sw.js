@@ -73,27 +73,27 @@ function buildNotificationOptions(payload) {
   };
 }
 
-// Handle background messages via Firebase Compat
+// Handle background messages via Firebase Compat or fallback
 if (messaging) {
   messaging.onBackgroundMessage((payload) => {
     console.log('[TripDM FCM SW] Received background push message:', payload);
     const { title, options } = buildNotificationOptions(payload);
     return self.registration.showNotification(title, options);
   });
+} else {
+  // Fallback listener for raw push events if messaging compat is not active
+  self.addEventListener('push', (event) => {
+    if (!event.data) return;
+    try {
+      const rawData = event.data.json();
+      console.log('[TripDM FCM SW] Raw push event received:', rawData);
+      const { title, options } = buildNotificationOptions(rawData);
+      event.waitUntil(self.registration.showNotification(title, options));
+    } catch (err) {
+      console.warn('[TripDM FCM SW] Push event parsing note:', err);
+    }
+  });
 }
-
-// Fallback listener for raw push events
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-  try {
-    const rawData = event.data.json();
-    console.log('[TripDM FCM SW] Raw push event received:', rawData);
-    const { title, options } = buildNotificationOptions(rawData);
-    event.waitUntil(self.registration.showNotification(title, options));
-  } catch (err) {
-    console.warn('[TripDM FCM SW] Push event parsing note:', err);
-  }
-});
 
 // Handle notification click -> open or focus the exact chat conversation window
 self.addEventListener('notificationclick', (event) => {
