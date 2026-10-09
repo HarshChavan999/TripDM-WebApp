@@ -5827,9 +5827,9 @@ export default function HomeClient({
                           )}
                         </button>
 
-                        {/* Desktop View: Classic Category Nav Strip */}
-                        <div id="category-nav-strip" className="hidden sm:flex w-fit max-w-full mx-auto bg-white/85 border border-white/80 rounded-xl p-2.5 mb-2 sm:mb-3 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.05)] items-center justify-center gap-3 sm:gap-4 py-2.5 sticky top-16 z-[90] backdrop-blur-xl relative transition-all duration-300">
-                          <div className="flex gap-2 sm:gap-3.5 items-center justify-center px-2 overflow-x-auto horizontal-scroll-nav scrollbar-hide max-w-full">
+                        {/* Desktop View: Classic Category Nav Strip (Direct on Page - No Container Box) */}
+                        <div id="category-nav-strip" className="hidden sm:flex w-fit max-w-full mx-auto items-center justify-center gap-2 sm:gap-3 py-2.5 mb-2 sm:mb-3 sticky top-16 z-[90] relative transition-all duration-300 bg-transparent border-none shadow-none">
+                          <div className="flex gap-2 sm:gap-2.5 items-center justify-center px-1 overflow-x-auto horizontal-scroll-nav scrollbar-hide max-w-full">
                             {[
                               { id: 'all_categories', label: 'Categories', type: 'categories', filter: null },
                               { id: 'domestic_tab', label: 'Domestic', type: 'all', filter: { category: 'domestic', title: 'Domestic Packages' } },
@@ -5866,10 +5866,10 @@ export default function HomeClient({
                                       setSelectedCategoryFilter(item.filter);
                                     }
                                   }}
-                                  className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-[transform,box-shadow,border-color] duration-150 flex items-center gap-2 shrink-0 cursor-pointer ${
+                                  className={`px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
                                     isActive
-                                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
-                                      : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
+                                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/20 border border-amber-400/50'
+                                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-2xs'
                                   }`}
                                   style={{ borderRadius: '6px' }}
                                 >
@@ -5880,15 +5880,15 @@ export default function HomeClient({
                             })}
                           </div>
                           
-                          <div className="h-6 w-px bg-slate-200/80 mx-1 shrink-0"></div>
+                          <div className="h-6 w-px bg-slate-200 mx-1 shrink-0"></div>
                           
                           <div className="relative shrink-0 flex items-center">
                             <button
                               onClick={() => setShowFilters(!showFilters)}
-                              className={`px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-[transform,box-shadow,border-color] duration-150 flex items-center gap-2 border cursor-pointer ${
+                              className={`px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                                 showFilters
-                                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
-                                  : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
+                                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/20 border border-amber-400/50'
+                                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-2xs'
                               }`}
                               style={{ borderRadius: '6px' }}
                             >

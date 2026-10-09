@@ -25,7 +25,8 @@ import {
   SlidersHorizontal,
   X,
   Plus,
-  Minus
+  Minus,
+  ChevronDown
 } from 'lucide-react';
 import { PackageListing } from '@/lib/discoveryEngine';
 import { getDbInstance } from '@/lib/firebase';
@@ -934,9 +935,9 @@ export default function TravelAgentsView({
   };
 
   return (
-    <div className="w-full bg-[#f8fafc] text-slate-900 min-h-screen">
+    <div className="w-full bg-white text-slate-900 min-h-screen">
       {/* ─── 1. TOP HERO SECTION FOR TRAVEL AGENTS (Clean layout with centered search) ─── */}
-      <div className="relative w-full bg-white border-b border-slate-200/80 pt-6 sm:pt-8 pb-7 overflow-hidden">
+      <div className="relative w-full bg-white border-b border-slate-100 pt-6 sm:pt-8 pb-7 overflow-hidden">
         {/* Background Banner Image on the right side with seamless smooth fade to white */}
         <div
           className="absolute inset-y-0 right-0 w-full sm:w-[85%] md:w-[70%] lg:w-[60%] bg-cover bg-no-repeat bg-right pointer-events-none"
@@ -988,35 +989,35 @@ export default function TravelAgentsView({
             </div>
           </div>
 
-          {/* Middle Row: Centered Search Bar (Rectangular Container & Button) */}
-          <div className="mt-7 max-w-2xl sm:max-w-3xl mx-auto relative z-20">
+          {/* Middle Row: Standard Centered Search Bar */}
+          <div className="mt-4 sm:mt-5 max-w-xl mx-auto relative z-20">
             <form
               onSubmit={(e) => e.preventDefault()}
-              className="bg-white/95 backdrop-blur-sm p-2 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.06)] border border-slate-200/90 flex items-center gap-2"
+              className="bg-white/95 backdrop-blur-sm p-1 sm:p-1.5 shadow-sm border border-slate-200/90 flex items-center gap-1.5"
               style={{ borderRadius: '6px' }}
             >
-              <div className="flex-1 flex items-center pl-3 sm:pl-4">
-                <Search className="h-4 sm:h-5 w-4 sm:w-5 text-slate-400 shrink-0 mr-2 sm:mr-3" />
+              <div className="flex-1 flex items-center pl-2.5 sm:pl-3">
+                <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search travel agents (e.g. Kashmir, Bali, Adventure, Family Tour...)"
-                  className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none font-medium"
+                  placeholder="Search travel agents (e.g. Kashmir, Bali, Adventure...)"
+                  className="w-full bg-transparent text-xs sm:text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none font-medium"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer mr-1 sm:mr-2"
+                    className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer mr-1"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
               <button
                 type="submit"
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-sm shadow-md shadow-amber-500/25 transition-all cursor-pointer shrink-0 border border-amber-400/50"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold px-4 sm:px-5 py-2 text-xs sm:text-[13px] shadow-xs transition-all cursor-pointer shrink-0 border border-amber-400/50"
                 style={{ borderRadius: '6px' }}
               >
                 Search Agents
@@ -1024,12 +1025,9 @@ export default function TravelAgentsView({
             </form>
           </div>
 
-          {/* Bottom Row: Exact Category Nav Strip Container (Matching Destinations Image 1) */}
-          <div
-            className="mt-6 w-fit max-w-full mx-auto bg-white/85 border border-white/80 p-2 sm:p-2.5 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2 sm:gap-3 backdrop-blur-xl relative transition-all duration-300"
-            style={{ borderRadius: '6px' }}
-          >
-            <div className="flex gap-2 sm:gap-3.5 items-center justify-center px-1 overflow-x-auto horizontal-scroll-nav scrollbar-hide max-w-full">
+          {/* Bottom Row: Category Nav Buttons (Direct on banner - No outer container box) */}
+          <div className="mt-6 w-full flex items-center justify-center">
+            <div className="flex flex-wrap gap-2 sm:gap-2.5 items-center justify-center px-1 max-w-full">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -1038,10 +1036,10 @@ export default function TravelAgentsView({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 text-xs sm:text-sm font-semibold transition-[transform,box-shadow,border-color] duration-150 flex items-center gap-2 shrink-0 cursor-pointer ${
+                    className={`px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
                       isActive
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25 border border-amber-400/50 scale-[1.02]'
-                        : 'bg-white/80 border border-slate-200/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-300 hover:shadow-sm hover:scale-[1.02]'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/20 border border-amber-400/50'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-2xs'
                     }`}
                     style={{ borderRadius: '6px' }}
                   >
@@ -1059,14 +1057,13 @@ export default function TravelAgentsView({
       <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ══════════════════════════════════════════════════════════════════
-              LEFT SIDEBAR: FILTERS (Single Page View - Compact & Sticky)
+              LEFT SIDEBAR: FILTERS (Direct on Page - No Container Box)
              ══════════════════════════════════════════════════════════════════ */}
           <aside
-            className="lg:col-span-3 xl:col-span-2 bg-white p-3 border border-slate-200 shadow-2xs lg:sticky lg:top-20"
-            style={{ borderRadius: '8px' }}
+            className="lg:col-span-3 xl:col-span-2 bg-transparent p-0 lg:sticky lg:top-20 space-y-2 max-h-[calc(100vh-6.5rem)] overflow-y-auto scrollbar-hide border-none shadow-none"
           >
             {/* Header: Filters + Reset */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
               <div className="flex items-center gap-1.5">
                 <SlidersHorizontal className="h-3.5 w-3.5 text-slate-700" />
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">Filters</h3>
@@ -1246,7 +1243,7 @@ export default function TravelAgentsView({
              ══════════════════════════════════════════════════════════════════ */}
           <main className="lg:col-span-6 xl:col-span-7 space-y-4">
             {/* Center Header: Count + Sort Dropdown (Clean typography on page background) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-1 pt-0.5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-200">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {filteredAgencies.length} Verified Travel {filteredAgencies.length === 1 ? 'Agent' : 'Agents'}
@@ -1259,16 +1256,19 @@ export default function TravelAgentsView({
               {/* Sort By Dropdown */}
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs font-semibold text-slate-500">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none cursor-pointer shadow-xs hover:border-slate-300"
-                  style={{ borderRadius: '6px' }}
-                >
-                  <option value="relevant">Most Relevant</option>
-                  <option value="packages">Most Packages</option>
-                  <option value="name">Agency Name</option>
-                </select>
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-white border border-slate-200 pl-3 pr-8 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer shadow-xs hover:border-slate-300 transition-colors"
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <option value="relevant">Most Relevant</option>
+                    <option value="packages">Most Packages</option>
+                    <option value="name">Agency Name</option>
+                  </select>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                </div>
               </div>
             </div>
 
@@ -1320,12 +1320,11 @@ export default function TravelAgentsView({
                 return (
                   <div
                     key={agency.id}
-                    className="bg-white shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col md:flex-row p-4 sm:p-5 gap-5 items-stretch border border-slate-200"
-                    style={{ borderRadius: '6px' }}
+                    className="relative group flex flex-col md:flex-row pb-6 sm:pb-7 gap-5 sm:gap-6 items-stretch border-b border-slate-200 last:border-b-0 last:pb-0"
                   >
                     {/* Left: Real Package Photos from this Agency (Standardized uniform aspect ratio) */}
                     <div
-                      className="relative w-full md:w-64 xl:w-72 h-52 sm:h-56 md:h-[220px] max-h-[220px] overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-slate-100"
+                      className="relative w-full md:w-64 xl:w-72 h-52 sm:h-56 md:h-[220px] max-h-[220px] overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-slate-100 shadow-2xs"
                       style={{ borderRadius: '6px' }}
                     >
                       {hasImages && currentImg ? (
@@ -1604,12 +1603,9 @@ export default function TravelAgentsView({
           {/* ══════════════════════════════════════════════════════════════════
               RIGHT SIDEBAR: MAP & TOP DESTINATIONS (Single Page View - Compact & Sticky)
              ══════════════════════════════════════════════════════════════════ */}
-          <aside className="lg:col-span-3 space-y-3 lg:sticky lg:top-20">
+          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20 max-h-[calc(100vh-6.5rem)] overflow-y-auto scrollbar-hide border-none shadow-none">
             {/* 1. REAL DYNAMIC TRAVEL AGENTS MAP WIDGET */}
-            <div
-              className="bg-white p-3 border border-slate-200 shadow-2xs"
-              style={{ borderRadius: '8px' }}
-            >
+            <div className="bg-transparent p-0">
               {/* Map Title & Toggle */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
@@ -1649,12 +1645,9 @@ export default function TravelAgentsView({
               )}
             </div>
 
-            {/* 2. TOP DESTINATIONS BY AGENTS WIDGET (Top 3 Compact) */}
+            {/* 2. TOP DESTINATIONS BY AGENTS WIDGET (Direct on page with clean separator) */}
             {topDestinationsByAgents.length > 0 && (
-              <div
-                className="bg-white p-3 border border-slate-200 shadow-2xs"
-                style={{ borderRadius: '8px' }}
-              >
+              <div className="bg-transparent p-0 pt-3 border-t border-slate-200">
                 <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
                   Top Destinations by Agents
                 </h3>
@@ -1709,11 +1702,8 @@ export default function TravelAgentsView({
               </div>
             )}
 
-            {/* 3. WHY BOOK WITH TRAVEL AGENTS ON TRIPDM? (Clean Compact Trust Card) */}
-            <div
-              className="bg-white p-3 border border-slate-200 shadow-2xs"
-              style={{ borderRadius: '8px' }}
-            >
+            {/* 3. WHY BOOK WITH TRAVEL AGENTS ON TRIPDM? (Direct on page with clean separator) */}
+            <div className="bg-transparent p-0 pt-3 border-t border-slate-200">
               <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
                 Why Book on TripDM?
               </h3>

@@ -373,13 +373,10 @@ export default function AgencyProfileView({
   };
 
   return (
-    <div className="w-full bg-[#f8fafc] min-h-screen text-slate-900 pb-16">
+    <div className="w-full bg-white min-h-screen text-slate-900 pb-16">
       <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-5">
-        {/* ─── 1. HERO PANORAMIC BANNER CARD (Exact Image 1 Design) ─── */}
-        <div
-          className="w-full bg-white border border-slate-200/90 shadow-[0_6px_30px_rgba(0,0,0,0.07)] overflow-hidden relative"
-          style={{ borderRadius: '12px' }}
-        >
+        {/* ─── 1. HERO PANORAMIC BANNER (Direct on Page - No Container Box) ─── */}
+        <div className="w-full relative overflow-hidden bg-white border-b border-slate-200 pb-2">
           {/* Panoramic Mountain Lake Backdrop with Soft Left Gradient Wash */}
           <div
             className="w-full bg-cover bg-center relative p-5 sm:p-7 lg:p-9"
@@ -518,7 +515,7 @@ export default function AgencyProfileView({
 
               {/* Right Column: Share, Wishlist & Chat Buttons directly on the banner */}
               <div className="flex items-center gap-2.5 self-start lg:self-end shrink-0 mt-3 lg:mt-0">
-                {/* Share Button (Opens interactive multi-platform share modal / Web Share) */}
+                {/* Share Button */}
                 <button
                   type="button"
                   onClick={handleShare}
@@ -561,13 +558,10 @@ export default function AgencyProfileView({
           </div>
         </div>
 
-        {/* ─── 2. SEPARATE AGENCY PHOTO PREVIEW STRIP (Dedicated Clean Gallery Card Below Banner) ─── */}
+        {/* ─── 2. SEPARATE AGENCY PHOTO PREVIEW STRIP (Direct on Page) ─── */}
         {agencyPhotos.length > 0 && (
-          <div
-            className="w-full bg-white border border-slate-200/90 p-3 sm:p-4 shadow-2xs overflow-hidden"
-            style={{ borderRadius: '8px' }}
-          >
-            <div className="flex items-center justify-between gap-4 mb-2.5 px-0.5">
+          <div className="w-full bg-transparent py-4 border-b border-slate-200">
+            <div className="flex items-center justify-between gap-4 mb-3 px-0.5">
               <div className="flex items-center gap-2">
                 <Camera className="w-4 h-4 text-[#FF5500]" />
                 <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
@@ -584,14 +578,15 @@ export default function AgencyProfileView({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {agencyPhotos.slice(0, 5).map((photo, idx) => {
                 const isLast = idx === 4 && agencyPhotos.length > 5;
                 return (
                   <div
                     key={idx}
                     onClick={() => setShowAllPhotosModal(true)}
-                    className="relative aspect-video sm:aspect-4/3 overflow-hidden cursor-pointer border border-slate-200 rounded-md group shadow-2xs hover:border-orange-500 transition-all"
+                    className="relative aspect-video sm:aspect-4/3 overflow-hidden cursor-pointer border border-slate-200 group shadow-2xs hover:border-orange-500 transition-all"
+                    style={{ borderRadius: '6px' }}
                   >
                     <img
                       src={photo}
@@ -611,11 +606,8 @@ export default function AgencyProfileView({
           </div>
         )}
 
-        {/* ─── 3. SUB-NAVIGATION TABS BAR ─── */}
-        <div
-          className="w-full bg-white border border-slate-200/90 px-4 sm:px-6 shadow-2xs overflow-x-auto scrollbar-hide sticky top-16 z-20"
-          style={{ borderRadius: '8px' }}
-        >
+        {/* ─── 3. SUB-NAVIGATION TABS BAR (Direct on Page - No Container Box) ─── */}
+        <div className="w-full bg-white border-b border-slate-200 px-2 overflow-x-auto scrollbar-hide sticky top-16 z-20">
           <div className="flex items-center gap-6 sm:gap-8 min-w-max text-xs sm:text-sm font-bold">
             <button
               type="button"
@@ -663,19 +655,15 @@ export default function AgencyProfileView({
           </div>
         </div>
 
-        {/* ─── 3. MAIN 2-COLUMN BODY (Left 3 Original-Sized Cards Rail, Right Sleek Compact Sidebar) ─── */}
-        <div className="flex flex-col lg:flex-row gap-5 items-start">
+        {/* ─── 4. MAIN 2-COLUMN BODY (Direct on Page - No Container Boxes) ─── */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start pt-2">
           {/* ══════════════════════════════════════════════════════════════════
-              LEFT MAIN COLUMN (Spacious: Fits 3 Original Full-Sized Listing Cards)
+              LEFT MAIN COLUMN (Direct on Page - No Container Box)
              ══════════════════════════════════════════════════════════════════ */}
           <div className="flex-1 min-w-0 space-y-6">
-            {/* SECTION 1: POPULAR TOUR PACKAGES (ORIGINAL FULL-SIZED CARDS VISIBLE SIDE-BY-SIDE + HORIZONTAL SCROLL) */}
-            <div
-              id="section-packages"
-              className="bg-white border border-slate-200/90 p-4 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.05)]"
-              style={{ borderRadius: '8px' }}
-            >
-              <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+            {/* SECTION 1: POPULAR TOUR PACKAGES */}
+            <div id="section-packages" className="bg-transparent pb-6 border-b border-slate-200">
+              <div className="flex items-center justify-between gap-4 mb-4 pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <PackageIcon className="w-5 h-5 text-[#FF5500]" />
                   <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
@@ -751,7 +739,7 @@ export default function AgencyProfileView({
                   <button
                     type="button"
                     onClick={handleChat}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-1.5 px-4 text-xs"
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-1.5 px-4 text-xs cursor-pointer"
                     style={{ borderRadius: '6px' }}
                   >
                     Request Custom Quote
@@ -760,12 +748,8 @@ export default function AgencyProfileView({
               )}
             </div>
 
-            {/* SECTION 2: ABOUT THE AGENCY (Positioned directly above Reviews) */}
-            <div
-              id="section-about"
-              className="bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_4px_25px_rgba(0,0,0,0.05)]"
-              style={{ borderRadius: '8px' }}
-            >
+            {/* SECTION 2: ABOUT THE AGENCY */}
+            <div id="section-about" className="bg-transparent py-6 border-b border-slate-200">
               <div className="flex items-center gap-2 mb-3.5">
                 <FileText className="w-5 h-5 text-[#FF5500]" />
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -785,7 +769,7 @@ export default function AgencyProfileView({
                 )}
               </div>
 
-              {/* Real Metric Highlights Row (ONLY SHOW IF DATA AVAILABLE) */}
+              {/* Metric Highlights */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
                 {agency.experienceYears ? (
                   <div className="flex items-center gap-2">
@@ -828,12 +812,8 @@ export default function AgencyProfileView({
             </div>
 
             {/* SECTION 3: CUSTOMER REVIEWS */}
-            <div
-              id="section-reviews"
-              className="bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_4px_25px_rgba(0,0,0,0.05)]"
-              style={{ borderRadius: '8px' }}
-            >
-              <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+            <div id="section-reviews" className="bg-transparent py-6">
+              <div className="flex items-center justify-between gap-4 mb-4 pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
                   <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -969,7 +949,7 @@ export default function AgencyProfileView({
                   <button
                     type="button"
                     onClick={handleChat}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-1.5 px-4 text-xs"
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-1.5 px-4 text-xs cursor-pointer"
                     style={{ borderRadius: '6px' }}
                   >
                     Chat with Agent
@@ -980,14 +960,11 @@ export default function AgencyProfileView({
           </div>
 
           {/* ══════════════════════════════════════════════════════════════════
-              RIGHT SIDEBAR: COMPACT STICKY CONTACT & INFO CARDS (~280px)
+              RIGHT SIDEBAR: COMPACT STICKY CONTACT & INFO (Direct on Page - No Container Boxes)
              ══════════════════════════════════════════════════════════════════ */}
-          <div className="w-full lg:w-[275px] xl:w-[290px] shrink-0 space-y-4 lg:sticky lg:top-28">
-            {/* Card 1: Chat with Agency (Primary CTA Box) */}
-            <div
-              className="bg-white border border-slate-200/90 p-4 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.05)] space-y-3.5"
-              style={{ borderRadius: '8px' }}
-            >
+          <div className="w-full lg:w-[275px] xl:w-[290px] shrink-0 space-y-6 lg:sticky lg:top-28">
+            {/* Item 1: Chat with Agency */}
+            <div className="bg-transparent pb-6 border-b border-slate-200 space-y-3">
               <div>
                 <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
                   Chat with {agency.name}
@@ -1010,18 +987,15 @@ export default function AgencyProfileView({
               </div>
             </div>
 
-            {/* Card 3: Location Map Card */}
-            <div
-              className="bg-white border border-slate-200/90 p-3.5 shadow-2xs overflow-hidden"
-              style={{ borderRadius: '8px' }}
-            >
+            {/* Item 2: Location Map */}
+            <div className="bg-transparent pb-6 border-b border-slate-200">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-[11px] font-bold text-slate-900">Location</h4>
                 <span className="text-[10px] text-slate-500">{agency.city || 'India'}</span>
               </div>
 
               <div
-                className="h-24 w-full bg-slate-100 border border-slate-200 rounded-md relative overflow-hidden flex flex-col items-center justify-center p-2 text-center"
+                className="h-28 w-full bg-slate-100 border border-slate-200 rounded-md relative overflow-hidden flex flex-col items-center justify-center p-2 text-center shadow-2xs"
                 style={{
                   backgroundImage: "url('https://maps.googleapis.com/maps/api/staticmap?center=India&zoom=4&size=400x200&sensor=false')",
                   backgroundSize: 'cover',
@@ -1039,17 +1013,13 @@ export default function AgencyProfileView({
               </div>
             </div>
 
-            {/* Card 4: Why Travel with this Agency */}
-            <div
-              id="section-why-us"
-              className="bg-white border border-slate-200/90 p-4 shadow-2xs space-y-2.5"
-              style={{ borderRadius: '8px' }}
-            >
+            {/* Item 3: Why Travel with this Agency */}
+            <div id="section-why-us" className="bg-transparent pb-6 space-y-2.5">
               <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-900 pb-2 border-b border-slate-100">
                 Why Travel with {agency.name}?
               </h4>
 
-              <div className="space-y-1.5 text-[11px] font-medium text-slate-700">
+              <div className="space-y-2 text-[11px] font-medium text-slate-700">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Local {primaryDestination} experts</span>

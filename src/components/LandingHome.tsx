@@ -367,53 +367,50 @@ export default function LandingHome({
           </div>
         </div>
 
-        {/* ─── 2. 4 VALUE PROPOSITIONS CARD (FLOATING WHITE CARD) ─────────── */}
+        {/* ─── 2. 4 VALUE PROPOSITIONS (DIRECT ON PAGE - NO CONTAINER) ─── */}
         <div className="relative z-10 w-full mt-3 sm:mt-4">
-          <div className="max-w-5xl mx-auto px-2 sm:px-4">
-            <div
-              className="bg-white/95 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-slate-200/80 py-3 sm:py-3.5 px-3 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-100"
-              style={{ borderRadius: '6px' }}
-            >
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-300/60">
               {/* Item 1 */}
-              <div className="flex flex-col items-center text-center px-2 py-1 sm:py-0">
-                <Users className="h-5 w-5 text-[#FF5500] mb-1 shrink-0" />
+              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
+                <Users className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Multiple Travel Agents
                 </h3>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   Get options from many verified agents
                 </p>
               </div>
 
               {/* Item 2 */}
-              <div className="flex flex-col items-center text-center px-2 py-1 sm:py-0">
-                <MessageSquare className="h-5 w-5 text-[#FF5500] mb-1 shrink-0" />
+              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
+                <MessageSquare className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Chat Directly
                 </h3>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   Discuss, negotiate and customize
                 </p>
               </div>
 
               {/* Item 3 */}
-              <div className="flex flex-col items-center text-center px-2 py-1 sm:py-0">
-                <IndianRupee className="h-5 w-5 text-[#FF5500] mb-1 shrink-0" />
+              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
+                <IndianRupee className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   No Commission
                 </h3>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   You pay the agency directly
                 </p>
               </div>
 
               {/* Item 4 */}
-              <div className="flex flex-col items-center text-center px-2 py-1 sm:py-0">
-                <ShieldCheck className="h-5 w-5 text-[#FF5500] mb-1 shrink-0" />
+              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
+                <ShieldCheck className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Verified Agents
                 </h3>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   Safe, reliable and trusted
                 </p>
               </div>

@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-  Search,
-  Calendar,
   Users,
   MessageSquare,
   ShieldCheck,
@@ -13,12 +11,6 @@ import {
   X as CloseIcon,
   ChevronDown,
   ArrowRight,
-  Send,
-  Phone,
-  MoreVertical,
-  Paperclip,
-  CheckCheck,
-  Star,
 } from 'lucide-react';
 
 interface HowItWorksViewProps {
@@ -80,14 +72,11 @@ export default function HowItWorksView({
   onNavigateToAgents,
   onInitiateChat,
 }: HowItWorksViewProps) {
-  const [openFaqId, setOpenFaqId] = useState<string | null>('faq-1');
-  const [showAllFaqs, setShowAllFaqs] = useState(false);
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
   const toggleFaq = (id: string) => {
     setOpenFaqId(openFaqId === id ? null : id);
   };
-
-  const displayedFaqs = showAllFaqs ? FAQS_DATA : FAQS_DATA.slice(0, 4);
 
   return (
     <div className="w-full bg-white text-slate-900 min-h-screen">
@@ -146,340 +135,77 @@ export default function HowItWorksView({
         </div>
       </div>
 
-      {/* ─── 2. 3 SIMPLE STEPS WORKFLOW SECTION (Full Width & Pure White Cards) ─── */}
+      {/* ─── 2. 3 SIMPLE STEPS WORKFLOW SECTION (Direct on Page - No Container Boxes) ─── */}
       <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
           {/* STEP 1: Search Destinations */}
-          <div
-            className="bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_4px_25px_rgba(0,0,0,0.05)] flex flex-col justify-between relative group hover:border-slate-300 transition-all"
-            style={{ borderRadius: '8px' }}
-          >
-            {/* Step Header */}
-            <div>
-              <div className="flex items-center gap-3 mb-2.5">
-                <span
-                  className="w-7 h-7 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-xs shrink-0 shadow-2xs"
-                  style={{ borderRadius: '6px' }}
-                >
-                  1
-                </span>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                  Search Destinations
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500 font-normal leading-relaxed mb-4">
-                Enter your destination, travel dates and preferences to find multiple travel agents.
-              </p>
-            </div>
-
-            {/* Step 1 UI Mockup Card (Pure White Static Graphic Container) */}
-            <div
-              className="bg-white border border-slate-200 p-3.5 shadow-2xs select-none pointer-events-none"
-              style={{ borderRadius: '6px' }}
-            >
-              {/* Mini Header */}
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <div className="w-4 h-4 rounded-full bg-[#FF5500] flex items-center justify-center text-white text-[9px] font-black">
-                  T
-                </div>
-                <span className="text-xs font-black text-slate-900 tracking-tight">TripDM</span>
-              </div>
-
-              {/* Mockup Search Field */}
-              <div
-                className="bg-white border border-slate-200 px-2.5 py-1.5 flex items-center justify-between gap-2 mb-2 shadow-2xs"
-                style={{ borderRadius: '4px' }}
+          <div className="flex flex-col relative group p-0 bg-transparent border-none shadow-none">
+            <div className="flex items-center gap-3 mb-2.5">
+              <span
+                className="w-8 h-8 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                style={{ borderRadius: '6px' }}
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="text-xs font-semibold text-slate-900 truncate">
-                    Kashmir
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-400 font-medium shrink-0">Destination</span>
-              </div>
-
-              {/* Date & Traveler Row */}
-              <div className="grid grid-cols-2 gap-1.5 mb-2.5">
-                <div
-                  className="bg-white border border-slate-200 px-2 py-1.2 flex items-center justify-between text-[10px] text-slate-700 font-medium"
-                  style={{ borderRadius: '4px' }}
-                >
-                  <div className="flex items-center gap-1 truncate">
-                    <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>10 - 15 Dec</span>
-                  </div>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                </div>
-
-                <div
-                  className="bg-white border border-slate-200 px-2 py-1.2 flex items-center justify-between text-[10px] text-slate-700 font-medium"
-                  style={{ borderRadius: '4px' }}
-                >
-                  <div className="flex items-center gap-1 truncate">
-                    <Users className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>2 Travelers</span>
-                  </div>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                </div>
-              </div>
-
-              {/* Mockup Search CTA (Static Graphic) */}
-              <div
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-1.5 text-xs text-center shadow-xs border border-amber-400/50 mb-2"
-                style={{ borderRadius: '4px' }}
-              >
-                Search
-              </div>
-
-              {/* Popular Mini Tags */}
-              <div className="flex flex-wrap items-center gap-1 text-[9px] text-slate-500">
-                <span className="font-semibold">Popular:</span>
-                {['Kashmir', 'Manali', 'Kerala', 'Dubai', 'Bali'].map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-1.5 py-0.5 bg-white border border-slate-200 text-slate-700 font-medium"
-                    style={{ borderRadius: '3px' }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+                1
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                Search Destinations
+              </h3>
             </div>
+            <p className="text-xs sm:text-sm text-slate-600 font-normal leading-relaxed">
+              Enter your destination, travel dates and preferences to find multiple travel agents.
+            </p>
 
             {/* Connecting Arrow for Desktop */}
-            <div className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm items-center justify-center text-slate-400">
+            <div className="hidden md:flex absolute -right-6 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm items-center justify-center text-slate-400">
               <ArrowRight className="w-3.5 h-3.5 text-[#FF5500]" />
             </div>
           </div>
 
           {/* STEP 2: Compare & Chat with Agents */}
-          <div
-            className="bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_4px_25px_rgba(0,0,0,0.05)] flex flex-col justify-between relative group hover:border-slate-300 transition-all"
-            style={{ borderRadius: '8px' }}
-          >
-            {/* Step Header */}
-            <div>
-              <div className="flex items-center gap-3 mb-2.5">
-                <span
-                  className="w-7 h-7 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-xs shrink-0 shadow-2xs"
-                  style={{ borderRadius: '6px' }}
-                >
-                  2
-                </span>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                  Compare & Chat with Agents
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500 font-normal leading-relaxed mb-4">
-                View multiple verified travel agents offering packages for your destination. Chat directly, ask questions and customize your trip.
-              </p>
+          <div className="flex flex-col relative group p-0 bg-transparent border-none shadow-none">
+            <div className="flex items-center gap-3 mb-2.5">
+              <span
+                className="w-8 h-8 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                style={{ borderRadius: '6px' }}
+              >
+                2
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                Compare & Chat with Agents
+              </h3>
             </div>
-
-            {/* Step 2 UI Mockup Card (Pure White Static Graphic Container) */}
-            <div
-              className="bg-white border border-slate-200 p-3.5 shadow-2xs space-y-2 select-none pointer-events-none"
-              style={{ borderRadius: '6px' }}
-            >
-              <div className="text-[11px] font-bold text-slate-800 mb-1">
-                Kashmir Travel Agents
-              </div>
-
-              {/* Agent 1 */}
-              <div
-                className="bg-white border border-slate-200/90 p-2 flex items-center justify-between shadow-2xs"
-                style={{ borderRadius: '4px' }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center text-xs font-bold text-[#FF5500] shrink-0">
-                    🏔️
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 truncate leading-tight">
-                      Himalaya Travels
-                    </h4>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 shrink-0" />
-                      <span className="font-bold text-slate-800">4.8</span>
-                      <span>(220 reviews)</span>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className="px-2.5 py-1 text-[11px] font-bold text-[#FF5500] border border-[#FF5500] shrink-0"
-                  style={{ borderRadius: '4px' }}
-                >
-                  Chat
-                </div>
-              </div>
-
-              {/* Agent 2 */}
-              <div
-                className="bg-white border border-slate-200/90 p-2 flex items-center justify-between shadow-2xs"
-                style={{ borderRadius: '4px' }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-xs font-bold text-emerald-600 shrink-0">
-                    🌲
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 truncate leading-tight">
-                      Valley Explorers
-                    </h4>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 shrink-0" />
-                      <span className="font-bold text-slate-800">4.7</span>
-                      <span>(190 reviews)</span>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className="px-2.5 py-1 text-[11px] font-bold text-[#FF5500] border border-[#FF5500] shrink-0"
-                  style={{ borderRadius: '4px' }}
-                >
-                  Chat
-                </div>
-              </div>
-
-              {/* Agent 3 */}
-              <div
-                className="bg-white border border-slate-200/90 p-2 flex items-center justify-between shadow-2xs"
-                style={{ borderRadius: '4px' }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">
-                    ❄️
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 truncate leading-tight">
-                      Kashmir Den Tours
-                    </h4>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 shrink-0" />
-                      <span className="font-bold text-slate-800">4.6</span>
-                      <span>(200 reviews)</span>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className="px-2.5 py-1 text-[11px] font-bold text-[#FF5500] border border-[#FF5500] shrink-0"
-                  style={{ borderRadius: '4px' }}
-                >
-                  Chat
-                </div>
-              </div>
-            </div>
+            <p className="text-xs sm:text-sm text-slate-600 font-normal leading-relaxed">
+              View multiple verified travel agents offering packages for your destination. Chat directly, ask questions and customize your trip.
+            </p>
 
             {/* Connecting Arrow for Desktop */}
-            <div className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm items-center justify-center text-slate-400">
+            <div className="hidden md:flex absolute -right-6 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm items-center justify-center text-slate-400">
               <ArrowRight className="w-3.5 h-3.5 text-[#FF5500]" />
             </div>
           </div>
 
           {/* STEP 3: Customize & Book Directly */}
-          <div
-            className="bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_4px_25px_rgba(0,0,0,0.05)] flex flex-col justify-between relative group hover:border-slate-300 transition-all"
-            style={{ borderRadius: '8px' }}
-          >
-            {/* Step Header */}
-            <div>
-              <div className="flex items-center gap-3 mb-2.5">
-                <span
-                  className="w-7 h-7 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-xs shrink-0 shadow-2xs"
-                  style={{ borderRadius: '6px' }}
-                >
-                  3
-                </span>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                  Customize & Book Directly
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500 font-normal leading-relaxed mb-4">
-                Discuss your requirements, negotiate, finalize the itinerary and book directly with the travel agency.
-              </p>
-            </div>
-
-            {/* Step 3 UI Mockup Card (Pure White Static Graphic Container) */}
-            <div
-              className="bg-white border border-slate-200 p-3.5 shadow-2xs flex flex-col justify-between min-h-[195px] select-none pointer-events-none"
-              style={{ borderRadius: '6px' }}
-            >
-              {/* Chat Header */}
-              <div className="flex items-center justify-between border-b border-slate-200/80 pb-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                    🏔️
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 truncate leading-tight">
-                      Himalaya Travels
-                    </h4>
-                    <span className="text-[9px] text-emerald-600 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Online
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Phone className="w-3.5 h-3.5" />
-                  <MoreVertical className="w-3.5 h-3.5" />
-                </div>
-              </div>
-
-              {/* Message Bubbles */}
-              <div className="space-y-1.5 text-[11px] mb-2">
-                {/* User Bubble */}
-                <div className="flex justify-end">
-                  <div
-                    className="max-w-[90%] bg-orange-500 text-white px-2.5 py-1.5 shadow-2xs text-[10px] leading-snug"
-                    style={{ borderRadius: '6px' }}
-                  >
-                    <p>Hi! We are planning a 5N/6D trip to Kashmir for 2 people. Can you share package options?</p>
-                    <div className="flex items-center justify-end gap-1 mt-0.5 text-[8px] text-orange-200">
-                      <span>09:41 AM</span>
-                      <CheckCheck className="w-2.5 h-2.5" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Agent Bubble */}
-                <div className="flex justify-start">
-                  <div
-                    className="max-w-[90%] bg-white border border-slate-200 text-slate-800 px-2.5 py-1.5 shadow-2xs text-[10px] leading-snug"
-                    style={{ borderRadius: '6px' }}
-                  >
-                    <p>Sure! Here are 3 customized options with hotels, transport and sightseeing.</p>
-                    <div className="text-right text-[8px] text-slate-400 mt-0.5">
-                      <span>09:42 AM</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chat Input Bar */}
-              <div
-                className="bg-white border border-slate-200 px-2 py-1 flex items-center justify-between gap-1.5 text-[10px] text-slate-400"
-                style={{ borderRadius: '4px' }}
+          <div className="flex flex-col relative group p-0 bg-transparent border-none shadow-none">
+            <div className="flex items-center gap-3 mb-2.5">
+              <span
+                className="w-8 h-8 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                style={{ borderRadius: '6px' }}
               >
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <Paperclip className="w-3 h-3 text-slate-400 shrink-0" />
-                  <span className="truncate">Type a message...</span>
-                </div>
-                <div
-                  className="w-5 h-5 bg-[#FF5500] text-white flex items-center justify-center shrink-0 shadow-2xs"
-                  style={{ borderRadius: '3px' }}
-                >
-                  <Send className="w-2.5 h-2.5 ml-0.5" />
-                </div>
-              </div>
+                3
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                Customize & Book Directly
+              </h3>
             </div>
+            <p className="text-xs sm:text-sm text-slate-600 font-normal leading-relaxed">
+              Discuss your requirements, negotiate, finalize the itinerary and book directly with the travel agency.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ─── 3. WHY CHOOSE TRIPDM SECTION (Full Width & Pure White Cards) ─── */}
-      <div className="w-full bg-white py-12 sm:py-16">
+      {/* ─── 3. WHY CHOOSE TRIPDM SECTION (Direct on Page - No Container Boxes) ─── */}
+      <div className="w-full bg-white py-10 sm:py-14 border-t border-slate-100">
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
             <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-[#FF5500]">
@@ -490,12 +216,9 @@ export default function HowItWorksView({
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {/* Feature 1: Multiple Options */}
-            <div
-              className="bg-white border border-slate-200/90 p-6 flex flex-col items-center text-center shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-slate-300 transition-all group"
-              style={{ borderRadius: '8px' }}
-            >
+            <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
               <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
                 <Users className="w-6 h-6 text-[#FF5500]" />
               </div>
@@ -508,10 +231,7 @@ export default function HowItWorksView({
             </div>
 
             {/* Feature 2: Direct Communication */}
-            <div
-              className="bg-white border border-slate-200/90 p-6 flex flex-col items-center text-center shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-slate-300 transition-all group"
-              style={{ borderRadius: '8px' }}
-            >
+            <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
               <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
                 <MessageSquare className="w-6 h-6 text-emerald-600" />
               </div>
@@ -524,10 +244,7 @@ export default function HowItWorksView({
             </div>
 
             {/* Feature 3: No Commission */}
-            <div
-              className="bg-white border border-slate-200/90 p-6 flex flex-col items-center text-center shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-slate-300 transition-all group"
-              style={{ borderRadius: '8px' }}
-            >
+            <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
               <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
                 <IndianRupee className="w-6 h-6 text-blue-600" />
               </div>
@@ -540,10 +257,7 @@ export default function HowItWorksView({
             </div>
 
             {/* Feature 4: Verified Agents */}
-            <div
-              className="bg-white border border-slate-200/90 p-6 flex flex-col items-center text-center shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-slate-300 transition-all group"
-              style={{ borderRadius: '8px' }}
-            >
+            <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
               <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
                 <ShieldCheck className="w-6 h-6 text-orange-600" />
               </div>
@@ -558,14 +272,11 @@ export default function HowItWorksView({
         </div>
       </div>
 
-      {/* ─── 4. COMPARISON TABLE & YOU ARE IN CONTROL SECTION (Full Width & Pure White) ─── */}
-      <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 bg-white">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-          {/* Left Column: Comparison Table Card */}
-          <div
-            className="lg:col-span-7 bg-white border border-slate-200/90 p-6 sm:p-8 shadow-[0_4px_25px_rgba(0,0,0,0.05)] flex flex-col justify-between"
-            style={{ borderRadius: '8px' }}
-          >
+      {/* ─── 4. COMPARISON TABLE & YOU ARE IN CONTROL SECTION (Direct on Page) ─── */}
+      <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 bg-white border-t border-slate-100">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+          {/* Left Column: Comparison Table */}
+          <div className="lg:col-span-7 flex flex-col justify-between bg-transparent p-0 border-none shadow-none">
             <div>
               <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mb-6">
                 TripDM vs Traditional Travel Booking Sites
@@ -618,13 +329,10 @@ export default function HowItWorksView({
             </div>
           </div>
 
-          {/* Right Column: "You are in Control" Card with Photo */}
-          <div
-            className="lg:col-span-5 bg-white border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col justify-between"
-            style={{ borderRadius: '8px' }}
-          >
+          {/* Right Column: "You are in Control" with Photo */}
+          <div className="lg:col-span-5 flex flex-col justify-between bg-transparent p-0 border-none shadow-none">
             {/* Top Text Content */}
-            <div className="p-6 sm:p-7">
+            <div className="pb-4">
               <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-3.5 shadow-2xs">
                 <Lightbulb className="w-5 h-5 text-amber-600" />
               </div>
@@ -637,7 +345,10 @@ export default function HowItWorksView({
             </div>
 
             {/* Bottom Scenic Image */}
-            <div className="relative w-full h-56 sm:h-64 overflow-hidden border-t border-slate-100">
+            <div
+              className="relative w-full h-56 sm:h-64 overflow-hidden border border-slate-200 shadow-2xs"
+              style={{ borderRadius: '6px' }}
+            >
               <img
                 src="/how-it-works-friends.jpg"
                 alt="Friends traveling and hiking with backpacks"
@@ -652,47 +363,34 @@ export default function HowItWorksView({
         </div>
       </div>
 
-      {/* ─── 5. FREQUENTLY ASKED QUESTIONS SECTION (Full Width & Pure White Cards) ─── */}
-      <div className="w-full bg-white py-12 sm:py-16">
+      {/* ─── 5. FREQUENTLY ASKED QUESTIONS SECTION (Direct Accordion on Page) ─── */}
+      <div className="w-full bg-white py-12 sm:py-16 border-t border-slate-100">
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
-            <div>
-              <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-[#FF5500]">
-                FREQUENTLY ASKED QUESTIONS
-              </span>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mt-1.5">
-                Got Questions? We've Got Answers.
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowAllFaqs(!showAllFaqs)}
-              className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 w-fit cursor-pointer"
-              style={{ borderRadius: '6px' }}
-            >
-              <span>{showAllFaqs ? 'Show Less FAQs' : 'View All FAQs'}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#FF5500]" />
-            </button>
+          <div className="mb-8 sm:mb-10">
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-[#FF5500]">
+              FREQUENTLY ASKED QUESTIONS
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mt-1.5">
+              Got Questions? We've Got Answers.
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            {displayedFaqs.map((faq) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-2">
+            {FAQS_DATA.map((faq) => {
               const isOpen = openFaqId === faq.id;
               return (
                 <div
                   key={faq.id}
-                  className={`border transition-all duration-200 bg-white ${
-                    isOpen ? 'border-orange-400 shadow-sm bg-orange-50/10' : 'border-slate-200 hover:border-slate-300 shadow-2xs'
-                  }`}
-                  style={{ borderRadius: '8px' }}
+                  className="border-b border-slate-200 bg-transparent transition-colors py-1"
                 >
                   <button
                     type="button"
                     onClick={() => toggleFaq(faq.id)}
-                    className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left cursor-pointer"
+                    className="w-full py-3.5 flex items-center justify-between gap-3 text-left cursor-pointer group"
                   >
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                    <h3 className={`text-xs sm:text-sm font-bold leading-snug transition-colors ${
+                      isOpen ? 'text-[#FF5500]' : 'text-slate-900 group-hover:text-[#FF5500]'
+                    }`}>
                       {faq.question}
                     </h3>
                     <ChevronDown
@@ -703,7 +401,7 @@ export default function HowItWorksView({
                   </button>
 
                   {isOpen && (
-                    <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 text-xs sm:text-[13px] text-slate-600 leading-relaxed border-t border-slate-100 mt-1 pt-3">
+                    <div className="pb-3.5 pt-0 text-xs sm:text-[13px] text-slate-600 leading-relaxed">
                       {faq.answer}
                     </div>
                   )}

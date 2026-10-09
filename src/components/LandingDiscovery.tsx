@@ -874,8 +874,9 @@ export default function LandingDiscovery({
 
       {/* ==========================================
           SECTION 3 — State → Story → Places → Experiences (Editorial Storytelling)
+          (Hidden as requested - preserved in codebase)
           ========================================== */}
-      {displayStories.length > 0 && (
+      {false && displayStories.length > 0 && (
         <>
           {/* Schema.org JSON-LD Structured Data for Google Indexing */}
           <script

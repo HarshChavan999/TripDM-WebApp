@@ -575,50 +575,50 @@ export default function DestinationAgentsSearchView({
   };
 
   return (
-    <div className="w-full bg-[#f8fafc] text-slate-900 min-h-screen">
+    <div className="w-full bg-white text-slate-900 min-h-screen">
       {/* ─── 1. TOP SEARCH STRIP (Centered in Middle with Proper Vertical Spacing) ─── */}
-      <div className="bg-white border-b border-slate-200/90 py-4 sm:py-5 shadow-2xs sticky top-15 md:top-16 z-30">
-        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="bg-white border-b border-slate-100 py-3 sm:py-3.5 shadow-2xs">
+        <div className="w-full max-w-3xl mx-auto px-4 sm:px-6">
           {/* Centered Search Bar Form */}
           <form
             onSubmit={handleSearchFormSubmit}
-            className="flex flex-col md:flex-row items-stretch md:items-center gap-2 bg-white border border-slate-200/90 p-1.5 shadow-xs"
+            className="flex flex-col md:flex-row items-stretch md:items-center gap-1.5 bg-white border border-slate-200/90 p-1 sm:p-1.5 shadow-xs"
             style={{ borderRadius: '6px' }}
           >
             {/* Field 1: Destination Search Input with Autocorrect */}
-            <div className="flex-1 flex items-center px-3 py-1.5 min-w-0">
-              <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2.5" />
+            <div className="flex-1 flex items-center px-2.5 py-1 min-w-0">
+              <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
               <input
                 type="text"
                 value={currentSearch}
                 onChange={(e) => setCurrentSearch(e.target.value)}
                 placeholder="Search destination (e.g. Mumbai, Rajasthan, Kashmir)..."
-                className="w-full bg-transparent text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
             </div>
 
-            <div className="h-5 w-px bg-slate-200 hidden md:block" />
+            <div className="h-4 w-px bg-slate-200 hidden md:block" />
 
             {/* Field 2: Dates Dropdown */}
-            <div className="flex items-center px-3 py-1.5 gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer">
-              <Calendar className="h-4 w-4 text-slate-400" />
+            <div className="flex items-center px-2.5 py-1 gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <span>{selectedDates}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+              <ChevronDown className="h-3 w-3 text-slate-400" />
             </div>
 
-            <div className="h-5 w-px bg-slate-200 hidden md:block" />
+            <div className="h-4 w-px bg-slate-200 hidden md:block" />
 
             {/* Field 3: Travelers Dropdown */}
-            <div className="flex items-center px-3 py-1.5 gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer">
-              <Users className="h-4 w-4 text-slate-400" />
+            <div className="flex items-center px-2.5 py-1 gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer">
+              <Users className="h-3.5 w-3.5 text-slate-400" />
               <span>{selectedTravelers}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+              <ChevronDown className="h-3 w-3 text-slate-400" />
             </div>
 
             {/* Submit Search Button */}
             <button
               type="submit"
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold px-7 py-2.5 text-xs sm:text-sm shadow-md shadow-amber-500/25 transition-all cursor-pointer shrink-0 border border-amber-400/50"
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold px-5 py-2 text-xs sm:text-[13px] shadow-xs transition-all cursor-pointer shrink-0 border border-amber-400/50"
               style={{ borderRadius: '6px' }}
             >
               Search
@@ -631,14 +631,13 @@ export default function DestinationAgentsSearchView({
       <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* ══════════════════════════════════════════════════════════════════
-              LEFT SIDEBAR: FILTERS (Single Page View - Compact & Sticky)
+              LEFT SIDEBAR: FILTERS (Direct on Page - No Container Box)
              ══════════════════════════════════════════════════════════════════ */}
           <aside
-            className="lg:col-span-3 xl:col-span-2 bg-white p-3 border border-slate-200 shadow-2xs lg:sticky lg:top-20 space-y-2"
-            style={{ borderRadius: '8px' }}
+            className="lg:col-span-3 xl:col-span-2 bg-transparent p-0 lg:sticky lg:top-20 space-y-2 max-h-[calc(100vh-6.5rem)] overflow-y-auto scrollbar-hide border-none shadow-none"
           >
             {/* Header: Filters + Reset */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
               <div className="flex items-center gap-1.5">
                 <SlidersHorizontal className="h-3.5 w-3.5 text-slate-700" />
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">Filters</h3>
@@ -817,7 +816,7 @@ export default function DestinationAgentsSearchView({
              ══════════════════════════════════════════════════════════════════ */}
           <main className="lg:col-span-6 xl:col-span-7 space-y-4">
             {/* Header: Title + Autocorrect notification + Agent Count + Sort Dropdown */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-1 pt-0.5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-200">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {formattedDestName} Travel Agents
@@ -845,16 +844,19 @@ export default function DestinationAgentsSearchView({
               {/* Sort By Dropdown */}
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs font-semibold text-slate-500">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none cursor-pointer shadow-xs hover:border-slate-300"
-                  style={{ borderRadius: '6px' }}
-                >
-                  <option value="recommended">Recommended</option>
-                  <option value="rating">Highest Rated</option>
-                  <option value="packages">Most Packages</option>
-                </select>
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-white border border-slate-200 pl-3 pr-8 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer shadow-xs hover:border-slate-300 transition-colors"
+                    style={{ borderRadius: '6px' }}
+                  >
+                    <option value="recommended">Recommended</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="packages">Most Packages</option>
+                  </select>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                </div>
               </div>
             </div>
 
@@ -966,12 +968,11 @@ export default function DestinationAgentsSearchView({
                 return (
                   <div
                     key={agency.id}
-                    className="bg-white shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col md:flex-row p-4 sm:p-5 gap-5 items-stretch border border-slate-200"
-                    style={{ borderRadius: '8px' }}
+                    className="relative group flex flex-col md:flex-row pb-6 sm:pb-7 gap-5 sm:gap-6 items-stretch border-b border-slate-200 last:border-b-0 last:pb-0"
                   >
                     {/* Left: Real Package Photo for this agency OR Clean Verified Agency Badge */}
                     <div
-                      className="relative w-full md:w-64 xl:w-72 h-52 sm:h-56 md:h-[220px] max-h-[220px] overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-slate-100"
+                      className="relative w-full md:w-64 xl:w-72 h-52 sm:h-56 md:h-[220px] max-h-[220px] overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-slate-100 shadow-2xs"
                       style={{ borderRadius: '6px' }}
                     >
                       {hasImages && currentImg ? (
@@ -1319,12 +1320,9 @@ export default function DestinationAgentsSearchView({
           {/* ══════════════════════════════════════════════════════════════════
               RIGHT SIDEBAR: MAP & TOP DESTINATIONS (Single Page View - Compact & Sticky)
              ══════════════════════════════════════════════════════════════════ */}
-          <aside className="lg:col-span-3 space-y-3 lg:sticky lg:top-20">
+          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20 max-h-[calc(100vh-6.5rem)] overflow-y-auto scrollbar-hide border-none shadow-none">
             {/* 1. REAL MAP WIDGET */}
-            <div
-              className="bg-white p-3 border border-slate-200 shadow-2xs"
-              style={{ borderRadius: '8px' }}
-            >
+            <div className="bg-transparent p-0">
               {/* Map Title & Toggle */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
@@ -1364,12 +1362,9 @@ export default function DestinationAgentsSearchView({
               )}
             </div>
 
-            {/* 2. TOP DESTINATIONS BY AGENTS WIDGET (Top 3 Compact) */}
+            {/* 2. TOP DESTINATIONS BY AGENTS WIDGET (Direct on page with clean separator) */}
             {topDestinationsByAgents.length > 0 && (
-              <div
-                className="bg-white p-3 border border-slate-200 shadow-2xs"
-                style={{ borderRadius: '8px' }}
-              >
+              <div className="bg-transparent p-0 pt-3 border-t border-slate-200">
                 <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
                   Top Destinations by Agents
                 </h3>
@@ -1424,11 +1419,8 @@ export default function DestinationAgentsSearchView({
               </div>
             )}
 
-            {/* 3. WHY BOOK ON TRIPDM? */}
-            <div
-              className="bg-white p-3 border border-slate-200 shadow-2xs"
-              style={{ borderRadius: '8px' }}
-            >
+            {/* 3. WHY BOOK ON TRIPDM? (Direct on page with clean separator) */}
+            <div className="bg-transparent p-0 pt-3 border-t border-slate-200">
               <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
                 Why Book on TripDM?
               </h3>
