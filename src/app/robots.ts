@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin/', '/blogtripdm/', '/agencytripdm/', '/api/'], // Disallowing admin, blog admin, agency portal, and api routes from being indexed
+      disallow: ['/admin/', '/blogtripdm/', '/agencytripdm/', '/api/', '/_next/'], // Disallowing admin, internal portals, api and static build assets
     },
     sitemap: 'https://tripdm.com/sitemap.xml',
   };
