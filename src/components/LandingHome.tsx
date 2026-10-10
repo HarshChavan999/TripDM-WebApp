@@ -377,35 +377,41 @@ export default function LandingHome({
           </div>
         </div>
 
-        {/* ─── 2. 4 VALUE PROPOSITIONS (DIRECT ON PAGE - NO CONTAINER) ─── */}
-        <div className="relative z-10 w-full mt-3 sm:mt-4">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-300/60">
+        {/* ─── 2. 4 VALUE PROPOSITIONS (FROSTED GLASS CONTAINER) ─── */}
+        <div className="relative z-10 w-full mt-3.5 sm:mt-5 px-3 sm:px-6">
+          <div className="max-w-4xl mx-auto bg-white/92 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 border border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               {/* Item 1 */}
-              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
-                <Users className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent">
+                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
+                  <Users className="h-4 w-4" />
+                </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Multiple Travel Agents
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
-                  Get options from many verified agents
+                  Get options from verified agents
                 </p>
               </div>
 
               {/* Item 2 */}
-              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
-                <MessageSquare className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent sm:border-l sm:border-slate-200/60">
+                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
+                  <MessageSquare className="h-4 w-4" />
+                </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Chat Directly
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
-                  Discuss, negotiate and customize
+                  Discuss, negotiate & customize
                 </p>
               </div>
 
               {/* Item 3 */}
-              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
-                <IndianRupee className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent sm:border-l sm:border-slate-200/60">
+                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
+                  <IndianRupee className="h-4 w-4" />
+                </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   No Commission
                 </h3>
@@ -415,13 +421,15 @@ export default function LandingHome({
               </div>
 
               {/* Item 4 */}
-              <div className="flex flex-col items-center text-center px-2 py-1.5 sm:py-0">
-                <ShieldCheck className="h-5 w-5 text-[#FF5500] mb-1 shrink-0 drop-shadow-xs" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent sm:border-l sm:border-slate-200/60">
+                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Verified Agents
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
-                  Safe, reliable and trusted
+                  Safe, reliable & trusted
                 </p>
               </div>
             </div>
