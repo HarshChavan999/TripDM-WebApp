@@ -337,7 +337,8 @@ export default function LandingDiscovery({
           </p>
           <button
             onClick={() => setPackageTypeTab(packageTypeTab === 'international' ? 'domestic' : 'all')}
-            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-full shadow-sm transition-all cursor-pointer"
+            className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+            style={{ borderRadius: '6px' }}
           >
             Explore {packageTypeTab === 'international' ? 'Domestic Packages' : 'All Packages'}
           </button>
@@ -769,14 +770,16 @@ export default function LandingDiscovery({
               {/* Floating Side Arrows for Desktop */}
               <button
                 onClick={() => scrollRail('rail-experiences', 'left')}
-                className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ borderRadius: '6px' }}
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => scrollRail('rail-experiences', 'right')}
-                className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ borderRadius: '6px' }}
                 aria-label="Scroll right"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -871,8 +874,9 @@ export default function LandingDiscovery({
 
       {/* ==========================================
           SECTION 3 — State → Story → Places → Experiences (Editorial Storytelling)
+          (Hidden as requested - preserved in codebase)
           ========================================== */}
-      {displayStories.length > 0 && (
+      {false && displayStories.length > 0 && (
         <>
           {/* Schema.org JSON-LD Structured Data for Google Indexing */}
           <script
@@ -921,14 +925,16 @@ export default function LandingDiscovery({
               {/* Floating Side Arrows for Desktop */}
               <button
                 onClick={() => scrollRail('rail-destination-stories', 'left')}
-                className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ borderRadius: '6px' }}
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => scrollRail('rail-destination-stories', 'right')}
-                className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-110 active:scale-95 cursor-pointer"
+                className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 bg-white shadow-md border border-slate-200 text-slate-700 hover:bg-orange-500 hover:text-white items-center justify-center transition-all opacity-0 group-hover/rail:opacity-100 hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ borderRadius: '6px' }}
                 aria-label="Scroll right"
               >
                 <ChevronRight className="w-5 h-5" />

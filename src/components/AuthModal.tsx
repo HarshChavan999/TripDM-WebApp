@@ -114,12 +114,14 @@ export default function AuthModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative flex w-full max-w-3xl h-[580px] max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl bg-white"
+        className="relative flex w-full max-w-3xl h-[580px] max-h-[90vh] overflow-hidden shadow-2xl bg-white border border-slate-200"
+        style={{ borderRadius: '6px' }}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white text-gray-600 hover:text-gray-900 transition-all shadow-md cursor-pointer"
+          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white text-gray-600 hover:text-gray-900 transition-all shadow-xs cursor-pointer border border-slate-200"
+          style={{ borderRadius: '6px' }}
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -140,7 +142,6 @@ export default function AuthModal({
             <h2 className="text-white text-2xl font-bold leading-tight mb-2">
               Your Adventure Starts Here
             </h2>
-            
           </div>
         </div>
 
@@ -177,7 +178,10 @@ export default function AuthModal({
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Log into Your Account</h3>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5 rounded-lg">
+                  <div 
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5"
+                    style={{ borderRadius: '6px' }}
+                  >
                     {error}
                   </div>
                 )}
@@ -188,7 +192,8 @@ export default function AuthModal({
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                    className="w-full border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                    style={{ borderRadius: '6px' }}
                     required
                   />
                 </div>
@@ -199,7 +204,8 @@ export default function AuthModal({
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                    className="w-full border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                    style={{ borderRadius: '6px' }}
                     required
                   />
                 </div>
@@ -216,7 +222,8 @@ export default function AuthModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
+                  className="w-full bg-[#FF5500] hover:bg-[#E04B00] active:scale-[0.99] text-white font-bold py-3.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+                  style={{ borderRadius: '6px' }}
                 >
                   {loading ? 'Please wait...' : 'Login & Continue'}
                 </button>
@@ -226,13 +233,19 @@ export default function AuthModal({
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={loading}
-                  className="w-full flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-50 transition-all disabled:opacity-60"
+                  className="w-full flex items-center justify-between border border-gray-200 px-4 py-3 hover:bg-gray-50 transition-all disabled:opacity-60 cursor-pointer"
+                  style={{ borderRadius: '6px' }}
                 >
                   <div className="flex items-center gap-3">
                     {googleUser?.photoURL ? (
-                      <img src={googleUser.photoURL} alt="" className="w-7 h-7 rounded-full" />
+                      <img src={googleUser.photoURL} alt="" className="w-6 h-6 rounded-full object-cover" />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">G</div>
+                      <div 
+                        className="w-6 h-6 bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500"
+                        style={{ borderRadius: '4px' }}
+                      >
+                        G
+                      </div>
                     )}
                     <span className="text-sm font-semibold text-gray-700">
                       {googleUser?.displayName ? `Sign in as ${googleUser.displayName}` : 'Sign in with Google'}
@@ -249,7 +262,6 @@ export default function AuthModal({
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                 </button>
-                
               </form>
             )}
 
@@ -259,7 +271,10 @@ export default function AuthModal({
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Create Your Account</h3>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5 rounded-lg">
+                  <div 
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5"
+                    style={{ borderRadius: '6px' }}
+                  >
                     {error}
                   </div>
                 )}
@@ -269,7 +284,8 @@ export default function AuthModal({
                   placeholder="Full Name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  className="w-full border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  style={{ borderRadius: '6px' }}
                   required
                 />
 
@@ -278,7 +294,8 @@ export default function AuthModal({
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  className="w-full border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  style={{ borderRadius: '6px' }}
                   required
                 />
 
@@ -288,7 +305,8 @@ export default function AuthModal({
                     <button
                       type="button"
                       onClick={() => setShowCountryCodes(!showCountryCodes)}
-                      className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all whitespace-nowrap focus:outline-none focus:border-orange-400"
+                      className="flex items-center gap-1 border border-gray-200 px-3 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all whitespace-nowrap focus:outline-none focus:border-orange-400 cursor-pointer"
+                      style={{ borderRadius: '6px' }}
                     >
                       {countryCode}
                       <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,13 +314,16 @@ export default function AuthModal({
                       </svg>
                     </button>
                     {showCountryCodes && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-48 overflow-y-auto">
+                      <div 
+                        className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 shadow-xl z-50 py-1 max-h-48 overflow-y-auto"
+                        style={{ borderRadius: '6px' }}
+                      >
                         {COUNTRY_CODES.map((c) => (
                           <button
                             key={c.code}
                             type="button"
                             onClick={() => { setCountryCode(c.code); setShowCountryCodes(false); }}
-                            className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-orange-50 text-sm transition-colors"
+                            className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-orange-50 text-sm transition-colors cursor-pointer"
                           >
                             <span>{c.flag}</span>
                             <span className="font-medium">{c.code}</span>
@@ -317,7 +338,8 @@ export default function AuthModal({
                     placeholder="Phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                    className="flex-1 border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                    style={{ borderRadius: '6px' }}
                   />
                 </div>
 
@@ -326,7 +348,8 @@ export default function AuthModal({
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  className="w-full border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  style={{ borderRadius: '6px' }}
                   required
                 />
 
@@ -335,7 +358,8 @@ export default function AuthModal({
                   placeholder="Confirm Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  className="w-full border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200 transition-all"
+                  style={{ borderRadius: '6px' }}
                   required
                 />
 
@@ -349,7 +373,8 @@ export default function AuthModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
+                  className="w-full bg-[#FF5500] hover:bg-[#E04B00] active:scale-[0.99] text-white font-bold py-3.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+                  style={{ borderRadius: '6px' }}
                 >
                   {loading ? 'Creating account...' : 'Sign Up'}
                 </button>
@@ -359,7 +384,7 @@ export default function AuthModal({
                   <button
                     type="button"
                     onClick={() => handleTabChange('login')}
-                    className="font-bold text-gray-800 hover:text-orange-500 transition-colors"
+                    className="font-bold text-gray-800 hover:text-orange-500 transition-colors cursor-pointer"
                   >
                     Log In
                   </button>

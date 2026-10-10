@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, User, Menu, X, Heart, Scale, MessageSquare, Palmtree, ChevronRight, LogOut, FileText, Briefcase, Shield, Building2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, User, Menu, X, Heart, Scale, MessageSquare, Palmtree, ChevronRight, LogOut, FileText, Briefcase, Shield, Building2, Sparkles, MapPin } from 'lucide-react';
 import PackageDetailView from '@/components/PackageDetailView';
 import AuthModal from '@/components/AuthModal';
 import { useState, useEffect } from 'react';
@@ -268,20 +269,63 @@ export default function PackageClientView({ listing }: { listing: any }) {
             <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1 sidebar-scroll">
               <p className="text-[10px] uppercase font-bold text-slate-400 px-3 pt-1 pb-1 tracking-wider">Navigation</p>
 
-              {/* Explore Packages */}
+              {/* Destinations */}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/');
+                  router.push('/?section=destinations');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <Palmtree className="h-4 w-4 text-orange-500" />
-                  <span>Explore All Packages</span>
+                  <MapPin className="h-4 w-4 text-orange-500" />
+                  <span>Destinations</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300" />
               </button>
+
+              {/* Travel Agents */}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  router.push('/?section=agents');
+                }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <Building2 className="h-4 w-4 text-blue-500" />
+                  <span>Travel Agents</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300" />
+              </button>
+
+              {/* How It Works */}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  router.push('/?section=how-it-works');
+                }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <span>How It Works</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300" />
+              </button>
+
+              {/* Travel Stories */}
+              <a
+                href="/blog"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="h-4 w-4 text-purple-500" />
+                  <span>Travel Stories</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300" />
+              </a>
 
               {/* Compare Packages */}
               <button
@@ -295,7 +339,14 @@ export default function PackageClientView({ listing }: { listing: any }) {
                   <Scale className="h-4 w-4 text-blue-500" />
                   <span>Compare Packages</span>
                 </div>
-                <ChevronRight className="h-4 w-4 text-slate-300" />
+                <div className="flex items-center gap-2">
+                  {comparisonList.length > 0 && (
+                    <span className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {comparisonList.length}
+                    </span>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                </div>
               </button>
 
               {/* Wishlist */}
@@ -324,24 +375,26 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 </div>
               </button>
 
-              {/* Messages */}
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  if (!user) {
-                    setShowAuthModal(true);
-                  } else {
-                    router.push('/?section=chat');
-                  }
-                }}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-4 w-4 text-emerald-500" />
-                  <span>Messages & Enquiries</span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-300" />
-              </button>
+              {/* Messages (Only for non-agency users / travelers) */}
+              {(!userData || userData.role !== 'agency') && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (!user) {
+                      setShowAuthModal(true);
+                    } else {
+                      router.push('/?section=chat');
+                    }
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="h-4 w-4 text-emerald-500" />
+                    <span>Messages & Enquiries</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                </button>
+              )}
 
               {/* Profile */}
               <button
@@ -374,18 +427,20 @@ export default function PackageClientView({ listing }: { listing: any }) {
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-300" />
                 </a>
-                {userData?.role === 'agency' && (
-                  <a
-                    href="/agencytripdm"
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Briefcase className="h-4 w-4 text-slate-500" />
-                      <span>For Travel Agencies</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-slate-300" />
-                  </a>
-                )}
+                <Link
+                  href="/agencytripdm"
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    userData?.role === 'agency'
+                      ? 'bg-orange-50 text-orange-600 font-bold border border-orange-200'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="h-4 w-4 text-orange-500" />
+                    <span>{userData?.role === 'agency' ? 'Agency Portal Dashboard' : 'For Travel Agencies'}</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                </Link>
                 <a
                   href="/policies/conditions-of-use"
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
@@ -420,34 +475,89 @@ export default function PackageClientView({ listing }: { listing: any }) {
       {/* Top Header */}
       <header className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
         {/* Desktop Header Layout */}
-        <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-6 px-4 h-16 w-full">
+        <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-8 px-4 sm:px-6 h-16 md:h-[70px] w-full">
           {/* Logo */}
           <div
-            className="flex items-center gap-1 sm:gap-2 font-extrabold tracking-tight cursor-pointer shrink-0"
+            className="flex items-center cursor-pointer shrink-0 py-1"
             onClick={() => router.push('/')}
           >
-            <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-16 md:h-20 w-auto object-contain py-1" />
+            <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-12 sm:h-[54px] md:h-[60px] w-auto object-contain" />
           </div>
 
-          {/* Right: Agency Portal / Profile / Login */}
-          <div className="flex items-center gap-4 lg:gap-6 shrink-0">
+          {/* Center Navigation Links */}
+          <nav className="flex items-center gap-5 lg:gap-8 shrink-0">
+            <button
+              type="button"
+              onClick={() => router.push('/?section=destinations')}
+              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+            >
+              Destinations
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push('/?section=agents')}
+              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+            >
+              Travel Agents
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push('/?section=how-it-works')}
+              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+            >
+              How It Works
+            </button>
+
+            <a
+              href="/blog"
+              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+            >
+              Travel Stories
+            </a>
+          </nav>
+
+          {/* Right Action Icons & Profile / Login */}
+          <div className="flex items-center gap-4 lg:gap-5 shrink-0">
+            {/* Messages (Only for non-agency users / travelers) */}
+            {(!userData || userData.role !== 'agency') && (
+              <button
+                type="button"
+                className="cursor-pointer text-slate-700 hover:text-slate-950 relative p-1.5 transition-colors"
+                style={{ borderRadius: '6px' }}
+                onClick={() => {
+                  if (!user) {
+                    setShowAuthModal(true);
+                    return;
+                  }
+                  router.push('/?section=chat');
+                }}
+                aria-label="Messages"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Profile / Sign In */}
             {user && userData ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 ml-1 border-l border-gray-200 pl-4">
                 {/* ONLY VISIBLE TO LOGGED-IN AGENCIES */}
                 {userData.role === 'agency' && (
-                  <a
+                  <Link
                     href="/agencytripdm"
-                    className="cursor-pointer text-[15px] font-medium flex items-center gap-1.5 text-slate-800 shrink-0 hover:text-orange-600 transition-colors"
+                    className="cursor-pointer text-[14px] font-semibold flex items-center gap-1.5 text-slate-800 hover:text-slate-950 shrink-0"
                     title="Go to Agency Portal"
                   >
                     <Building2 className="h-4 w-4 text-slate-600" />
                     <span>Agency Portal</span>
-                  </a>
+                  </Link>
                 )}
                 {userData.role === 'admin' && (
                   <a
                     href="/admin"
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
+                    style={{ borderRadius: '6px' }}
                     title="Go to Admin Dashboard"
                   >
                     <Shield className="h-3.5 w-3.5" />
@@ -456,7 +566,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 )}
 
                 <div
-                  className="flex items-center gap-2 cursor-pointer text-[15px] font-medium text-slate-800"
+                  className="flex items-center gap-2 cursor-pointer text-[14px] font-semibold text-slate-800"
                   onClick={() => router.push('/?section=profile')}
                 >
                   {userAvatar ? (
@@ -467,8 +577,8 @@ export default function PackageClientView({ listing }: { listing: any }) {
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
-                    <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-slate-600 border border-gray-200">
-                      <User className="h-4 w-4" />
+                    <div className="w-7 h-7 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center border border-slate-200">
+                      <User className="w-4 h-4 text-slate-600" />
                     </div>
                   )}
                   <span>
@@ -477,19 +587,34 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 </div>
                 
                 <span
-                  className="text-[13px] text-slate-600 hover:text-rose-600 cursor-pointer transition-colors border-l border-gray-200 pl-3"
-                  onClick={() => signOut?.()}
+                  className="text-[13px] text-slate-600 hover:text-rose-600 cursor-pointer transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    signOut?.();
+                  }}
                 >
                   Sign Out
                 </span>
               </div>
             ) : (
-              <span
-                onClick={() => setShowAuthModal(true)}
-                className="cursor-pointer text-[15px] font-medium text-slate-800 flex items-center gap-1.5 hover:text-orange-600 transition-colors"
-              >
-                <User className="h-4 w-4 text-slate-600" /> Login
-              </span>
+              <div className="flex items-center gap-3 ml-1 border-l border-gray-200 pl-4">
+                <Link
+                  href="/agencytripdm"
+                  className="cursor-pointer text-[14px] font-semibold flex items-center gap-1.5 text-slate-800 hover:text-slate-950 shrink-0"
+                  title="Go to Agency Portal"
+                >
+                  <Building2 className="h-4 w-4 text-slate-600" />
+                  <span>Agency Portal</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="cursor-pointer text-[15px] font-semibold text-slate-800 flex items-center gap-1.5 ml-1 select-none hover:text-[#FF5500] transition-colors"
+                >
+                  <User className="h-4 w-4 text-slate-700" />
+                  <span>Login</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -510,31 +635,85 @@ export default function PackageClientView({ listing }: { listing: any }) {
               className="cursor-pointer flex items-center"
               onClick={() => router.push('/')}
             >
-              <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 sm:h-12 w-auto object-contain py-1" />
+              <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-11 sm:h-[50px] w-auto object-contain py-0.5" />
             </div>
           </div>
 
-          {/* Right: Profile / Login */}
-          <div className="flex items-center gap-2">
-            {user && userData ? (
+          {/* Right: Quick Action Icons */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Compare Icon with Badge */}
+            <button
+              onClick={() => router.push('/?section=compare')}
+              className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors relative"
+              aria-label="Compare packages"
+            >
+              <Scale className="h-5 w-5" />
+              {comparisonList.length > 0 && (
+                <span className="absolute top-1 right-1 bg-slate-900 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+                  {comparisonList.length}
+                </span>
+              )}
+            </button>
+
+            {/* Messages Icon (Only for non-agency users / travelers) */}
+            {(!userData || userData.role !== 'agency') && (
               <button
-                onClick={() => router.push('/?section=profile')}
-                className="p-1 rounded-full hover:ring-2 hover:ring-orange-500/20 transition-all"
-                aria-label="User Profile"
+                onClick={() => {
+                  if (!user) {
+                    setShowAuthModal(true);
+                    return;
+                  }
+                  router.push('/?section=chat');
+                }}
+                className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                aria-label="View messages"
               >
-                {userAvatar ? (
-                  <img
-                    src={userAvatar}
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-orange-500/20 shadow-xs"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-xs border border-orange-200 shadow-xs">
-                    {userInitial}
-                  </div>
-                )}
+                <MessageSquare className="h-5 w-5" />
               </button>
+            )}
+
+            {/* Profile / Login Avatar */}
+            {user && userData ? (
+              <div className="flex items-center gap-1.5">
+                {userData.role === 'agency' && (
+                  <Link
+                    href="/agencytripdm"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 transition-all shrink-0"
+                    title="Go to Agency Portal"
+                  >
+                    <Building2 className="h-3.5 w-3.5 text-gray-600" />
+                    <span>Portal</span>
+                  </Link>
+                )}
+                {userData.role === 'admin' && (
+                  <a
+                    href="/admin"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
+                    title="Go to Admin Dashboard"
+                  >
+                    <Shield className="h-3 w-3" />
+                    <span>Admin</span>
+                  </a>
+                )}
+                <button
+                  onClick={() => router.push('/?section=profile')}
+                  className="p-1 rounded-full hover:ring-2 hover:ring-orange-500/20 transition-all"
+                  aria-label="User Profile"
+                >
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center border border-slate-200">
+                      <User className="w-4 h-4 text-slate-600" />
+                    </div>
+                  )}
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}

@@ -61,7 +61,18 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('tripdm_auth_userdata');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -93,23 +104,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           docUnsubscribe = onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
-              setUserData(docSnap.data() as UserData);
+              const data = docSnap.data() as UserData;
+              setUserData(data);
+              try {
+                sessionStorage.setItem('tripdm_auth_userdata', JSON.stringify(data));
+              } catch {}
               // Update online status immediately on login
               updateDoc(docRef, { isOnline: true }).catch(() => {});
             } else {
               setUserData(null);
+              try {
+                sessionStorage.removeItem('tripdm_auth_userdata');
+              } catch {}
             }
+            setLoading(false);
           }, (error) => {
             // Silently handle listener lifecycle changes during signout/unapproved status
             console.warn('User document listener note:', error?.message || error);
+            setLoading(false);
           });
+        } else {
+          setLoading(false);
         }
       } else {
         setUser(null);
         setUserData(null);
-        try { localStorage.removeItem('tripdm_auth_uid'); } catch {}
+        try {
+          sessionStorage.removeItem('tripdm_auth_userdata');
+        } catch {}
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     const unsubscribe = onAuthStateChanged(authInstance, handleAuthStateChange);
@@ -385,11 +409,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch {}
         }
       }
-      // Clear cached agency chat data
+      // Clear cached agency chat & auth data
       try {
         sessionStorage.removeItem('agency_conversations');
         sessionStorage.removeItem('agency_chat_messages');
         sessionStorage.removeItem('agency_selected_conversation');
+        sessionStorage.removeItem('tripdm_auth_userdata');
       } catch {}
       const authInstance = getAuthInstance();
       if (authInstance) {

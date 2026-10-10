@@ -53,7 +53,10 @@ export default function AdminLoginView() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-2xl sm:px-10 border border-gray-100">
+        <div 
+          className="bg-white py-8 px-4 shadow sm:px-10 border border-gray-100"
+          style={{ borderRadius: '6px' }}
+        >
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900">Login</h2>
             <p className="text-sm text-gray-500 mt-1">Sign in to your admin account</p>
@@ -61,7 +64,10 @@ export default function AdminLoginView() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg border border-red-100">
+              <div 
+                className="p-3 text-sm text-red-500 bg-red-50 border border-red-100"
+                style={{ borderRadius: '6px' }}
+              >
                 {error}
               </div>
             )}
@@ -72,7 +78,8 @@ export default function AdminLoginView() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                style={{ borderRadius: '6px' }}
                 required
               />
             </div>
@@ -83,7 +90,8 @@ export default function AdminLoginView() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                style={{ borderRadius: '6px' }}
                 required
               />
             </div>
@@ -92,16 +100,23 @@ export default function AdminLoginView() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full mt-4 flex items-center justify-center gap-2 border border-gray-200 rounded-lg px-4 py-2.5 hover:bg-gray-50 transition-all font-medium text-gray-700 text-sm"
+              className="w-full mt-4 flex items-center justify-center gap-2 border border-gray-200 px-4 py-2.5 hover:bg-gray-50 transition-all font-medium text-gray-700 text-sm cursor-pointer"
+              style={{ borderRadius: '6px' }}
             >
-              <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500">G</div>
+              <div 
+                className="w-5 h-5 bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500"
+                style={{ borderRadius: '4px' }}
+              >
+                G
+              </div>
               Sign in with Google
             </button>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#0B0F19] hover:bg-gray-800 text-white font-bold py-3 rounded-lg mt-4 transition-all disabled:opacity-60 text-sm"
+              className="w-full bg-[#0B0F19] hover:bg-gray-800 text-white font-bold py-3 mt-4 transition-all disabled:opacity-60 text-sm cursor-pointer shadow-xs"
+              style={{ borderRadius: '6px' }}
             >
               {loading ? 'Please wait...' : 'Sign In'}
             </button>

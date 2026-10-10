@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import BlogViewTracker from '@/components/BlogViewTracker';
 import BlogShareBar from '@/components/BlogShareBar';
@@ -307,14 +307,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const title = blog.metaTitle || blog.title;
   const description = blog.metaDescription || blog.excerpt;
   const image = getBlogCoverImage(blog);
+  const canonicalSlug = (blog.slug || slug).trim();
   return {
     title: `${title} | TripDM Travel Field Report`,
     description,
     keywords: [...(blog.tags || []), 'travel', 'TripDM', blog.category].filter(Boolean),
     authors: [{ name: blog.author }],
-    openGraph: { title, description, type: 'article', url: `https://tripdm.com/blog/${slug}`, images: image ? [{ url: image, width: 1200, height: 630, alt: title }] : [], publishedTime: blog.publishedAt, modifiedTime: blog.updatedAt, authors: [blog.author], tags: blog.tags, section: blog.category },
+    openGraph: { title, description, type: 'article', url: `https://tripdm.com/blog/${canonicalSlug}`, images: image ? [{ url: image, width: 1200, height: 630, alt: title }] : [], publishedTime: blog.publishedAt, modifiedTime: blog.updatedAt, authors: [blog.author], tags: blog.tags, section: blog.category },
     twitter: { card: 'summary_large_image', title, description, images: image ? [image] : [] },
-    alternates: { canonical: `https://tripdm.com/blog/${slug}` },
+    alternates: { canonical: `https://tripdm.com/blog/${canonicalSlug}` },
   };
 }
 
@@ -894,6 +895,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const blog = await getBlogBySlug(slug);
   if (!blog || !blog.published) notFound();
+
+  // If accessed by Firestore doc ID or an un-normalized slug, permanently redirect to canonical slug URL
+  if (blog.slug && slug !== blog.slug && slug !== encodeURIComponent(blog.slug)) {
+    permanentRedirect(`/blog/${blog.slug}`);
+  }
 
   const recommendedBlogs = await getRecommendedBlogs(blog);
   const contentHtml = renderContent(blog.content);
