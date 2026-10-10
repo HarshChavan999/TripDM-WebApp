@@ -80,7 +80,7 @@ export async function sendWebPushNotification(options: SendPushNotificationOptio
     },
     webpush: {
       headers: {
-        Urgency: 'high',
+        Urgency: 'normal',
         TTL: '86400' // 24 hours retention
       },
       notification: {
@@ -88,8 +88,7 @@ export async function sendWebPushNotification(options: SendPushNotificationOptio
         body,
         icon,
         badge: icon,
-        requireInteraction: true,
-        vibrate: [200, 100, 200],
+        requireInteraction: false,
         actions: [
           {
             action: 'open',
