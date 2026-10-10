@@ -45,6 +45,10 @@ export async function getUserFcmTokens(db: admin.firestore.Firestore, userId: st
         }
       }
     }
+  } catch (e) {
+    console.warn(`[FCM Server] users doc lookup note for ${userId}:`, e);
+  }
+
   try {
     // 3. Check fcm_tokens/{userId} (written by Android clients and direct registrations)
     const fcmTokenDoc = await db.collection('fcm_tokens').doc(userId).get();

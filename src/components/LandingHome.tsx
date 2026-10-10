@@ -142,7 +142,7 @@ export default function LandingHome({
   };
 
   return (
-    <div className="w-full bg-white text-slate-900 h-[calc(100vh-4rem)] md:h-[calc(100dvh-4rem)] min-h-[560px] max-h-[calc(100vh-4rem)] flex flex-col justify-between overflow-y-auto lg:overflow-hidden select-none">
+    <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-y-auto lg:overflow-hidden select-none pb-16 lg:pb-0">
       {/* ─── MAIN HERO CONTAINER ────────────────────────────────────────── */}
       <div className="relative w-full flex-1 flex flex-col justify-between pt-5 sm:pt-7 pb-2 px-4 sm:px-6 overflow-hidden">
         {/* Scenic Background Image matching Mockup */}
@@ -446,9 +446,9 @@ export default function LandingHome({
 
             {/* Right Column (3 Steps with Chevrons) */}
             <div className="md:col-span-8">
-              <div className="flex items-center justify-between gap-1 sm:gap-2">
+              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-3 sm:gap-2">
                 {/* Step 1 */}
-                <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
+                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                   <span
                     className="w-5 h-5 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
                     style={{ borderRadius: '4px' }}
@@ -472,7 +472,7 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 2 */}
-                <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
+                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                   <span
                     className="w-5 h-5 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
                     style={{ borderRadius: '4px' }}
@@ -496,7 +496,7 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 3 */}
-                <div className="flex items-start gap-2 sm:gap-2.5 flex-1 min-w-0">
+                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                   <span
                     className="w-5 h-5 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
                     style={{ borderRadius: '4px' }}
