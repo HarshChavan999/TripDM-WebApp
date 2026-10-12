@@ -42,6 +42,7 @@ import AgencyProfileView from '@/components/AgencyProfileView';
 import DestinationAgentsSearchView from '@/components/DestinationAgentsSearchView';
 import NotificationPermissionPrompt from '@/components/NotificationPermissionPrompt';
 import { sendVendorReplyNotification, autoSyncFcmTokenIfGranted, listenToForegroundMessages } from '@/lib/fcmNotifications';
+import { triggerChatEmailNotification } from '@/lib/emailNotifications';
 import { normalizeExperienceName } from '@/lib/discoveryEngine';
 import { resolveDestinationWithAutocorrect } from '@/lib/destinationResolver';
 import { useComparison } from '@/contexts/ComparisonContext';
@@ -760,6 +761,7 @@ export default function HomeClient({
   });
   const selectedConversationRef = useRef<any>(null);
   selectedConversationRef.current = selectedConversation;
+  const targetUserIdParamRef = useRef<string | null>(null);
   const hasManuallyClosedChatRef = useRef(false);
   const [locallyUnlockedAgencyUsers, setLocallyUnlockedAgencyUsers] = useState<string[]>(() => {
     try {
@@ -1076,40 +1078,68 @@ export default function HomeClient({
       const chatAgencyId = urlParams.get('chat') || urlParams.get('agencyId');
       const actionParam = urlParams.get('action');
       const sectionParam = urlParams.get('section');
+      const tabParam = urlParams.get('tab');
+      const targetUserId = urlParams.get('userId') || urlParams.get('customerId');
       const agencyNameParam = urlParams.get('agencyName');
       const bookListingId = urlParams.get('book');
       const wishlistListingId = urlParams.get('wishlist');
       
       let shouldCleanUrl = false;
 
-      if (chatAgencyId || actionParam === 'chat' || sectionParam === 'chat' || sectionParam === 'messages') {
-        const targetAgencyId = chatAgencyId || '';
-        const targetAgencyName = agencyNameParam || 'Travel Agency';
-        const chatPackageId = urlParams.get('packageId');
-        if (chatPackageId) {
-          setSelectedChatPackageId(chatPackageId);
-        }
-        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
-        if (!user && !hasCachedAuth) {
-          if (targetAgencyId) {
-            sessionStorage.setItem('pending_chat_target', JSON.stringify({
-              agencyId: targetAgencyId,
-              agencyName: targetAgencyName,
-              packageId: chatPackageId || null
-            }));
-          }
-          setAuthModalTab('login');
-          setShowAuthModal(true);
-        } else {
-          setUserActiveSection('chat');
-          if (targetAgencyId) {
-            setCurrentChatAgency(targetAgencyId);
-            if (agencyNameParam) {
-              setCurrentChatAgencyName(agencyNameParam);
+      // Handle Agency Portal Deep Linking (e.g. /agencytripdm?tab=chat&userId=...)
+      if (routeMode === 'agency' || userData?.role === 'agency') {
+        if (tabParam === 'chat' || sectionParam === 'chat' || actionParam === 'chat') {
+          setAgencyActiveSection('chat');
+          if (targetUserId) {
+            targetUserIdParamRef.current = targetUserId;
+            const matched = agencyConversations.find(c => c.userId === targetUserId);
+            if (matched) {
+              selectConversation(matched);
+            } else {
+              selectConversation({
+                userId: targetUserId,
+                userName: urlParams.get('userName') || 'Customer',
+                lastMessage: '',
+                lastMessageTime: Date.now(),
+                unreadCount: 0,
+              });
             }
           }
+          shouldCleanUrl = true;
         }
-        shouldCleanUrl = true;
+      }
+
+      // Handle Traveler Deep Linking (e.g. /?action=chat&agencyId=...)
+      if (chatAgencyId || actionParam === 'chat' || sectionParam === 'chat' || sectionParam === 'messages' || tabParam === 'chat') {
+        if (routeMode !== 'agency') {
+          const targetAgencyId = chatAgencyId || '';
+          const targetAgencyName = agencyNameParam || 'Travel Agency';
+          const chatPackageId = urlParams.get('packageId');
+          if (chatPackageId) {
+            setSelectedChatPackageId(chatPackageId);
+          }
+          const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+          if (!user && !hasCachedAuth) {
+            if (targetAgencyId) {
+              sessionStorage.setItem('pending_chat_target', JSON.stringify({
+                agencyId: targetAgencyId,
+                agencyName: targetAgencyName,
+                packageId: chatPackageId || null
+              }));
+            }
+            setAuthModalTab('login');
+            setShowAuthModal(true);
+          } else {
+            setUserActiveSection('chat');
+            if (targetAgencyId) {
+              setCurrentChatAgency(targetAgencyId);
+              if (agencyNameParam) {
+                setCurrentChatAgencyName(agencyNameParam);
+              }
+            }
+          }
+          shouldCleanUrl = true;
+        }
       }
       
       if (bookListingId) {
@@ -2772,8 +2802,14 @@ export default function HomeClient({
         // Single atomic state update — no intermediate renders
         setAgencyConversations(conversations);
 
-        // Auto-select first conversation if none selected
-        if (!selectedConversationRef.current && conversations.length > 0 && !hasManuallyClosedChatRef.current) {
+        // Auto-select requested customer conversation or first conversation if none selected
+        if (targetUserIdParamRef.current) {
+          const targetConv = conversations.find(c => c.userId === targetUserIdParamRef.current);
+          if (targetConv) {
+            setSelectedConversation(targetConv);
+            targetUserIdParamRef.current = null;
+          }
+        } else if (!selectedConversationRef.current && conversations.length > 0 && !hasManuallyClosedChatRef.current) {
           setSelectedConversation(conversations[0]);
         }
       };
@@ -3231,6 +3267,20 @@ export default function HomeClient({
           url: '/?tab=chat'
         })
       }).catch(err => console.error('[Push] Send notification error:', err));
+
+      // Trigger Email Notification to recipient agency (First message with buffer)
+      const activePackage = selectedChatPackageId
+        ? listings.find(l => l.id === selectedChatPackageId)
+        : null;
+
+      triggerChatEmailNotification({
+        senderId: user.uid,
+        recipientId: currentChatAgency,
+        senderName: userData?.name || user.displayName || user.email || 'Traveler',
+        messageContent: chatInput,
+        packageTitle: activePackage?.title || undefined,
+        senderRole: 'user',
+      }).catch(err => console.error('[Email Notification] User->Agency dispatch note:', err));
     }
 
     setChatInput('');
@@ -3289,6 +3339,15 @@ export default function HomeClient({
       recipientId: recipientUserId,
       messageContent: msgContent,
     }).catch(err => console.error('[FCM] Push dispatch error:', err));
+
+    // Trigger Email Notification to recipient traveler (First reply with buffer)
+    triggerChatEmailNotification({
+      senderId: agencySenderId,
+      recipientId: recipientUserId,
+      senderName: agencyDisplayName,
+      messageContent: msgContent,
+      senderRole: 'agency',
+    }).catch(err => console.error('[Email Notification] Agency->User dispatch note:', err));
   };
 
   const selectConversation = (conversation: any) => {
@@ -9705,6 +9764,15 @@ export default function HomeClient({
                                                 recipientId: selectedConversation.userId,
                                                 messageContent: reply,
                                               }).catch(err => console.error('[FCM] Quick reply push error:', err));
+
+                                              // Trigger Email Notification to recipient traveler (First reply with buffer)
+                                              triggerChatEmailNotification({
+                                                senderId: user.uid,
+                                                recipientId: selectedConversation.userId,
+                                                senderName: userData?.companyName || userData?.name || 'Travel Agent',
+                                                messageContent: reply,
+                                                senderRole: 'agency',
+                                              }).catch(err => console.error('[Email Notification] Quick reply dispatch note:', err));
                                             }}
                                             className="shrink-0 px-3 py-1.5 bg-white hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300 text-xs rounded-full whitespace-nowrap transition-all shadow-2xs active:scale-95 font-medium"
                                           >

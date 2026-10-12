@@ -384,7 +384,7 @@ export default function LandingHome({
                   Multiple Travel Agents
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
-                  Get options from verified agents
+                  Get options from many verified agents
                 </p>
               </div>
 
@@ -397,7 +397,7 @@ export default function LandingHome({
                   Chat Directly
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
-                  Discuss, negotiate & customize
+                  Discuss, negotiate and customize
                 </p>
               </div>
 
@@ -423,7 +423,7 @@ export default function LandingHome({
                   Verified Agents
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
-                  Safe, reliable & trusted
+                  Safe, reliable and trusted
                 </p>
               </div>
             </div>
