@@ -112,6 +112,70 @@ export default function AgencyProfileView({
     return agency.city || 'India';
   }, [agency, agencyPackages]);
 
+  // Helper to sanitize address and remove external domains (.com, .in, URLs, etc.)
+  const sanitizeAddressText = (text: string): string => {
+    if (!text) return '';
+    return text
+      // Strip URLs with protocol
+      .replace(/https?:\/\/[^\s,]+/gi, '')
+      // Strip www. links
+      .replace(/www\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+(?:\/[^\s,]*)?/gi, '')
+      // Strip standalone domain names like Enjoymytrips.com, agency.in, etc.
+      .replace(/\b[a-zA-Z0-9-]+\.(?:com|in|co\.in|org|net|io|co|biz|info|travel|online|site|store)(?:\/[^\s,]*)?/gi, '')
+      // Clean up punctuation remnants (leading/trailing commas, colons, hyphens, and duplicate commas)
+      .replace(/^[,\s\-–:;]+/, '')
+      .replace(/[,\s\-–:;]+$/, '')
+      .replace(/,\s*,+/g, ', ')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  };
+
+  // Resolve location, state, pincode, and office address dynamically from agency onboarding data
+  const resolvedLocation = useMemo(() => {
+    const rawBusinessLoc = sanitizeAddressText(agency.businessLocation || '');
+    const rawOfficeAddr = sanitizeAddressText(agency.officeAddress || '');
+    const rawFullAddr = sanitizeAddressText(agency.fullAddress || '');
+    const rawLocation = sanitizeAddressText(agency.location || '');
+    const rawCity = sanitizeAddressText(agency.city || '');
+    const rawState = sanitizeAddressText(agency.state || '');
+
+    // 1. Extract 6-digit Indian PIN code
+    let pincode = (agency.pincode || '').trim();
+    if (!pincode) {
+      const combinedAddr = `${rawOfficeAddr} ${rawFullAddr} ${rawBusinessLoc} ${rawLocation}`;
+      const pinMatch = combinedAddr.match(/\b([1-9][0-9]{5})\b/);
+      if (pinMatch) pincode = pinMatch[1];
+    }
+
+    // 2. Identify State / City / Location without hardcoding 'New Delhi'
+    let displayLocation = rawBusinessLoc;
+    if (!displayLocation) {
+      if (rawCity && rawState && rawCity.toLowerCase() !== rawState.toLowerCase() && rawCity !== 'India') {
+        displayLocation = `${rawCity}, ${rawState}`;
+      } else if (rawLocation && !rawLocation.toLowerCase().includes('new delhi')) {
+        displayLocation = rawLocation;
+      } else if (rawCity && rawCity !== 'India') {
+        displayLocation = rawCity;
+      } else if (rawState) {
+        displayLocation = rawState;
+      } else if (rawLocation) {
+        displayLocation = rawLocation;
+      } else {
+        displayLocation = 'India';
+      }
+    }
+
+    const officeAddress = rawOfficeAddr || rawFullAddr || '';
+
+    return {
+      displayLocation: displayLocation || 'India',
+      pincode,
+      officeAddress,
+      state: rawState,
+      city: rawCity,
+    };
+  }, [agency]);
+
   // 2. Fetch real reviews for this agency's packages from Firestore / API
   useEffect(() => {
     let isMounted = true;
@@ -453,15 +517,6 @@ export default function AgencyProfileView({
                     {agency.name}
                   </h1>
 
-                  {/* Tagline */}
-                  <p className="text-xs sm:text-sm text-slate-700 font-semibold">
-                    {agency.description ||
-                      agency.bio ||
-                      (agency.companyName && agency.companyName !== agency.name
-                        ? agency.companyName
-                        : 'Your Trusted Partner for Customized & Unforgettable Journeys')}
-                  </p>
-
                   {/* Metadata Row: Rating | Experience | Happy Travelers */}
                   <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-700 font-semibold pt-0.5">
                     {reviewStats ? (
@@ -492,10 +547,13 @@ export default function AgencyProfileView({
                     ) : null}
                   </div>
 
-                  {/* Location */}
-                  <div className="flex items-center gap-1 text-xs text-slate-600 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-[#FF5500]" />
-                    <span>{agency.location || `${agency.city || 'India'}, India`}</span>
+                  {/* Location & State */}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium pt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-800 shrink-0" />
+                    <span className="font-semibold text-slate-900">{resolvedLocation.displayLocation}</span>
+                    {resolvedLocation.pincode && (
+                      <span className="text-slate-500 font-normal">({resolvedLocation.pincode})</span>
+                    )}
                   </div>
 
                   {/* Specialty Pills */}
@@ -563,7 +621,7 @@ export default function AgencyProfileView({
           <div className="w-full bg-transparent py-4 border-b border-slate-200">
             <div className="flex items-center justify-between gap-4 mb-3 px-0.5">
               <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-[#FF5500]" />
+                <Camera className="w-4 h-4 text-slate-800" />
                 <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
                   {agency.name} Photos & Itinerary Highlights
                 </h3>
@@ -571,7 +629,7 @@ export default function AgencyProfileView({
               <button
                 type="button"
                 onClick={() => setShowAllPhotosModal(true)}
-                className="text-[11px] font-bold text-[#FF5500] hover:text-[#e04b00] hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                className="text-[11px] font-bold text-slate-700 hover:text-slate-950 hover:underline cursor-pointer flex items-center gap-1 transition-colors"
               >
                 <span>{agencyPhotos.length} Photos Available</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -751,7 +809,7 @@ export default function AgencyProfileView({
             {/* SECTION 2: ABOUT THE AGENCY */}
             <div id="section-about" className="bg-transparent py-6 border-b border-slate-200">
               <div className="flex items-center gap-2 mb-3.5">
-                <FileText className="w-5 h-5 text-[#FF5500]" />
+                <FileText className="w-5 h-5 text-slate-800" />
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                   About {agency.name}
                 </h2>
@@ -770,45 +828,39 @@ export default function AgencyProfileView({
               </div>
 
               {/* Metric Highlights */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
-                {agency.experienceYears ? (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#FF5500] shrink-0" />
-                    <div>
-                      <div className="font-black text-slate-900">{agency.experienceYears}+</div>
-                      <div className="text-[10px] text-slate-500">Years Experience</div>
+              {(agency.experienceYears || agency.happyTravelersCount || reviewStats) ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
+                  {agency.experienceYears ? (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-slate-800 shrink-0" />
+                      <div>
+                        <div className="font-black text-slate-900">{agency.experienceYears}+</div>
+                        <div className="text-[10px] text-slate-500">Years Experience</div>
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
 
-                {agency.happyTravelersCount ? (
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <div>
-                      <div className="font-black text-slate-900">{agency.happyTravelersCount}+</div>
-                      <div className="text-[10px] text-slate-500">Happy Travelers</div>
+                  {agency.happyTravelersCount ? (
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <div className="font-black text-slate-900">{agency.happyTravelersCount}+</div>
+                        <div className="text-[10px] text-slate-500">Happy Travelers</div>
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
 
-                <div className="flex items-center gap-2">
-                  <PackageIcon className="w-4 h-4 text-blue-600 shrink-0" />
-                  <div>
-                    <div className="font-black text-slate-900">{agencyPackages.length}+</div>
-                    <div className="text-[10px] text-slate-500">{primaryDestination} Packages</div>
-                  </div>
+                  {reviewStats ? (
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                      <div>
+                        <div className="font-black text-slate-900">{reviewStats.avg.toFixed(1)}/5</div>
+                        <div className="text-[10px] text-slate-500">Customer Rating</div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-
-                {reviewStats ? (
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-                    <div>
-                      <div className="font-black text-slate-900">{reviewStats.avg.toFixed(1)}/5</div>
-                      <div className="text-[10px] text-slate-500">Customer Rating</div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+              ) : null}
             </div>
 
             {/* SECTION 3: CUSTOMER REVIEWS */}
@@ -987,31 +1039,55 @@ export default function AgencyProfileView({
               </div>
             </div>
 
-            {/* Item 2: Location Map */}
-            <div className="bg-transparent pb-6 border-b border-slate-200">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[11px] font-bold text-slate-900">Location</h4>
-                <span className="text-[10px] text-slate-500">{agency.city || 'India'}</span>
-              </div>
+            {/* Item 2: Registered Office & Location (Replaces dummy location map) */}
+            {(resolvedLocation.officeAddress || resolvedLocation.displayLocation || resolvedLocation.pincode) && (
+              <div className="bg-transparent pb-6 border-b border-slate-200 space-y-2.5">
+                <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
+                  <Building2 className="w-3.5 h-3.5 text-slate-800" />
+                  <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-900">
+                    Registered Office & Location
+                  </h4>
+                </div>
 
-              <div
-                className="h-28 w-full bg-slate-100 border border-slate-200 rounded-md relative overflow-hidden flex flex-col items-center justify-center p-2 text-center shadow-2xs"
-                style={{
-                  backgroundImage: "url('https://maps.googleapis.com/maps/api/staticmap?center=India&zoom=4&size=400x200&sensor=false')",
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              >
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-2xs" />
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-6 h-6 rounded-full bg-[#FF5500] text-white flex items-center justify-center shadow-md mb-1 animate-bounce">
-                    <MapPin className="w-3.5 h-3.5" />
+                <div className="space-y-3 pt-1 text-xs">
+                  {resolvedLocation.officeAddress && (
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Office Address:</span>
+                      <span className="font-semibold text-slate-900 whitespace-pre-line leading-relaxed block">
+                        {resolvedLocation.officeAddress}
+                      </span>
+                    </div>
+                  )}
+
+                  {resolvedLocation.displayLocation && (
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Location / State:</span>
+                      <span className="font-semibold text-slate-900 block">
+                        {resolvedLocation.displayLocation}
+                      </span>
+                    </div>
+                  )}
+
+                  {resolvedLocation.pincode && (
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Pincode:</span>
+                      <span className="font-semibold text-slate-900 block">
+                        {resolvedLocation.pincode}
+                      </span>
+                    </div>
+                  )}
+
+                  <div>
+                    <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Operating Setup:</span>
+                    <span className="font-semibold text-slate-900 block">
+                      {agency.operatingFromOffice
+                        ? 'Commercial Office'
+                        : 'Registered Travel Consultant'}
+                    </span>
                   </div>
-                  <span className="text-xs font-black text-slate-900 leading-tight">{agency.name}</span>
-                  <span className="text-[10px] text-slate-500">{agency.city || 'India'}</span>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Item 3: Why Travel with this Agency */}
             <div id="section-why-us" className="bg-transparent pb-6 space-y-2.5">
