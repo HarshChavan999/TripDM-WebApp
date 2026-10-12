@@ -54,6 +54,12 @@ export interface AgencyData {
   state?: string;
   country?: string;
   location?: string;
+  businessLocation?: string;
+  officeAddress?: string;
+  fullAddress?: string;
+  pincode?: string;
+  operatingFromOffice?: boolean;
+  operatingFromHome?: boolean;
   verified?: boolean;
   approved?: boolean;
   rating?: number;
@@ -62,6 +68,7 @@ export interface AgencyData {
   happyTravelersCount?: number | string;
   description?: string;
   bio?: string;
+  tagline?: string;
   specialties?: string[];
   destinations?: string[];
   tripTypes?: string[];
@@ -281,9 +288,72 @@ export default function DestinationAgentsSearchView({
         userDoc.photoURL ||
         null;
 
-      const city = userDoc.city || (userDoc.location?.split(',')[0]?.trim()) || 'India';
-      const state = userDoc.state || (userDoc.location?.split(',')[1]?.trim()) || '';
+      // Smart location resolution from registered agency onboarding data
+      const sanitizeAddr = (t: string) => (t || '')
+        .replace(/https?:\/\/[^\s,]+/gi, '')
+        .replace(/www\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+(?:\/[^\s,]*)?/gi, '')
+        .replace(/\b[a-zA-Z0-9-]+\.(?:com|in|co\.in|org|net|io|co|biz|info|travel|online|site|store)(?:\/[^\s,]*)?/gi, '')
+        .replace(/^[,\s\-–:;]+/, '')
+        .replace(/[,\s\-–:;]+$/, '')
+        .replace(/,\s*,+/g, ', ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      const rawBusinessLoc = sanitizeAddr(userDoc.businessLocation || '');
+      const rawOfficeAddr = sanitizeAddr(userDoc.officeAddress || '');
+      const rawFullAddr = sanitizeAddr(userDoc.fullAddress || '');
+      const rawLocation = sanitizeAddr(userDoc.location || '');
+      const rawAddress = rawOfficeAddr || rawFullAddr || rawLocation;
+
+      // Extract 6-digit Indian PIN code if present
+      let extractedPincode = (userDoc.pincode || '').trim();
+      if (!extractedPincode && rawAddress) {
+        const pinMatch = rawAddress.match(/\b([1-9][0-9]{5})\b/);
+        if (pinMatch) extractedPincode = pinMatch[1];
+      }
+
+      // Resolve City and State
+      let city = (userDoc.city || '').trim();
+      let state = (userDoc.state || '').trim();
+
+      if (rawBusinessLoc) {
+        const parts = rawBusinessLoc.split(',').map((p: string) => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          if (!city) city = parts[0];
+          if (!state) state = parts[1];
+        } else if (parts.length === 1 && !city) {
+          city = parts[0];
+        }
+      }
+
+      if (!city || !state) {
+        if (rawAddress) {
+          const parts = rawAddress.split(',').map((p: string) => p.trim()).filter(Boolean);
+          if (parts.length >= 2) {
+            const lastPart = parts[parts.length - 1].replace(/\b[1-9][0-9]{5}\b/g, '').replace(/[-–]/g, '').trim();
+            const secondLast = parts[parts.length - 2].replace(/\b[1-9][0-9]{5}\b/g, '').trim();
+            if (!state && lastPart && !['india', 'bharat'].includes(lastPart.toLowerCase())) {
+              state = lastPart;
+            }
+            if (!city && secondLast) {
+              city = secondLast;
+            }
+          } else if (parts.length === 1 && !city) {
+            city = parts[0].replace(/\b[1-9][0-9]{5}\b/g, '').trim();
+          }
+        }
+      }
+
+      // Fallback defaults without hardcoding
+      if (!city) {
+        city = (rawLocation?.split(',')[0]?.trim()) || state || 'India';
+      }
+      if (!state) {
+        state = (rawLocation?.split(',')[1]?.trim()) || (city !== 'India' ? 'India' : '');
+      }
       const country = userDoc.country || 'India';
+
+      const displayLocation = rawBusinessLoc || (city && state && city.toLowerCase() !== state.toLowerCase() ? `${city}, ${state}` : city || 'India');
 
       const directPhotos: string[] = [];
       if (Array.isArray(userDoc.photos)) userDoc.photos.forEach((p: any) => typeof p === 'string' && p.trim().startsWith('http') && directPhotos.push(p.trim()));
@@ -301,7 +371,13 @@ export default function DestinationAgentsSearchView({
         city,
         state,
         country,
-        location: userDoc.location || (city && state ? `${city}, ${state}` : city || 'India'),
+        location: displayLocation,
+        businessLocation: rawBusinessLoc,
+        officeAddress: rawOfficeAddr,
+        fullAddress: rawFullAddr,
+        pincode: extractedPincode,
+        operatingFromOffice: Boolean(userDoc.operatingFromOffice),
+        operatingFromHome: Boolean(userDoc.operatingFromHome),
         verified: userDoc.approved !== false,
         approved: userDoc.approved !== false,
         rating: typeof userDoc.rating === 'number' && userDoc.rating > 0 ? userDoc.rating : 4.8,
@@ -1108,10 +1184,6 @@ export default function DestinationAgentsSearchView({
                                 {agency.verified && (
                                   <CheckCircle2 className="h-4 w-4 text-emerald-500 fill-emerald-100 shrink-0" />
                                 )}
-                              </div>
-                              <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-0.5">
-                                <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                                <span className="font-medium truncate">{agency.location || `${agency.city || formattedDestName}, India`}</span>
                               </div>
                             </div>
                           </div>

@@ -93,8 +93,9 @@ export function useModalBackHandler(
         if (index !== -1) {
           modalStack.splice(index, 1);
         }
-        isProgrammaticBack = true;
-        window.history.back();
+        // Do NOT call window.history.back() here:
+        // Unmounting occurs when navigating to a new route. Calling history.back()
+        // would immediately pop the new route and bounce back to the previous page.
       }
     };
   }, [isOpen, modalKey]);

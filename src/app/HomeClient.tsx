@@ -803,6 +803,29 @@ export default function HomeClient({
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingListing, setEditingListing] = useState<any>(null);
   const [viewingListing, setViewingListing] = useState<any>(null);
+  const prevListingScrollYRef = useRef<number>(0);
+
+  const handleOpenListing = (listing: any) => {
+    if (typeof window !== 'undefined') {
+      prevListingScrollYRef.current = window.scrollY;
+    }
+    setViewingListing(listing);
+    setShowComparison(false);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  };
+
+  const handleCloseListing = () => {
+    const returnY = prevListingScrollYRef.current;
+    setViewingListing(null);
+    if (typeof window !== 'undefined' && returnY > 0) {
+      setTimeout(() => {
+        window.scrollTo({ top: returnY, behavior: 'instant' });
+      }, 30);
+    }
+  };
+
   const [selectedAgencyProfile, setSelectedAgencyProfile] = useState<any>(null);
   const [tempPhotoFiles, setTempPhotoFiles] = useState<File[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
@@ -1312,7 +1335,7 @@ export default function HomeClient({
   useModalBackHandler(agencyMobileMenuOpen, () => setAgencyMobileMenuOpen(false), 'agency_mobile_menu_drawer');
 
   // Pseudo-page views back handlers
-  useModalBackHandler(Boolean(viewingListing), () => setViewingListing(null), 'viewing_listing');
+  useModalBackHandler(Boolean(viewingListing), handleCloseListing, 'viewing_listing');
   useModalBackHandler(Boolean(selectedAgencyProfile), () => {
     setSelectedAgencyProfile(null);
     if (fromSection) setUserActiveSection(fromSection);
@@ -5500,14 +5523,16 @@ export default function HomeClient({
                     </span>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => { setAuthModalTab('login'); setShowAuthModal(true); }}
-                    className="cursor-pointer text-[15px] font-semibold text-slate-800 flex items-center gap-1.5 ml-1 select-none"
-                  >
-                    <User className="h-4 w-4 text-slate-700" />
-                    <span>Login</span>
-                  </button>
+                  <div className="flex items-center pl-3 sm:pl-4 border-l border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthModalTab('login'); setShowAuthModal(true); }}
+                      className="cursor-pointer text-[15px] font-semibold text-slate-800 hover:text-slate-950 flex items-center gap-1.5 select-none transition-colors"
+                    >
+                      <User className="h-4 w-4 text-slate-700" />
+                      <span>Login</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -5672,7 +5697,7 @@ export default function HomeClient({
             }`}
             id="user-dashboard-scroll-container"
           >
-            <main className={`${(userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || userActiveSection === 'chat' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations'))) ? 'w-full flex-1 flex flex-col min-h-0 min-w-0 !p-0 !max-w-none' : (userActiveSection === 'profile' || userActiveSection === 'comparison' || userActiveSection === 'wishlist' || userActiveSection === 'listings' || userActiveSection === 'destinations') ? 'w-full max-w-[1600px] mx-auto px-4 sm:px-8' : 'px-6 max-w-7xl mx-auto w-full'} ${userActiveSection === 'chat' || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') ? '' : (userActiveSection === 'wishlist' && wishlist.length === 0) ? 'pb-0' : (userActiveSection === 'comparison' || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations')) || userActiveSection === 'profile') ? 'pb-0' : 'pb-10'}`}>
+            <main className={`${(Boolean(viewingListing) || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || userActiveSection === 'chat' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations'))) ? 'w-full flex-1 flex flex-col min-h-0 min-w-0 !p-0 !max-w-none' : (userActiveSection === 'profile' || userActiveSection === 'comparison' || userActiveSection === 'wishlist' || userActiveSection === 'listings' || userActiveSection === 'destinations') ? 'w-full max-w-[1600px] mx-auto px-4 sm:px-8' : 'px-6 max-w-7xl mx-auto w-full'} ${Boolean(viewingListing) || userActiveSection === 'chat' || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') ? '' : (userActiveSection === 'wishlist' && wishlist.length === 0) ? 'pb-0' : (userActiveSection === 'comparison' || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations')) || userActiveSection === 'profile') ? 'pb-0' : 'pb-10'}`}>
               {/* Header logic adjusted for non-listings sections (excludes bookings, profile, how-it-works which have their own layouts) */}
               {userActiveSection !== 'home' && userActiveSection !== 'agents' && userActiveSection !== 'how-it-works' && userActiveSection !== 'listings' && userActiveSection !== 'destinations' && userActiveSection !== 'bookings' && userActiveSection !== 'profile' && userActiveSection !== 'comparison' && userActiveSection !== 'wishlist' && userActiveSection !== 'chat' && (
                 <div className="mb-6 mt-6 px-6 max-w-7xl mx-auto flex justify-between items-center border-b pb-4 border-gray-200">
@@ -5788,11 +5813,7 @@ export default function HomeClient({
                       }
                       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onViewListing={(listing) => {
-                      setViewingListing(listing);
-                      setShowComparison(false);
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onViewListing={handleOpenListing}
                     onInitiateChat={(data) => {
                       handleInitiateChat(data);
                     }}
@@ -5828,7 +5849,8 @@ export default function HomeClient({
                     }}
                     onViewAgencyProfile={(agency) => {
                       setFromSection('agents');
-                      setSelectedAgencyProfile(agency);
+                      const rawAgency = allAgencies.find((a: any) => a.id === agency.id || a.email === agency.email) || {};
+                      setSelectedAgencyProfile({ ...rawAgency, ...agency });
                       setUserActiveSection('agents');
                       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
@@ -5840,11 +5862,7 @@ export default function HomeClient({
                       setShowComparison(false);
                       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onViewListing={(listing) => {
-                      setViewingListing(listing);
-                      setShowComparison(false);
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onViewListing={handleOpenListing}
                   />
                 )
               )}
@@ -5861,15 +5879,12 @@ export default function HomeClient({
                     }}
                     onViewAgencyProfile={(agency) => {
                       setFromSection(userActiveSection);
-                      setSelectedAgencyProfile(agency);
+                      const rawAgency = allAgencies.find((a: any) => a.id === agency.id || a.email === agency.email) || {};
+                      setSelectedAgencyProfile({ ...rawAgency, ...agency });
                       setUserActiveSection('agents');
                       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onViewListing={(listing) => {
-                      setViewingListing(listing);
-                      setShowComparison(false);
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onViewListing={handleOpenListing}
                     onNavigateHome={() => {
                       setUserActiveSection('home');
                       setSearchTerm('');
@@ -6005,7 +6020,7 @@ export default function HomeClient({
                     /* Amazon & Thrillophilia Travel Discovery Landing Page */
                     <LandingDiscovery
                       listings={listings}
-                      onView={setViewingListing}
+                      onView={handleOpenListing}
                       onBook={startBooking}
                       onChat={handleInitiateChat}
                       onWishlist={handleWishlistToggle}
@@ -6299,7 +6314,7 @@ export default function HomeClient({
                           <ListingCard
                             key={listing.id}
                             listing={listing}
-                            onView={setViewingListing}
+                            onView={handleOpenListing}
                             onBook={startBooking}
                             onChat={handleInitiateChat}
                             onWishlist={handleWishlistToggle}
@@ -6636,7 +6651,7 @@ export default function HomeClient({
               {viewingListing && (userActiveSection === 'listings' || userActiveSection === 'destinations' || userActiveSection === 'home' || userActiveSection === 'agents') && !showComparison && (
                 <PackageDetailView
                   listing={viewingListing}
-                  onBack={() => setViewingListing(null)}
+                  onBack={handleCloseListing}
                   onBook={startBooking}
                   onChat={handleInitiateChat}
                   onWishlist={handleWishlistToggle}

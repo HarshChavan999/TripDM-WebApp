@@ -782,12 +782,19 @@ export default function ListingCard({
                   <Link 
                     href={`/package/${listing.id}`} 
                     className="block flex-1 min-w-0"
-                    onClick={() => {
+                    onClick={(e) => {
                       event({
                         action: 'package_view_click',
                         category: 'package',
                         label: cardTitle || listing.title || listing.id,
                       });
+                      if (onView) {
+                        e.preventDefault();
+                        onView(listing);
+                        if (typeof window !== 'undefined') {
+                          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                        }
+                      }
                     }}
                   >
                     <Button 

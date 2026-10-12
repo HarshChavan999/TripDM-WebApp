@@ -433,6 +433,13 @@ export default function PackageDetailView({
     }
   };
 
+  // Always scroll to top when opening or switching package
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [listing?.id]);
+
   // Sticky bar observer: trigger as soon as "Offered By" section scrolls out of view
   useEffect(() => {
     if (listing?.id) {
