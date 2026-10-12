@@ -124,9 +124,9 @@ export default function HowItWorksView({
               <span className="text-xs sm:text-[13px] font-bold text-slate-800 font-serif italic tracking-tight drop-shadow-2xs">
                 Chat
               </span>
-              <span className="text-xs sm:text-[13px] font-extrabold text-[#FF5500] font-serif italic tracking-tight drop-shadow-2xs flex items-center gap-1">
+              <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 font-serif italic tracking-tight drop-shadow-2xs flex items-center gap-1">
                 Travel Your Way
-                <svg className="w-3.5 h-3.5 text-[#FF5500] transform rotate-12 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-3.5 h-3.5 text-slate-900 transform rotate-12 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
@@ -142,7 +142,7 @@ export default function HowItWorksView({
           <div className="flex flex-col relative group p-0 bg-transparent border-none shadow-none">
             <div className="flex items-center gap-3 mb-2.5">
               <span
-                className="w-8 h-8 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                className="w-8 h-8 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-sm shrink-0"
                 style={{ borderRadius: '6px' }}
               >
                 1
@@ -157,7 +157,7 @@ export default function HowItWorksView({
 
             {/* Connecting Arrow for Desktop */}
             <div className="hidden md:flex absolute -right-6 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm items-center justify-center text-slate-400">
-              <ArrowRight className="w-3.5 h-3.5 text-[#FF5500]" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-700" />
             </div>
           </div>
 
@@ -165,7 +165,7 @@ export default function HowItWorksView({
           <div className="flex flex-col relative group p-0 bg-transparent border-none shadow-none">
             <div className="flex items-center gap-3 mb-2.5">
               <span
-                className="w-8 h-8 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                className="w-8 h-8 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-sm shrink-0"
                 style={{ borderRadius: '6px' }}
               >
                 2
@@ -180,7 +180,7 @@ export default function HowItWorksView({
 
             {/* Connecting Arrow for Desktop */}
             <div className="hidden md:flex absolute -right-6 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm items-center justify-center text-slate-400">
-              <ArrowRight className="w-3.5 h-3.5 text-[#FF5500]" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-700" />
             </div>
           </div>
 
@@ -188,7 +188,7 @@ export default function HowItWorksView({
           <div className="flex flex-col relative group p-0 bg-transparent border-none shadow-none">
             <div className="flex items-center gap-3 mb-2.5">
               <span
-                className="w-8 h-8 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                className="w-8 h-8 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-sm shrink-0"
                 style={{ borderRadius: '6px' }}
               >
                 3
@@ -219,8 +219,8 @@ export default function HowItWorksView({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {/* Feature 1: Multiple Options */}
             <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
-              <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
-                <Users className="w-6 h-6 text-[#FF5500]" />
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 text-black flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <Users className="w-6 h-6 text-black" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-1.5">
                 Multiple Options
@@ -232,8 +232,8 @@ export default function HowItWorksView({
 
             {/* Feature 2: Direct Communication */}
             <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
-                <MessageSquare className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 text-black flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <MessageSquare className="w-6 h-6 text-black" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-1.5">
                 Direct Communication
@@ -245,8 +245,8 @@ export default function HowItWorksView({
 
             {/* Feature 3: No Commission */}
             <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
-              <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
-                <IndianRupee className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 text-black flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <IndianRupee className="w-6 h-6 text-black" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-1.5">
                 No Commission
@@ -258,8 +258,8 @@ export default function HowItWorksView({
 
             {/* Feature 4: Verified Agents */}
             <div className="flex flex-col items-center text-center p-3 group bg-transparent border-none shadow-none">
-              <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-4 shadow-2xs group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-6 h-6 text-orange-600" />
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 text-black flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-6 h-6 text-black" />
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-1.5">
                 Verified Agents
@@ -287,7 +287,7 @@ export default function HowItWorksView({
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                       <th className="pb-3.5 pr-4">Feature</th>
-                      <th className="pb-3.5 px-4 text-center font-black text-[#FF5500]">TripDM</th>
+                      <th className="pb-3.5 px-4 text-center font-black text-slate-900">TripDM</th>
                       <th className="pb-3.5 pl-4 text-center text-slate-600">Traditional Travel Sites</th>
                     </tr>
                   </thead>
@@ -298,12 +298,12 @@ export default function HowItWorksView({
                           {row.feature}
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-600">
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-black">
+                            <Check className="w-3.5 h-3.5 stroke-[3] text-black" />
                           </span>
                         </td>
                         <td className="py-3.5 pl-4 text-center">
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-100 text-rose-500">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-400">
                             <CloseIcon className="w-3 h-3 stroke-[2.5]" />
                           </span>
                         </td>
@@ -321,10 +321,10 @@ export default function HowItWorksView({
               <button
                 type="button"
                 onClick={() => onNavigateToDestinations()}
-                className="text-xs font-bold text-[#FF5500] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-slate-900 hover:text-black hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>Browse Packages</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-black" />
               </button>
             </div>
           </div>
@@ -333,8 +333,8 @@ export default function HowItWorksView({
           <div className="lg:col-span-5 flex flex-col justify-between bg-transparent p-0 border-none shadow-none">
             {/* Top Text Content */}
             <div className="pb-4">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-3.5 shadow-2xs">
-                <Lightbulb className="w-5 h-5 text-amber-600" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 text-black flex items-center justify-center mb-3.5">
+                <Lightbulb className="w-5 h-5 text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mb-2">
                 You are in Control
@@ -389,13 +389,13 @@ export default function HowItWorksView({
                     className="w-full py-3.5 flex items-center justify-between gap-3 text-left cursor-pointer group"
                   >
                     <h3 className={`text-xs sm:text-sm font-bold leading-snug transition-colors ${
-                      isOpen ? 'text-[#FF5500]' : 'text-slate-900 group-hover:text-[#FF5500]'
+                      isOpen ? 'text-black' : 'text-slate-900 group-hover:text-black'
                     }`}>
                       {faq.question}
                     </h3>
                     <ChevronDown
                       className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'transform rotate-180 text-[#FF5500]' : ''
+                        isOpen ? 'transform rotate-180 text-black' : 'group-hover:text-slate-700'
                       }`}
                     />
                   </button>

@@ -527,20 +527,53 @@ export default function HomeClient({
     }
   }, [sectionParam, user, loading]);
 
+  const isPopStateRef = useRef(false);
+
   // Synchronize browser Back & Forward button navigation for sections
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handlePopState = () => {
+    const handlePopState = (e: PopStateEvent) => {
+      // If the popstate was for a modal handled by useModalBackHandler, let it handle it
+      if (e.state && e.state.tripdm_modal) return;
+
+      isPopStateRef.current = true;
       const currentParam = new URLSearchParams(window.location.search).get('section');
       if (currentParam) {
         setUserActiveSection(currentParam);
-      } else if (!routeMode) {
+        setSelectedAgencyProfile(null);
+        setViewingListing(null);
+        setShowComparison(false);
+      } else if (routeMode === 'agency') {
+        setUserActiveSection('agencyDashboard');
+      } else if (routeMode === 'admin') {
+        setUserActiveSection('adminDashboard');
+      } else {
+        // Normal user route: return cleanly to home
         setUserActiveSection('home');
+        setSelectedAgencyProfile(null);
+        setViewingListing(null);
+        setShowComparison(false);
+        setSearchTerm('');
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [routeMode]);
+
+  // Push section changes into browser history so browser Back (and Google Chrome back arrow) goes back within TripDM instead of exiting to Google
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isPopStateRef.current) {
+      isPopStateRef.current = false;
+      return;
+    }
+    const currentParam = new URLSearchParams(window.location.search).get('section');
+    const targetParam = userActiveSection === 'home' ? null : userActiveSection;
+    if (currentParam !== targetParam) {
+      const newUrl = targetParam ? `/?section=${targetParam}` : '/';
+      window.history.pushState({ section: userActiveSection }, '', newUrl);
+    }
+  }, [userActiveSection]);
 
   const fetchPricingConfig = async () => {
     try {

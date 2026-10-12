@@ -206,7 +206,7 @@ export default function LandingHome({
                   {/* Autocomplete Dropdown - Only when user is actively typing a query */}
                   {showDestDropdown && destinationInput.trim().length >= 2 && filteredDestinations.length > 0 && (
                     <div
-                      className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.16)] border border-slate-200 rounded-xl py-1.5 z-[100] text-left max-h-52 overflow-y-auto"
+                      className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white shadow-md border border-slate-200 rounded-xl py-1.5 z-[100] text-left max-h-52 overflow-y-auto"
                     >
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                         Matching Destinations
@@ -220,9 +220,9 @@ export default function LandingHome({
                             setShowDestDropdown(false);
                             onNavigateToDestinations(dest);
                           }}
-                          className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-[#FF5500] flex items-center gap-2 transition-colors text-left cursor-pointer"
+                          className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors text-left cursor-pointer"
                         >
-                          <MapPin className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+                          <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
                           <span>{dest}</span>
                         </button>
                       ))}
@@ -263,7 +263,7 @@ export default function LandingHome({
 
                     {showDateDropdown && (
                       <div
-                        className="absolute left-0 sm:right-0 sm:left-auto top-[calc(100%+8px)] w-48 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.16)] border border-slate-200 rounded-xl py-1.5 z-[100] text-left"
+                        className="absolute left-0 sm:right-0 sm:left-auto top-[calc(100%+8px)] w-48 bg-white shadow-md border border-slate-200 rounded-xl py-1.5 z-[100] text-left"
                       >
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                           Select Season / Month
@@ -278,14 +278,11 @@ export default function LandingHome({
                             }}
                             className={`w-full px-3 py-1.5 text-xs font-semibold text-left transition-colors cursor-pointer flex items-center justify-between ${
                               selectedDates === opt.label
-                                ? 'bg-orange-50 text-[#FF5500]'
-                                : 'text-slate-700 hover:bg-orange-50/60 hover:text-[#FF5500]'
+                                ? 'bg-slate-100 text-slate-900 font-bold'
+                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                             }`}
                           >
                             <span>{opt.label}</span>
-                            {selectedDates === opt.label && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
-                            )}
                           </button>
                         ))}
                       </div>
@@ -318,7 +315,7 @@ export default function LandingHome({
 
                     {showTravelerDropdown && (
                       <div
-                        className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.16)] border border-slate-200 rounded-xl py-1.5 z-[100] text-left"
+                        className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white shadow-md border border-slate-200 rounded-xl py-1.5 z-[100] text-left"
                       >
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                           Who is traveling?
@@ -333,14 +330,11 @@ export default function LandingHome({
                             }}
                             className={`w-full px-3 py-1.5 text-xs font-semibold text-left transition-colors cursor-pointer flex items-center justify-between ${
                               selectedTravelers === opt.label
-                                ? 'bg-orange-50 text-[#FF5500]'
-                                : 'text-slate-700 hover:bg-orange-50/60 hover:text-[#FF5500]'
+                                ? 'bg-slate-100 text-slate-900 font-bold'
+                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                             }`}
                           >
                             <span>{opt.label}</span>
-                            {selectedTravelers === opt.label && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
-                            )}
                           </button>
                         ))}
                       </div>
@@ -360,7 +354,7 @@ export default function LandingHome({
 
             {/* Popular Destination Tags */}
             <div className="mt-2.5 sm:mt-3 relative z-10 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-1">
-              <span className="text-[11px] sm:text-xs font-bold text-slate-900 mr-1 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-900 mr-1">
                 Popular:
               </span>
               {POPULAR_TAGS.map((tag) => (
@@ -368,7 +362,7 @@ export default function LandingHome({
                   key={tag}
                   type="button"
                   onClick={() => handleSelectPopularTag(tag)}
-                  className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white/95 hover:bg-white text-slate-800 hover:text-orange-600 font-semibold text-[11px] sm:text-xs rounded-full transition-all shadow-2xs border border-slate-200/90 hover:border-orange-500 backdrop-blur-xs cursor-pointer hover:shadow-xs"
+                  className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white hover:bg-slate-50 text-slate-700 hover:text-black font-semibold text-[11px] sm:text-xs rounded-full transition-colors border border-slate-200 cursor-pointer"
                 >
                   {tag}
                 </button>
@@ -377,14 +371,14 @@ export default function LandingHome({
           </div>
         </div>
 
-        {/* ─── 2. 4 VALUE PROPOSITIONS (FROSTED GLASS CONTAINER) ─── */}
+        {/* ─── 2. 4 VALUE PROPOSITIONS (CLEAN NO-CONTAINER LAYOUT) ─── */}
         <div className="relative z-10 w-full mt-3.5 sm:mt-5 px-3 sm:px-6">
-          <div className="max-w-4xl mx-auto bg-white/92 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 border border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+          <div className="max-w-4xl mx-auto py-1 sm:py-2">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               {/* Item 1 */}
-              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent">
-                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
-                  <Users className="h-4 w-4" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <Users className="h-4 w-4 text-black" />
                 </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Multiple Travel Agents
@@ -395,9 +389,9 @@ export default function LandingHome({
               </div>
 
               {/* Item 2 */}
-              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent sm:border-l sm:border-slate-200/60">
-                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
-                  <MessageSquare className="h-4 w-4" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 sm:border-l sm:border-slate-200/80">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <MessageSquare className="h-4 w-4 text-black" />
                 </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Chat Directly
@@ -408,9 +402,9 @@ export default function LandingHome({
               </div>
 
               {/* Item 3 */}
-              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent sm:border-l sm:border-slate-200/60">
-                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
-                  <IndianRupee className="h-4 w-4" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 sm:border-l sm:border-slate-200/80">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <IndianRupee className="h-4 w-4 text-black" />
                 </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   No Commission
@@ -421,9 +415,9 @@ export default function LandingHome({
               </div>
 
               {/* Item 4 */}
-              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 rounded-xl bg-slate-50/60 sm:bg-transparent sm:border-l sm:border-slate-200/60">
-                <div className="w-8 h-8 rounded-full bg-orange-100/80 border border-orange-200/60 flex items-center justify-center text-[#FF5500] mb-1.5 shrink-0 shadow-2xs">
-                  <ShieldCheck className="h-4 w-4" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 sm:border-l sm:border-slate-200/80">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <ShieldCheck className="h-4 w-4 text-black" />
                 </div>
                 <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Verified Agents
@@ -454,7 +448,7 @@ export default function LandingHome({
               <button
                 type="button"
                 onClick={() => onNavigateToHowItWorks ? onNavigateToHowItWorks() : onNavigateToDestinations()}
-                className="md:mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/80 border border-slate-200/80 hover:border-[#FF5500] text-slate-700 hover:text-[#FF5500] hover:bg-orange-50/40 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0"
+                className="md:mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/80 border border-slate-200/80 hover:border-slate-400 text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0"
                 style={{ borderRadius: '6px' }}
               >
                 <span>Learn More</span>
@@ -468,7 +462,7 @@ export default function LandingHome({
                 {/* Step 1 */}
                 <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                   <span
-                    className="w-5 h-5 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
+                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
                     style={{ borderRadius: '4px' }}
                   >
                     1
@@ -492,7 +486,7 @@ export default function LandingHome({
                 {/* Step 2 */}
                 <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                   <span
-                    className="w-5 h-5 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
+                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
                     style={{ borderRadius: '4px' }}
                   >
                     2
@@ -516,7 +510,7 @@ export default function LandingHome({
                 {/* Step 3 */}
                 <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                   <span
-                    className="w-5 h-5 bg-orange-100 text-[#FF5500] font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
+                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
                     style={{ borderRadius: '4px' }}
                   >
                     3
