@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Tag,
   CheckCircle2,
@@ -55,27 +55,45 @@ export default function CheckoutModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  const prevIsOpenRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
   useEffect(() => {
-    if (isOpen) {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Reset form state ONLY when transitioning from closed to open
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
       setCouponCodeInput('');
       setCouponError(null);
       setAppliedCoupon(null);
       setDiscountAmount(0);
       setIsProcessing(false);
       setStatusMessage(null);
-
-      const prevOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        document.body.style.overflow = prevOverflow;
-        window.removeEventListener('keydown', handleKeyDown);
-      };
     }
-  }, [isOpen, onClose]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Handle body overflow and escape key listener independently of form state
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -387,7 +405,7 @@ export default function CheckoutModal({
                     onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
                     placeholder="Enter Coupon Code (e.g. SUMMER20)"
                     disabled={isValidating || isProcessing}
-                    className="w-full bg-white border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 rounded-md px-3.5 py-2.5 text-xs font-mono font-semibold uppercase text-slate-900 tracking-wider transition-all placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-400 shadow-xs"
+                    className="w-full bg-white border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 rounded-md pl-3.5 pr-9 py-2.5 text-xs font-mono font-semibold uppercase text-slate-900 tracking-wider transition-all placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-400 shadow-xs"
                     style={{ borderRadius: '6px' }}
                   />
                   {couponCodeInput && (
