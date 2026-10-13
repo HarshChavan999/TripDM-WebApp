@@ -133,7 +133,7 @@ export async function sendWebPushNotification(options: SendPushNotificationOptio
         title,
         body,
         icon: 'icon',
-        color: '#2563eb',
+        color: '#ea580c',
         sound: 'default',
         priority: 'high',
         visibility: 'public'
