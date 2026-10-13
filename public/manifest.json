@@ -3,10 +3,10 @@
   "short_name": "TripDM",
   "description": "Connect directly with trusted travel agents through instant messaging.",
   "start_url": "/",
-  "display": "standalone",
+  "display": "minimal-ui",
+  "display_override": ["minimal-ui", "browser"],
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
-  "orientation": "portrait-primary",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/tripdm-logo.png",

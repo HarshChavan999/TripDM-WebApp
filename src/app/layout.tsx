@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Inter, Playfair_Display, DM_Sans, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -47,10 +47,22 @@ const outfit = Outfit({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "TripDM: Direct Message. Better Travel.",
   description: "TripDM connects travelers directly with trusted travel agents through instant messaging.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "TripDM",
+  },
   verification: {
     google: "w1V-GlWBQftzDwWc-qjkfD9-W384Q5be7h465tV5cF4",
   },

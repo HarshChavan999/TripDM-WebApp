@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           title: `${agencyDisplayName} (TripDM)`,
           body: previewText,
           icon: 'icon',
-          color: '#2563eb',
+          color: '#ea580c',
           sound: 'default',
           priority: 'high',
           visibility: 'public'
