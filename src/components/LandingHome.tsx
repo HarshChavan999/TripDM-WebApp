@@ -186,20 +186,20 @@ export default function LandingHome({
   return (
     <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-x-hidden overflow-y-auto select-none pb-20 md:pb-0">
       {/* ─── UNIFIED HERO CANVAS: TITLE, SUBTITLE, SEARCH BAR, SCENIC VISTA & 4 VALUE PROPOSITIONS ─── */}
-      <div className="relative w-full flex-1 flex flex-col justify-between overflow-visible md:overflow-hidden min-h-0">
+      <div className="relative w-full min-h-[calc(100dvh-4rem-138px)] md:min-h-0 md:flex-1 flex flex-col justify-between overflow-visible md:overflow-hidden shrink-0">
         {/* Full-bleed Scenic Background Image across the entire hero canvas */}
         <div
-          className="absolute inset-0 bg-cover bg-no-repeat bg-[center_50%] sm:bg-[84%_52%] md:bg-[85%_50%] lg:bg-[86%_48%]"
+          className="absolute inset-0 bg-cover bg-no-repeat bg-[center_18%] sm:bg-[84%_42%] md:bg-[85%_42%] lg:bg-[86%_40%]"
           style={{
             backgroundImage: "url('/hero-traveler-vista.jpeg')",
           }}
         />
 
         {/* Soft top gradient: blends seamlessly from navbar down into the sky, keeping title & subtitle 100% clean with zero box/seam */}
-        <div className="absolute inset-x-0 top-0 h-48 sm:h-64 bg-gradient-to-b from-white via-white/85 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-28 sm:h-36 bg-gradient-to-b from-white via-white/60 to-transparent pointer-events-none" />
 
         {/* Soft bottom gradient: ensures clean white mist sits behind both rows of cards and blends into How TripDM Works bottom bar */}
-        <div className="absolute inset-x-0 bottom-0 h-44 sm:h-48 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
 
         {/* ── UPPER FLOW: HEADLINE, SUBTITLE, SEARCH BAR & POPULAR TAGS ── */}
         <div className="relative z-20 w-full pt-6 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
@@ -421,9 +421,9 @@ export default function LandingHome({
         </div>
 
         {/* ── LOWER PART: 4 VALUE PROPOSITIONS (BLENDING OVER MISTY BOTTOM) ── */}
-        <div className="relative z-20 w-full mt-auto pt-2 sm:pt-3 pb-0.5 sm:pb-1 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
-          <div className="max-w-4xl mx-auto pb-0.5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-2.5 sm:gap-2">
+        <div className="relative z-20 w-full pt-2 sm:pt-3 pb-3 sm:pb-4 mb-10 sm:mb-12 md:mb-2 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
+          <div className="max-w-4xl mx-auto py-0.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
               {/* Item 1 */}
               <div className="flex flex-col items-center text-center p-1 sm:p-1">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
@@ -506,7 +506,7 @@ export default function LandingHome({
             </div>
 
             {/* Right Column (3 Steps with Chevrons) */}
-            <div className="md:col-span-8">
+            <div className="md:col-span-8 mt-3 md:mt-0 pt-2 md:pt-0 border-t border-slate-100 md:border-t-0">
               <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-3 sm:gap-2">
                 {/* Step 1 */}
                 <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
