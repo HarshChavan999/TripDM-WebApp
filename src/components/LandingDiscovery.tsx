@@ -1060,19 +1060,21 @@ export default function LandingDiscovery({
       ))}
 
       {/* ==========================================
-          SECTION 6 — Interactive TripDM AI & Direct Agent Chat Simulation
+          SECTION 6 — Interactive TripDM AI & Direct Agent Chat Simulation (Hidden for now as requested)
           ========================================== */}
-      <div>
-        <LandingPhoneChatSection
-          onChat={onChat}
-          onView={onView}
-          listings={listings}
-        />
-        {/* Gradient Divider */}
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-2">
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+      {false && (
+        <div>
+          <LandingPhoneChatSection
+            onChat={onChat}
+            onView={onView}
+            listings={listings}
+          />
+          {/* Gradient Divider */}
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-2">
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ==========================================
           SECTION 6.5 — "Recently Added Packages" Rail
@@ -1112,72 +1114,74 @@ export default function LandingDiscovery({
       )}
 
       {/* ==========================================
-          SECTION 7 — How TripDM Works & Why Book Direct (Clean Travel Marketplace Style)
+          SECTION 7 — How TripDM Works & Why Book Direct (Hidden for now as requested)
           ========================================== */}
-      <section className="py-16 sm:py-20 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-2.5">
-            How TripDM Works
-          </h2>
-          <p className="text-slate-500 text-sm sm:text-base font-medium">
-            Plan and book custom holidays directly with verified local tour operators in 3 simple steps
-          </p>
-        </div>
-
-        {/* 3-Step Connected Travel Journey Flow */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative mb-16">
-          {/* Connector Line for Desktop */}
-          <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-[2px] border-t-2 border-dashed border-slate-200 z-0" />
-
-          {/* Step 1 */}
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-500/30 text-orange-600 flex items-center justify-center mb-5 shadow-xs bg-white">
-              <Search className="w-8 h-8 text-orange-500" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-wider text-orange-600 mb-1">Step 1</span>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
-              Explore & Compare Itineraries
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs">
-              Browse handpicked tour packages across top destinations. Compare quotes, hotels, and day-by-day itineraries side-by-side.
+      {false && (
+        <section className="py-16 sm:py-20 px-4 sm:px-8 lg:px-12 w-full max-w-[1600px] mx-auto">
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-2.5">
+              How TripDM Works
+            </h2>
+            <p className="text-slate-500 text-sm sm:text-base font-medium">
+              Plan and book custom holidays directly with verified local tour operators in 3 simple steps
             </p>
           </div>
 
-          {/* Step 2 */}
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-500/30 text-orange-600 flex items-center justify-center mb-5 shadow-xs bg-white">
-              <MessageSquare className="w-8 h-8 text-orange-500" />
+          {/* 3-Step Connected Travel Journey Flow */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative mb-16">
+            {/* Connector Line for Desktop */}
+            <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-[2px] border-t-2 border-dashed border-slate-200 z-0" />
+
+            {/* Step 1 */}
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-500/30 text-orange-600 flex items-center justify-center mb-5 shadow-xs bg-white">
+                <Search className="w-8 h-8 text-orange-500" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider text-orange-600 mb-1">Step 1</span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
+                Explore & Compare Itineraries
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs">
+                Browse handpicked tour packages across top destinations. Compare quotes, hotels, and day-by-day itineraries side-by-side.
+              </p>
             </div>
-            <span className="text-xs font-black uppercase tracking-wider text-orange-600 mb-1">Step 2</span>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
-              Chat Directly with Local Planners
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs">
-              Connect 1-on-1 with the actual tour agency. Customize dates, modify hotel categories, and request special add-ons without bots.
-            </p>
+
+            {/* Step 2 */}
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-500/30 text-orange-600 flex items-center justify-center mb-5 shadow-xs bg-white">
+                <MessageSquare className="w-8 h-8 text-orange-500" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider text-orange-600 mb-1">Step 2</span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
+                Chat Directly with Local Planners
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs">
+                Connect 1-on-1 with the actual tour agency. Customize dates, modify hotel categories, and request special add-ons without bots.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-500/30 text-orange-600 flex items-center justify-center mb-5 shadow-xs bg-white">
+                <ShieldCheck className="w-8 h-8 text-orange-500" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider text-orange-600 mb-1">Step 3</span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
+                Book at 0% Commission & Travel
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs">
+                Pay genuine ground operator rates with zero middleman fees. Receive instant booking confirmation and dedicated on-trip support.
+              </p>
+            </div>
           </div>
 
-          {/* Step 3 */}
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-500/30 text-orange-600 flex items-center justify-center mb-5 shadow-xs bg-white">
-              <ShieldCheck className="w-8 h-8 text-orange-500" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-wider text-orange-600 mb-1">Step 3</span>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">
-              Book at 0% Commission & Travel
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs">
-              Pay genuine ground operator rates with zero middleman fees. Receive instant booking confirmation and dedicated on-trip support.
-            </p>
+          {/* Gradient Divider */}
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
           </div>
-        </div>
-
-        {/* Gradient Divider */}
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 pt-12">
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
-        </div>
-      </section>
+        </section>
+      )}
         </>
       )}
     </div>

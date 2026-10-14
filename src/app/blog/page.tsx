@@ -169,11 +169,8 @@ export default async function BlogPage() {
                 <Link href="/how-it-works" className="nav-link" style={{ color: '#475569', fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>
                   How It Works
                 </Link>
-                <Link href="/blog" className="nav-link" style={{ color: '#ea580c', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                  Travel Stories
-                </Link>
               </div>
-              <Link href="/agencytripdm" className="nav-link" style={{ color: '#ea580c', fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>
+              <Link href="/travel-agents" className="nav-link" style={{ color: '#ea580c', fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>
                 For Agencies →
               </Link>
             </div>

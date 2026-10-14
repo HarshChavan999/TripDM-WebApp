@@ -1248,7 +1248,7 @@ export default function TravelAgentsView({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search travel agents (e.g. Kashmir, Bali, Adventure...)"
+                  placeholder="Search destination"
                   className="w-full bg-transparent text-xs sm:text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none font-medium"
                 />
                 {searchQuery && (
@@ -1333,8 +1333,8 @@ export default function TravelAgentsView({
               CENTER COLUMN: TRAVEL AGENTS LIST (Larger, Spacious Focus)
              ══════════════════════════════════════════════════════════════════ */}
           <main className="lg:col-span-6 xl:col-span-7 space-y-4 pb-24 lg:pb-0">
-            {/* Center Header: Count + Sort Dropdown (Clean typography on page background) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-200">
+            {/* Center Header: Count (Clean typography on page background) */}
+            <div className="pb-4 mb-2 border-b border-slate-200">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {filteredAgencies.length} Verified Travel {filteredAgencies.length === 1 ? 'Agent' : 'Agents'}
@@ -1342,24 +1342,6 @@ export default function TravelAgentsView({
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-normal">
                   Connect directly with trusted travel agencies and get the best travel experiences.
                 </p>
-              </div>
-
-              {/* Sort By Dropdown */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-semibold text-slate-500">Sort by:</span>
-                <div className="relative inline-flex items-center">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white border border-slate-200 pl-3 pr-8 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-orange-500 cursor-pointer shadow-xs hover:border-slate-300 transition-colors"
-                    style={{ borderRadius: '6px' }}
-                  >
-                    <option value="relevant">Most Relevant</option>
-                    <option value="packages">Most Packages</option>
-                    <option value="name">Agency Name</option>
-                  </select>
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
-                </div>
               </div>
             </div>
 
@@ -1758,8 +1740,8 @@ export default function TravelAgentsView({
               )}
             </div>
 
-            {/* 2. TOP DESTINATIONS BY AGENTS WIDGET (Direct on page with clean separator) */}
-            {topDestinationsByAgents.length > 0 && (
+            {/* 2. TOP DESTINATIONS BY AGENTS WIDGET (Hidden for now as requested) */}
+            {false && topDestinationsByAgents.length > 0 && (
               <div className="bg-transparent p-0 pt-3 border-t border-slate-200">
                 <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
                   Top Destinations by Agents
