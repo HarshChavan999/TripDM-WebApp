@@ -184,9 +184,9 @@ export default function LandingHome({
   };
 
   return (
-    <div className="w-full bg-white text-slate-900 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-y-auto md:overflow-hidden select-none pb-16 md:pb-0">
+    <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-x-hidden overflow-y-auto select-none pb-20 md:pb-0">
       {/* ─── UNIFIED HERO CANVAS: TITLE, SUBTITLE, SEARCH BAR, SCENIC VISTA & 4 VALUE PROPOSITIONS ─── */}
-      <div className="relative w-full flex-1 flex flex-col justify-between overflow-hidden min-h-0">
+      <div className="relative w-full flex-1 flex flex-col justify-between overflow-visible md:overflow-hidden min-h-0">
         {/* Full-bleed Scenic Background Image across the entire hero canvas */}
         <div
           className="absolute inset-0 bg-cover bg-no-repeat bg-[center_50%] sm:bg-[84%_52%] md:bg-[85%_50%] lg:bg-[86%_48%]"
@@ -202,7 +202,7 @@ export default function LandingHome({
         <div className="absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
 
         {/* ── UPPER FLOW: HEADLINE, SUBTITLE, SEARCH BAR & POPULAR TAGS ── */}
-        <div className="relative z-20 w-full pt-8 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
+        <div className="relative z-20 w-full pt-4 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
           <div className="max-w-3xl mx-auto px-2">
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-[1.12]">
@@ -218,7 +218,7 @@ export default function LandingHome({
           </div>
 
           {/* ─── SEARCH BAR & POPULAR TAGS (POSITIONED FURTHER DOWN) ─── */}
-          <div className="mt-5 sm:mt-7 md:mt-8 max-w-4xl mx-auto px-2">
+          <div className="mt-3.5 sm:mt-7 md:mt-8 max-w-4xl mx-auto px-2">
             {/* SEARCH BAR */}
             <form
               onSubmit={handleSearchSubmit}
@@ -402,8 +402,8 @@ export default function LandingHome({
             </form>
 
             {/* Popular Destination Tags */}
-            <div className="mt-2 sm:mt-2.5 relative z-10 flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 px-1">
-              <span className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-900 mr-1">
+            <div className="mt-2 sm:mt-2.5 relative z-10 flex items-center justify-start sm:justify-center gap-1 sm:gap-1.5 px-1 overflow-x-auto no-scrollbar sm:flex-wrap max-w-full py-0.5">
+              <span className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-900 mr-1 shrink-0">
                 Popular:
               </span>
               {popularTags.map((tag) => (
@@ -411,7 +411,7 @@ export default function LandingHome({
                   key={tag}
                   type="button"
                   onClick={() => handleSelectPopularTag(tag)}
-                  className="px-2.5 py-0.5 bg-white/95 hover:bg-white text-slate-700 hover:text-black font-semibold text-[10.5px] sm:text-[11px] rounded-full transition-colors border border-slate-200/90 hover:border-slate-300 cursor-pointer shadow-none hover:shadow-none"
+                  className="px-2.5 py-0.5 bg-white/95 hover:bg-white text-slate-700 hover:text-black font-semibold text-[10.5px] sm:text-[11px] rounded-full transition-colors border border-slate-200/90 hover:border-slate-300 cursor-pointer shadow-none hover:shadow-none shrink-0 whitespace-nowrap active:scale-95"
                 >
                   {tag}
                 </button>
@@ -421,9 +421,9 @@ export default function LandingHome({
         </div>
 
         {/* ── LOWER PART: 4 VALUE PROPOSITIONS (BLENDING OVER MISTY BOTTOM) ── */}
-        <div className="relative z-20 w-full pt-3 pb-1 sm:pb-2 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
+        <div className="relative z-20 w-full pt-1.5 sm:pt-3 pb-1 sm:pb-2 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
           <div className="max-w-4xl mx-auto py-0.5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2">
               {/* Item 1 */}
               <div className="flex flex-col items-center text-center p-1 sm:p-1">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
