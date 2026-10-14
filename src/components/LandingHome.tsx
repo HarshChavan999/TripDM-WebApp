@@ -147,9 +147,9 @@ export default function LandingHome({
       <div className="relative w-full flex flex-col lg:flex-1 lg:justify-between pt-4 sm:pt-7 pb-4 sm:pb-2 px-3 sm:px-6 overflow-visible lg:overflow-hidden">
         {/* Scenic Background Image with smooth white fade transition */}
         <div
-          className="absolute inset-0 bg-cover bg-no-repeat bg-center pointer-events-none"
+          className="absolute inset-0 bg-cover bg-no-repeat bg-[center_50%] sm:bg-[84%_52%] md:bg-[85%_50%] lg:bg-[86%_48%] pointer-events-none"
           style={{
-            backgroundImage: "url('/hero-scenic-8k.jpg?v=2')",
+            backgroundImage: "url('/hero-traveler-vista.jpeg')",
             maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 32%, rgba(0,0,0,0.5) 50%, transparent 68%)",
             WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 32%, rgba(0,0,0,0.5) 50%, transparent 68%)",
           }}
