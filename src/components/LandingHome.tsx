@@ -184,25 +184,25 @@ export default function LandingHome({
   };
 
   return (
-    <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-x-hidden overflow-y-auto select-none pb-20 md:pb-0">
+    <div className="w-full bg-white text-slate-900 h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-x-hidden overflow-y-auto md:overflow-hidden select-none pb-[72px] md:pb-0">
       {/* ─── UNIFIED HERO CANVAS: TITLE, SUBTITLE, SEARCH BAR, SCENIC VISTA & 4 VALUE PROPOSITIONS ─── */}
-      <div className="relative w-full min-h-[calc(100dvh-4rem-138px)] md:min-h-0 md:flex-1 flex flex-col justify-between overflow-visible md:overflow-hidden shrink-0">
-        {/* Full-bleed Scenic Background Image across the entire hero canvas */}
+      <div className="relative w-full flex-1 flex flex-col justify-between overflow-visible md:overflow-hidden min-h-0">
+        {/* Full-bleed Scenic Background Image across the entire hero canvas - DESKTOP ONLY */}
         <div
-          className="absolute inset-0 bg-cover bg-no-repeat bg-[center_18%] sm:bg-[84%_42%] md:bg-[85%_42%] lg:bg-[86%_40%]"
+          className="hidden md:block absolute inset-0 bg-cover bg-no-repeat bg-[center_18%] sm:bg-[84%_42%] md:bg-[85%_42%] lg:bg-[86%_40%]"
           style={{
             backgroundImage: "url('/hero-traveler-vista.jpeg')",
           }}
         />
 
-        {/* Soft top gradient: blends seamlessly from navbar down into the sky, keeping title & subtitle 100% clean with zero box/seam */}
-        <div className="absolute inset-x-0 top-0 h-28 sm:h-36 bg-gradient-to-b from-white via-white/60 to-transparent pointer-events-none" />
+        {/* Soft top gradient - DESKTOP ONLY */}
+        <div className="hidden md:block absolute inset-x-0 top-0 h-28 sm:h-36 bg-gradient-to-b from-white via-white/60 to-transparent pointer-events-none" />
 
-        {/* Soft bottom gradient: ensures clean white mist sits behind both rows of cards and blends into How TripDM Works bottom bar */}
-        <div className="absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
+        {/* Soft bottom gradient - DESKTOP ONLY */}
+        <div className="hidden md:block absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
 
         {/* ── UPPER FLOW: HEADLINE, SUBTITLE, SEARCH BAR & POPULAR TAGS ── */}
-        <div className="relative z-20 w-full pt-6 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
+        <div className="relative z-20 w-full pt-7 sm:pt-10 md:pt-12 px-3 sm:px-6 text-center">
           <div className="max-w-3xl mx-auto px-2">
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-[1.12]">
@@ -402,7 +402,7 @@ export default function LandingHome({
             </form>
 
             {/* Popular Destination Tags */}
-            <div className="mt-2 sm:mt-2.5 relative z-10 flex items-center justify-start sm:justify-center gap-1 sm:gap-1.5 px-1 overflow-x-auto no-scrollbar sm:flex-wrap max-w-full py-0.5">
+            <div className="mt-3.5 sm:mt-2.5 relative z-10 flex items-center justify-start sm:justify-center gap-1 sm:gap-1.5 px-1 overflow-x-auto no-scrollbar sm:flex-wrap max-w-full py-0.5">
               <span className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-900 mr-1 shrink-0">
                 Popular:
               </span>
@@ -420,8 +420,8 @@ export default function LandingHome({
           </div>
         </div>
 
-        {/* ── LOWER PART: 4 VALUE PROPOSITIONS (BLENDING OVER MISTY BOTTOM) ── */}
-        <div className="relative z-20 w-full pt-2 sm:pt-3 pb-3 sm:pb-4 mb-10 sm:mb-12 md:mb-2 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
+        {/* ── LOWER PART: 4 VALUE PROPOSITIONS ── */}
+        <div className="relative z-20 w-full my-auto md:mt-auto md:mb-0 pt-2 sm:pt-3 pb-2 sm:pb-3 px-3 sm:px-6 bg-transparent md:bg-gradient-to-t md:from-white md:via-white/85 md:to-transparent">
           <div className="max-w-4xl mx-auto py-0.5">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
               {/* Item 1 */}
@@ -481,7 +481,7 @@ export default function LandingHome({
       </div>
 
       {/* ─── 3. HOW TRIPDM WORKS SECTION (CLEAN BOTTOM BAR) ───────────── */}
-      <div id="how-it-works" className="relative z-10 w-full shrink-0 border-t border-slate-100 bg-white py-1.5 sm:py-2 shadow-xs">
+      <div id="how-it-works" className="relative z-10 w-full shrink-0 border-t border-slate-100 bg-white py-2 sm:py-2 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
             {/* Left Column (Heading & Learn More) */}
@@ -497,8 +497,7 @@ export default function LandingHome({
               <button
                 type="button"
                 onClick={() => onNavigateToHowItWorks ? onNavigateToHowItWorks() : onNavigateToDestinations()}
-                className="md:mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/80 border border-slate-200/80 hover:border-slate-400 text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0"
-                style={{ borderRadius: '6px' }}
+                className="md:mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-slate-200 hover:border-slate-400 text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0 rounded-lg"
               >
                 <span>Learn More</span>
                 <ArrowRight className="h-3 w-3" />
@@ -506,17 +505,16 @@ export default function LandingHome({
             </div>
 
             {/* Right Column (3 Steps with Chevrons) */}
-            <div className="md:col-span-8 mt-3 md:mt-0 pt-2 md:pt-0 border-t border-slate-100 md:border-t-0">
-              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-3 sm:gap-2">
+            <div className="md:col-span-8 mt-2 md:mt-0 pt-1 md:pt-0">
+              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-2 sm:gap-2">
                 {/* Step 1 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center gap-3 flex-1 min-w-0 bg-[#F8FAFC] border border-slate-100 sm:border-0 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-6 h-6 sm:w-5 sm:h-5 bg-white sm:bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 rounded-md shadow-2xs"
                   >
                     1
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <Search className="h-3.5 w-3.5 text-slate-800 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
@@ -533,14 +531,13 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 2 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center gap-3 flex-1 min-w-0 bg-[#F8FAFC] border border-slate-100 sm:border-0 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-6 h-6 sm:w-5 sm:h-5 bg-white sm:bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 rounded-md shadow-2xs"
                   >
                     2
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <MessageSquare className="h-3.5 w-3.5 text-slate-800 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
@@ -557,14 +554,13 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 3 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center gap-3 flex-1 min-w-0 bg-[#F8FAFC] border border-slate-100 sm:border-0 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-6 h-6 sm:w-5 sm:h-5 bg-white sm:bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 rounded-md shadow-2xs"
                   >
                     3
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <Ticket className="h-3.5 w-3.5 text-slate-800 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
@@ -577,10 +573,10 @@ export default function LandingHome({
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
