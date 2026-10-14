@@ -432,6 +432,31 @@ export default function HomeClient({
     }
   };
 
+  const handleNavigateToLanding = () => {
+    setUserActiveSection('home');
+    setViewingListing(null);
+    setSelectedCategoryFilter(null);
+    setDashboardViewMode('categories');
+    setSearchTerm('');
+    setAdvancedFilters({
+      styles: [],
+      duration: null,
+    });
+    setShowBookingForm(false);
+    setShowComparison(false);
+    setMobileMenuOpen(false);
+    setSelectedStory(null);
+    setSelectedAgencyProfile(null);
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/#')) {
+        window.location.href = '/';
+      } else {
+        window.history.pushState({ section: 'home' }, '', '/');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
   // Immediate auto-redirect to landing page on sign out / unauthenticated state if on a protected section
   useEffect(() => {
     const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
@@ -5032,17 +5057,7 @@ export default function HomeClient({
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
                   <div
                     className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => {
-                      setUserActiveSection('listings');
-                      setViewingListing(null);
-                      setSelectedCategoryFilter(null);
-                      setDashboardViewMode('categories');
-                      setSearchTerm('');
-                      setShowBookingForm(false);
-                      setShowComparison(false);
-                      setMobileMenuOpen(false);
-                      setSelectedStory(null);
-                    }}
+                    onClick={handleNavigateToLanding}
                   >
                     <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-10 w-auto object-contain" />
                   </div>
@@ -5157,14 +5172,7 @@ export default function HomeClient({
 
                   {/* Home */}
                   <button
-                    onClick={() => {
-                      setFromSection(userActiveSection);
-                      setUserActiveSection('home');
-                      setViewingListing(null);
-                      setShowBookingForm(false);
-                      setShowComparison(false);
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={handleNavigateToLanding}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'home' && !showComparison && !viewingListing
                         ? 'bg-orange-50 text-orange-600 font-bold'
@@ -5416,20 +5424,7 @@ export default function HomeClient({
               {/* Logo */}
               <div
                 className="flex items-center cursor-pointer shrink-0 py-1"
-                onClick={() => {
-                  setUserActiveSection('home');
-                  setViewingListing(null);
-                  setSelectedCategoryFilter(null);
-                  setDashboardViewMode('categories');
-                  setSearchTerm('');
-                  setAdvancedFilters({
-                    styles: [],
-                    duration: null,
-                  });
-                  setShowBookingForm(false);
-                  setShowComparison(false);
-                  setSelectedStory(null);
-                }}
+                onClick={handleNavigateToLanding}
               >
                 <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-12 sm:h-[54px] md:h-[60px] w-auto object-contain" />
               </div>
@@ -5615,16 +5610,7 @@ export default function HomeClient({
 
                 <div
                   className="cursor-pointer flex items-center"
-                  onClick={() => {
-                    setUserActiveSection('listings');
-                    setViewingListing(null);
-                    setSelectedCategoryFilter(null);
-                    setDashboardViewMode('categories');
-                    setSearchTerm('');
-                    setShowBookingForm(false);
-                    setShowComparison(false);
-                    setSelectedStory(null);
-                  }}
+                  onClick={handleNavigateToLanding}
                 >
                   <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-11 sm:h-[50px] w-auto object-contain py-0.5" />
                 </div>
@@ -8339,18 +8325,7 @@ export default function HomeClient({
               unreadCount={userConversations?.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0) || 0}
               onTabClick={(tab) => {
                 if (tab === 'explore') {
-                  setUserActiveSection('home');
-                  setViewingListing(null);
-                  setSelectedCategoryFilter(null);
-                  setDashboardViewMode('categories');
-                  setSearchTerm('');
-                  setShowBookingForm(false);
-                  setShowComparison(false);
-                  setSelectedStory(null);
-                  if (typeof window !== 'undefined') {
-                    window.history.pushState({ section: 'home' }, '', '/');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
+                  handleNavigateToLanding();
                 } else if (tab === 'agents') {
                   setUserActiveSection('agents');
                   setSelectedAgencyProfile(null);

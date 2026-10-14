@@ -15,7 +15,7 @@ import {
   ChevronRight,
   X,
 } from 'lucide-react';
-import { PackageListing, splitDestinationTokens, normalizeDestinationName } from '@/lib/discoveryEngine';
+import { PackageListing } from '@/lib/discoveryEngine';
 import { resolveDestinationWithAutocorrect, levenshteinDistance } from '@/lib/destinationResolver';
 
 interface LandingHomeProps {
@@ -28,13 +28,16 @@ interface LandingHomeProps {
   onViewListing?: (listing: PackageListing) => void;
 }
 
-const DEFAULT_FALLBACK_TAGS = [
+const POPULAR_TAGS = [
   'Kashmir',
+  'Manali',
   'Rajasthan',
-  'Himachal Pradesh',
   'Kerala',
-  'Goa',
   'Andaman',
+  'Goa',
+  'Singapore',
+  'Dubai',
+  'Bali',
 ];
 
 const DATE_OPTIONS = [
@@ -108,51 +111,6 @@ export default function LandingHome({
     return Array.from(new Set(suggestions)).slice(0, 8);
   }, [destinationInput, allDestinations]);
 
-  // Dynamic Popular Tags: states/destinations from real agency-uploaded packages
-  const popularTags = React.useMemo(() => {
-    const stateCounts = new Map<string, number>();
-
-    listings.forEach((listing) => {
-      if (listing.approved === false) return;
-
-      const rawStates: string[] = [];
-      if (listing.stateName) rawStates.push(...splitDestinationTokens(listing.stateName));
-      if (Array.isArray(listing.stateNames)) {
-        listing.stateNames.forEach((s) => s && rawStates.push(...splitDestinationTokens(s)));
-      }
-      // Fallback to destination if state not specified
-      if (rawStates.length === 0 && listing.destination) {
-        rawStates.push(...splitDestinationTokens(listing.destination));
-      }
-      // Fallback to countryName for international packages
-      if (rawStates.length === 0 && listing.countryName) {
-        rawStates.push(...splitDestinationTokens(listing.countryName));
-      }
-
-      const seenInListing = new Set<string>();
-      rawStates.forEach((raw) => {
-        const norm = normalizeDestinationName(raw);
-        if (norm && norm.length > 1 && !/package|tour|trip|holiday/i.test(norm) && !/^india$/i.test(norm)) {
-          seenInListing.add(norm);
-        }
-      });
-
-      seenInListing.forEach((name) => {
-        stateCounts.set(name, (stateCounts.get(name) || 0) + 1);
-      });
-    });
-
-    const sortedFromListings = Array.from(stateCounts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([name]) => name);
-
-    if (sortedFromListings.length > 0) {
-      return sortedFromListings.slice(0, 10);
-    }
-
-    return DEFAULT_FALLBACK_TAGS;
-  }, [listings]);
-
   // Click outside to close dropdowns
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -184,49 +142,46 @@ export default function LandingHome({
   };
 
   return (
-    <div className="w-full bg-white text-slate-900 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-y-auto md:overflow-hidden select-none pb-16 md:pb-0">
-      {/* ─── UNIFIED HERO CANVAS: TITLE, SUBTITLE, SEARCH BAR, SCENIC VISTA & 4 VALUE PROPOSITIONS ─── */}
-      <div className="relative w-full flex-1 flex flex-col justify-between overflow-hidden min-h-0">
-        {/* Full-bleed Scenic Background Image across the entire hero canvas */}
+    <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] flex flex-col lg:justify-between overflow-x-hidden overflow-y-auto select-none pb-24 lg:pb-0">
+      {/* ─── MAIN HERO CONTAINER ────────────────────────────────────────── */}
+      <div className="relative w-full flex flex-col lg:flex-1 lg:justify-between pt-4 sm:pt-7 pb-4 sm:pb-2 px-3 sm:px-6 overflow-visible lg:overflow-hidden">
+        {/* Scenic Background Image with smooth white fade transition */}
         <div
-          className="absolute inset-0 bg-cover bg-no-repeat bg-[center_50%] sm:bg-[84%_52%] md:bg-[85%_50%] lg:bg-[86%_48%]"
+          className="absolute inset-0 bg-cover bg-no-repeat bg-center pointer-events-none"
           style={{
-            backgroundImage: "url('/hero-traveler-vista.jpeg')",
+            backgroundImage: "url('/hero-scenic-8k.jpg?v=2')",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 32%, rgba(0,0,0,0.5) 50%, transparent 68%)",
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 32%, rgba(0,0,0,0.5) 50%, transparent 68%)",
           }}
         />
+        {/* Subtle luminous overlay for crisp typography and smooth gradient to pure white */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/15 via-30% to-white to-68% pointer-events-none" />
+        {/* Pure white anchor layer ensuring 100% solid white behind the 4 value propositions */}
+        <div className="absolute inset-x-0 bottom-0 h-64 sm:h-52 bg-gradient-to-t from-white via-white via-70% to-transparent pointer-events-none" />
 
-        {/* Soft top gradient: blends seamlessly from navbar down into the sky, keeping title & subtitle 100% clean with zero box/seam */}
-        <div className="absolute inset-x-0 top-0 h-48 sm:h-64 bg-gradient-to-b from-white via-white/85 to-transparent pointer-events-none" />
+        {/* ─── 1. TOP HERO: TITLE, SUBTITLE & SEARCH ─────────────────── */}
+        <div className="relative z-20 max-w-4xl mx-auto px-2 text-center w-full my-auto py-1 sm:py-0">
+          {/* Main Headline */}
+          <h1 className="text-[26px] sm:text-4xl md:text-[44px] lg:text-[46px] font-black text-slate-900 tracking-tight leading-[1.18] sm:leading-[1.12]">
+            Find Travel Agents <br className="sm:hidden" />
+            <span className="hidden sm:inline"> </span>for <span className="text-[#FF5500] whitespace-nowrap">Your Next Trip</span>
+          </h1>
 
-        {/* Soft bottom gradient: ensures clean white mist sits behind the 4 cards and blends into How TripDM Works bottom bar */}
-        <div className="absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
+          {/* Subtitle */}
+          <p className="text-xs sm:text-sm md:text-[15px] text-slate-800 sm:text-slate-900 font-medium sm:font-semibold text-center max-w-2xl mx-auto mt-2 sm:mt-2.5 leading-relaxed px-2 sm:px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">
+            Search destinations and connect directly with multiple verified travel agents. <br className="hidden sm:inline" />
+            Compare options, chat, customize and book — with zero commission on package price.
+          </p>
 
-        {/* ── UPPER FLOW: HEADLINE, SUBTITLE, SEARCH BAR & POPULAR TAGS ── */}
-        <div className="relative z-20 w-full pt-8 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
-          <div className="max-w-3xl mx-auto px-2">
-            {/* Main Headline */}
-            <h1 className="text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-[1.12]">
-              Find Travel Agents <br className="hidden sm:inline" />
-              for <span className="text-[#FF5500]">Your Next Trip</span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-xs sm:text-[12.5px] md:text-[13px] text-slate-600 font-medium text-center max-w-xl mx-auto mt-1 sm:mt-1.5 leading-snug px-2">
-              Search destinations and connect directly with multiple verified travel agents. <br className="hidden sm:inline" />
-              Compare options, chat, customize and book — with zero commission on package price.
-            </p>
-          </div>
-
-          {/* ─── SEARCH BAR & POPULAR TAGS (POSITIONED FURTHER DOWN) ─── */}
-          <div className="mt-5 sm:mt-7 md:mt-8 max-w-4xl mx-auto px-2">
-            {/* SEARCH BAR */}
+          {/* ─── SEARCH BAR ────────────────────────────────────────── */}
+          <div className="mt-3.5 sm:mt-5 max-w-3xl mx-auto relative z-40">
             <form
               onSubmit={handleSearchSubmit}
-              className="relative z-50 bg-white p-1 sm:p-1.5 rounded-2xl sm:rounded-full border border-slate-200/90 transition-colors shadow-xs hover:shadow-xs hover:border-slate-300 max-w-2xl sm:max-w-3xl mx-auto"
+              className="relative z-50 bg-white/95 backdrop-blur-md p-1 sm:p-1.5 rounded-2xl sm:rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-slate-200/90 transition-all hover:shadow-[0_12px_36px_rgba(0,0,0,0.12)] max-w-2xl sm:max-w-3xl mx-auto"
             >
               <div className="flex flex-col sm:flex-row sm:items-center">
                 {/* Field 1: Destination Search Input + Mobile Inline Search Button */}
-                <div ref={searchBoxRef} className="relative flex-1 flex items-center min-w-0 pl-3 pr-1.5 py-1 sm:py-0.5">
+                <div ref={searchBoxRef} className="relative flex-1 flex items-center min-w-0 pl-3 pr-1.5 py-1.5 sm:py-1">
                   <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
                   <input
                     type="text"
@@ -290,10 +245,10 @@ export default function LandingHome({
                 {/* Secondary Filters: Row 2 on Mobile (side-by-side) / Inline on Desktop */}
                 <div className="flex items-center border-t border-slate-100 sm:border-t-0 sm:contents">
                   {/* Desktop Divider 1 */}
-                  <div className="hidden sm:block w-px h-5 bg-slate-200/90 shrink-0" />
+                  <div className="hidden sm:block w-px h-6 bg-slate-200/90 shrink-0" />
 
                   {/* Field 2: Travel Dates Dropdown */}
-                  <div ref={dateDropdownRef} className="relative flex-1 sm:flex-initial sm:shrink-0 px-2.5 sm:px-3 py-1 sm:py-0.5">
+                  <div ref={dateDropdownRef} className="relative flex-1 sm:flex-initial sm:shrink-0 px-2.5 sm:px-3 py-1.5 sm:py-1">
                     <button
                       type="button"
                       onClick={() => {
@@ -342,10 +297,10 @@ export default function LandingHome({
                   <div className="w-px h-4 bg-slate-200/80 shrink-0 sm:hidden" />
 
                   {/* Desktop Divider 2 */}
-                  <div className="hidden sm:block w-px h-5 bg-slate-200/90 shrink-0" />
+                  <div className="hidden sm:block w-px h-6 bg-slate-200/90 shrink-0" />
 
                   {/* Field 3: Travelers Dropdown */}
-                  <div ref={travelerDropdownRef} className="relative flex-1 sm:flex-initial sm:shrink-0 px-2.5 sm:px-3 py-1 sm:py-0.5">
+                  <div ref={travelerDropdownRef} className="relative flex-1 sm:flex-initial sm:shrink-0 px-2.5 sm:px-3 py-1.5 sm:py-1">
                     <button
                       type="button"
                       onClick={() => {
@@ -394,7 +349,7 @@ export default function LandingHome({
                 {/* Desktop Search Button */}
                 <button
                   type="submit"
-                  className="hidden sm:inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold px-6 py-2 rounded-full transition-all duration-200 shadow-sm shadow-amber-500/25 border border-amber-400/50 text-xs sm:text-sm cursor-pointer shrink-0 ml-1"
+                  className="hidden sm:inline-flex items-center justify-center bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold px-7 py-2.5 rounded-full transition-all duration-200 shadow-md shadow-amber-500/25 border border-amber-400/50 text-xs sm:text-sm cursor-pointer shrink-0 ml-1"
                 >
                   Search
                 </button>
@@ -402,16 +357,16 @@ export default function LandingHome({
             </form>
 
             {/* Popular Destination Tags */}
-            <div className="mt-2 sm:mt-2.5 relative z-10 flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 px-1">
-              <span className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-900 mr-1">
+            <div className="mt-2 sm:mt-3 relative z-10 flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 px-1 overflow-x-auto no-scrollbar sm:flex-wrap max-w-full py-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-900 shrink-0 mr-0.5">
                 Popular:
               </span>
-              {popularTags.map((tag) => (
+              {POPULAR_TAGS.map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => handleSelectPopularTag(tag)}
-                  className="px-2.5 py-0.5 bg-white/95 hover:bg-white text-slate-700 hover:text-black font-semibold text-[10.5px] sm:text-[11px] rounded-full transition-colors border border-slate-200/90 hover:border-slate-300 cursor-pointer shadow-none hover:shadow-none"
+                  className="px-2.5 py-1 sm:py-0.5 bg-white/95 hover:bg-slate-50 text-slate-700 hover:text-black font-semibold text-[11px] sm:text-xs rounded-full transition-colors border border-slate-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
                 >
                   {tag}
                 </button>
@@ -420,58 +375,58 @@ export default function LandingHome({
           </div>
         </div>
 
-        {/* ── LOWER PART: 4 VALUE PROPOSITIONS (BLENDING OVER MISTY BOTTOM) ── */}
-        <div className="relative z-20 w-full pt-3 pb-1 sm:pb-2 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
-          <div className="max-w-4xl mx-auto py-0.5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
+        {/* ─── 2. 4 VALUE PROPOSITIONS ─── */}
+        <div className="relative z-10 w-full mt-4 sm:mt-5 px-3 sm:px-6">
+          <div className="max-w-4xl mx-auto py-1 sm:py-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
               {/* Item 1 */}
-              <div className="flex flex-col items-center text-center p-1 sm:p-1">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
-                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-900" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <Users className="h-4 w-4 text-black" />
                 </div>
-                <h3 className="text-xs sm:text-[12.5px] font-bold text-slate-900 leading-tight">
+                <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Multiple Travel Agents
                 </h3>
-                <p className="text-[10px] sm:text-[10.5px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   Get options from many verified agents
                 </p>
               </div>
 
               {/* Item 2 */}
-              <div className="flex flex-col items-center text-center p-1 sm:p-1 sm:border-l sm:border-slate-200/80">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
-                  <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-900" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 sm:border-l sm:border-slate-200/80">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <MessageSquare className="h-4 w-4 text-black" />
                 </div>
-                <h3 className="text-xs sm:text-[12.5px] font-bold text-slate-900 leading-tight">
+                <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Chat Directly
                 </h3>
-                <p className="text-[10px] sm:text-[10.5px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   Discuss, negotiate and customize
                 </p>
               </div>
 
               {/* Item 3 */}
-              <div className="flex flex-col items-center text-center p-1 sm:p-1 sm:border-l sm:border-slate-200/80">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
-                  <IndianRupee className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-900" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 sm:border-l sm:border-slate-200/80">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <IndianRupee className="h-4 w-4 text-black" />
                 </div>
-                <h3 className="text-xs sm:text-[12.5px] font-bold text-slate-900 leading-tight">
+                <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   No Commission
                 </h3>
-                <p className="text-[10px] sm:text-[10.5px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   You pay the agency directly
                 </p>
               </div>
 
               {/* Item 4 */}
-              <div className="flex flex-col items-center text-center p-1 sm:p-1 sm:border-l sm:border-slate-200/80">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
-                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-900" />
+              <div className="flex flex-col items-center text-center p-2 sm:p-1.5 sm:border-l sm:border-slate-200/80">
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
+                  <ShieldCheck className="h-4 w-4 text-black" />
                 </div>
-                <h3 className="text-xs sm:text-[12.5px] font-bold text-slate-900 leading-tight">
+                <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
                   Verified Agents
                 </h3>
-                <p className="text-[10px] sm:text-[10.5px] text-slate-500 font-medium leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
                   Safe, reliable and trusted
                 </p>
               </div>
@@ -481,24 +436,23 @@ export default function LandingHome({
       </div>
 
       {/* ─── 3. HOW TRIPDM WORKS SECTION (CLEAN BOTTOM BAR) ───────────── */}
-      <div id="how-it-works" className="relative z-10 w-full shrink-0 border-t border-slate-100 bg-white py-1.5 sm:py-2 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
+      <div id="how-it-works" className="relative z-10 w-full shrink-0 border-t border-slate-200/80 bg-white py-4 sm:py-4 shadow-xs mt-3 sm:mt-0">
+        <div className="max-w-5xl mx-auto px-3.5 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-6 items-center">
             {/* Left Column (Heading & Learn More) */}
-            <div className="md:col-span-4 flex items-center md:block justify-between">
+            <div className="md:col-span-4 flex items-center md:block justify-between gap-2">
               <div>
-                <h2 className="text-sm sm:text-base md:text-lg font-black text-slate-900 tracking-tight leading-tight">
+                <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight">
                   How TripDM Works
                 </h2>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-normal mt-0.5">
+                <p className="text-[11px] text-slate-500 font-normal mt-0.5">
                   Plan and book your trip with travel agents in 3 simple steps.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigateToHowItWorks ? onNavigateToHowItWorks() : onNavigateToDestinations()}
-                className="md:mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/80 border border-slate-200/80 hover:border-slate-400 text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0"
-                style={{ borderRadius: '6px' }}
+                className="md:mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-400 text-slate-800 hover:text-slate-950 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0 rounded-lg"
               >
                 <span>Learn More</span>
                 <ArrowRight className="h-3 w-3" />
@@ -507,18 +461,17 @@ export default function LandingHome({
 
             {/* Right Column (3 Steps with Chevrons) */}
             <div className="md:col-span-8">
-              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-3 sm:gap-2">
+              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-2.5 sm:gap-2">
                 {/* Step 1 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center sm:items-start gap-2.5 flex-1 min-w-0 bg-slate-50/90 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-5 h-5 bg-slate-900 text-white font-black flex items-center justify-center text-[10px] shrink-0 rounded-md"
                   >
                     1
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <Search className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                      <Search className="h-3.5 w-3.5 text-slate-700 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
                         Search
                       </h4>
@@ -533,16 +486,15 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 2 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center sm:items-start gap-2.5 flex-1 min-w-0 bg-slate-50/90 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-5 h-5 bg-slate-900 text-white font-black flex items-center justify-center text-[10px] shrink-0 rounded-md"
                   >
                     2
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                      <MessageSquare className="h-3.5 w-3.5 text-slate-700 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
                         Chat
                       </h4>
@@ -557,16 +509,15 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 3 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center sm:items-start gap-2.5 flex-1 min-w-0 bg-slate-50/90 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-5 h-5 bg-slate-900 text-white font-black flex items-center justify-center text-[10px] shrink-0 rounded-md"
                   >
                     3
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <Ticket className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                      <Ticket className="h-3.5 w-3.5 text-slate-700 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
                         Book Directly
                       </h4>

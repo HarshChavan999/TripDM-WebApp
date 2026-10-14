@@ -81,10 +81,10 @@ export default function HowItWorksView({
   return (
     <div className="w-full bg-white text-slate-900 min-h-screen">
       {/* ─── 1. TOP HERO SECTION (Full-Width with Pure White Background) ─── */}
-      <div className="relative w-full bg-white pt-8 sm:pt-10 pb-8 overflow-hidden">
-        {/* Scenic Background Photo on Right Side with smooth alpha mask fade to pure white */}
+      <div className="relative w-full bg-white pt-6 sm:pt-10 pb-6 sm:pb-8 overflow-hidden">
+        {/* Scenic Background Photo on Right Side with smooth alpha mask fade to pure white - Hidden on phone */}
         <div
-          className="absolute inset-y-0 right-0 w-full sm:w-[85%] md:w-[70%] lg:w-[58%] bg-cover bg-no-repeat bg-right pointer-events-none"
+          className="hidden sm:block absolute inset-y-0 right-0 w-full sm:w-[85%] md:w-[70%] lg:w-[58%] bg-cover bg-no-repeat bg-right pointer-events-none"
           style={{
             backgroundImage: "url('/how-it-works-hero.jpg')",
             maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.7) 45%, black 100%)',
@@ -96,9 +96,9 @@ export default function HowItWorksView({
         </div>
 
         <div className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-start justify-between min-h-[140px]">
+          <div className="flex flex-col md:flex-row items-start justify-between min-h-0 sm:min-h-[140px]">
             {/* Left Hero Text Block with custom left spacing */}
-            <div className="max-w-xl pl-4 sm:pl-8 md:pl-12 lg:pl-16 xl:pl-20 z-10">
+            <div className="max-w-xl pl-0 sm:pl-8 md:pl-12 lg:pl-16 xl:pl-20 z-10">
               {/* Orange Eyebrow Tag */}
               <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-[#FF5500]">
                 HOW IT WORKS

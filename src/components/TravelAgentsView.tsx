@@ -1183,10 +1183,10 @@ export default function TravelAgentsView({
   return (
     <div className="w-full bg-white text-slate-900 min-h-screen">
       {/* ─── 1. TOP HERO SECTION FOR TRAVEL AGENTS (Clean layout with centered search) ─── */}
-      <div className="relative w-full bg-white border-b border-slate-100 pt-6 sm:pt-8 pb-7 overflow-hidden">
-        {/* Background Banner Image on the right side with seamless smooth fade to white */}
+      <div className="relative w-full bg-white border-b border-slate-100 pt-5 sm:pt-8 pb-5 sm:pb-7 overflow-hidden">
+        {/* Background Banner Image on the right side with seamless smooth fade to white - Hidden on phone */}
         <div
-          className="absolute inset-y-0 right-0 w-full sm:w-[85%] md:w-[70%] lg:w-[60%] bg-cover bg-no-repeat bg-right pointer-events-none"
+          className="hidden sm:block absolute inset-y-0 right-0 w-full sm:w-[85%] md:w-[70%] lg:w-[60%] bg-cover bg-no-repeat bg-right pointer-events-none"
           style={{
             backgroundImage: "url('/travel-agents-hero-banner.jpg')",
             maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.7) 45%, black 100%)',
@@ -1197,10 +1197,10 @@ export default function TravelAgentsView({
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none opacity-80" />
         </div>
 
-        <div className="relative z-10 w-full max-w-[1720px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20">
+        <div className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-10 lg:px-14 xl:px-20">
           {/* Top Row: Left Title & Right Sticker Text */}
-          <div className="relative flex flex-col md:flex-row items-start justify-between min-h-[110px]">
-            <div className="max-w-xl pl-2 sm:pl-4 lg:pl-6 z-10">
+          <div className="relative flex flex-col md:flex-row items-start justify-between min-h-0 sm:min-h-[110px]">
+            <div className="max-w-xl pl-0 sm:pl-4 lg:pl-6 z-10">
               {/* Main Headline */}
               <h1 className="text-3xl sm:text-4xl md:text-[40px] lg:text-[44px] font-black text-slate-900 tracking-tight leading-none">
                 Travel Agents
@@ -1235,8 +1235,8 @@ export default function TravelAgentsView({
             </div>
           </div>
 
-          {/* Middle Row: Standard Centered Search Bar */}
-          <div className="mt-4 sm:mt-5 max-w-xl mx-auto relative z-20">
+          {/* Middle Row: Standard Centered Search Bar - Hidden on phone */}
+          <div className="hidden sm:block mt-4 sm:mt-5 max-w-xl mx-auto relative z-20">
             <form
               onSubmit={(e) => e.preventDefault()}
               className="bg-white/95 backdrop-blur-sm p-1 sm:p-1.5 shadow-sm border border-slate-200/90 flex items-center gap-1.5"
@@ -1271,9 +1271,9 @@ export default function TravelAgentsView({
             </form>
           </div>
 
-          {/* Bottom Row: Category Nav Buttons (Direct on banner - No outer container box) */}
-          <div className="mt-6 w-full flex items-center justify-center">
-            <div className="flex flex-wrap gap-2 sm:gap-2.5 items-center justify-center px-1 max-w-full">
+          {/* Bottom Row: Category Nav Buttons (Direct on banner - Horizontally scrollable on phone, centered wrap on desktop) */}
+          <div className="mt-3.5 sm:mt-6 w-full flex items-center justify-start sm:justify-center overflow-x-auto scrollbar-hide no-scrollbar px-1 py-1">
+            <div className="flex sm:flex-wrap gap-2 sm:gap-2.5 items-center sm:justify-center shrink-0 sm:shrink max-w-full">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -1282,7 +1282,7 @@ export default function TravelAgentsView({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                    className={`px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
                       isActive
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/20 border border-amber-400/50'
                         : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-2xs'
