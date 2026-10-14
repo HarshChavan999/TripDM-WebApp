@@ -142,29 +142,33 @@ export default function LandingHome({
   };
 
   return (
-    <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-y-auto lg:overflow-hidden select-none pb-16 lg:pb-0">
+    <div className="w-full bg-white text-slate-900 min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] flex flex-col lg:justify-between overflow-x-hidden overflow-y-auto select-none pb-24 lg:pb-0">
       {/* ─── MAIN HERO CONTAINER ────────────────────────────────────────── */}
-      <div className="relative w-full flex-1 flex flex-col justify-between pt-5 sm:pt-7 pb-2 px-4 sm:px-6 overflow-hidden">
-        {/* Scenic Background Image matching Mockup */}
+      <div className="relative w-full flex flex-col lg:flex-1 lg:justify-between pt-4 sm:pt-7 pb-4 sm:pb-2 px-3 sm:px-6 overflow-visible lg:overflow-hidden">
+        {/* Scenic Background Image with smooth white fade transition */}
         <div
           className="absolute inset-0 bg-cover bg-no-repeat bg-center pointer-events-none"
           style={{
             backgroundImage: "url('/hero-scenic-8k.jpg?v=2')",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 32%, rgba(0,0,0,0.5) 50%, transparent 68%)",
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 32%, rgba(0,0,0,0.5) 50%, transparent 68%)",
           }}
         />
-        {/* Subtle luminous overlay for crisp typography and vibrant scenic depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/75 via-white/30 to-white/90 pointer-events-none" />
+        {/* Subtle luminous overlay for crisp typography and smooth gradient to pure white */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/15 via-30% to-white to-68% pointer-events-none" />
+        {/* Pure white anchor layer ensuring 100% solid white behind the 4 value propositions */}
+        <div className="absolute inset-x-0 bottom-0 h-64 sm:h-52 bg-gradient-to-t from-white via-white via-70% to-transparent pointer-events-none" />
 
         {/* ─── 1. TOP HERO: TITLE, SUBTITLE & SEARCH ─────────────────── */}
-        <div className="relative z-20 max-w-4xl mx-auto px-2 text-center w-full my-auto">
+        <div className="relative z-20 max-w-4xl mx-auto px-2 text-center w-full my-auto py-1 sm:py-0">
           {/* Main Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-[44px] lg:text-[46px] font-black text-slate-900 tracking-tight leading-[1.12]">
-            Find Travel Agents <br className="hidden sm:inline" />
-            for <span className="text-[#FF5500]">Your Next Trip</span>
+          <h1 className="text-[26px] sm:text-4xl md:text-[44px] lg:text-[46px] font-black text-slate-900 tracking-tight leading-[1.18] sm:leading-[1.12]">
+            Find Travel Agents <br className="sm:hidden" />
+            <span className="hidden sm:inline"> </span>for <span className="text-[#FF5500] whitespace-nowrap">Your Next Trip</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xs sm:text-sm md:text-[15px] text-slate-900 font-semibold text-center max-w-3xl mx-auto mt-2.5 leading-relaxed px-4 drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)]">
+          <p className="text-xs sm:text-sm md:text-[15px] text-slate-800 sm:text-slate-900 font-medium sm:font-semibold text-center max-w-2xl mx-auto mt-2 sm:mt-2.5 leading-relaxed px-2 sm:px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]">
             Search destinations and connect directly with multiple verified travel agents. <br className="hidden sm:inline" />
             Compare options, chat, customize and book — with zero commission on package price.
           </p>
@@ -353,8 +357,8 @@ export default function LandingHome({
             </form>
 
             {/* Popular Destination Tags */}
-            <div className="mt-2.5 sm:mt-3 relative z-10 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-1">
-              <span className="text-[11px] sm:text-xs font-bold text-slate-900 mr-1">
+            <div className="mt-2 sm:mt-3 relative z-10 flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 px-1 overflow-x-auto no-scrollbar sm:flex-wrap max-w-full py-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-900 shrink-0 mr-0.5">
                 Popular:
               </span>
               {POPULAR_TAGS.map((tag) => (
@@ -362,7 +366,7 @@ export default function LandingHome({
                   key={tag}
                   type="button"
                   onClick={() => handleSelectPopularTag(tag)}
-                  className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white hover:bg-slate-50 text-slate-700 hover:text-black font-semibold text-[11px] sm:text-xs rounded-full transition-colors border border-slate-200 cursor-pointer"
+                  className="px-2.5 py-1 sm:py-0.5 bg-white/95 hover:bg-slate-50 text-slate-700 hover:text-black font-semibold text-[11px] sm:text-xs rounded-full transition-colors border border-slate-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
                 >
                   {tag}
                 </button>
@@ -371,10 +375,10 @@ export default function LandingHome({
           </div>
         </div>
 
-        {/* ─── 2. 4 VALUE PROPOSITIONS (CLEAN NO-CONTAINER LAYOUT) ─── */}
-        <div className="relative z-10 w-full mt-3.5 sm:mt-5 px-3 sm:px-6">
+        {/* ─── 2. 4 VALUE PROPOSITIONS ─── */}
+        <div className="relative z-10 w-full mt-4 sm:mt-5 px-3 sm:px-6">
           <div className="max-w-4xl mx-auto py-1 sm:py-2">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
               {/* Item 1 */}
               <div className="flex flex-col items-center text-center p-2 sm:p-1.5">
                 <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-black mb-1.5 shrink-0 shadow-2xs">
@@ -432,24 +436,23 @@ export default function LandingHome({
       </div>
 
       {/* ─── 3. HOW TRIPDM WORKS SECTION (CLEAN BOTTOM BAR) ───────────── */}
-      <div id="how-it-works" className="relative z-10 w-full shrink-0 border-t border-slate-100 bg-white py-3 sm:py-4 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-6 items-center">
+      <div id="how-it-works" className="relative z-10 w-full shrink-0 border-t border-slate-200/80 bg-white py-4 sm:py-4 shadow-xs mt-3 sm:mt-0">
+        <div className="max-w-5xl mx-auto px-3.5 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-6 items-center">
             {/* Left Column (Heading & Learn More) */}
-            <div className="md:col-span-4 flex items-center md:block justify-between">
+            <div className="md:col-span-4 flex items-center md:block justify-between gap-2">
               <div>
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight">
                   How TripDM Works
                 </h2>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-normal mt-0.5">
+                <p className="text-[11px] text-slate-500 font-normal mt-0.5">
                   Plan and book your trip with travel agents in 3 simple steps.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigateToHowItWorks ? onNavigateToHowItWorks() : onNavigateToDestinations()}
-                className="md:mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/80 border border-slate-200/80 hover:border-slate-400 text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0"
-                style={{ borderRadius: '6px' }}
+                className="md:mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-400 text-slate-800 hover:text-slate-950 font-bold text-[11px] transition-all cursor-pointer shadow-2xs shrink-0 rounded-lg"
               >
                 <span>Learn More</span>
                 <ArrowRight className="h-3 w-3" />
@@ -458,18 +461,17 @@ export default function LandingHome({
 
             {/* Right Column (3 Steps with Chevrons) */}
             <div className="md:col-span-8">
-              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-3 sm:gap-2">
+              <div className="grid grid-cols-1 sm:flex items-stretch sm:items-center justify-between gap-2.5 sm:gap-2">
                 {/* Step 1 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center sm:items-start gap-2.5 flex-1 min-w-0 bg-slate-50/90 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-5 h-5 bg-slate-900 text-white font-black flex items-center justify-center text-[10px] shrink-0 rounded-md"
                   >
                     1
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <Search className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                      <Search className="h-3.5 w-3.5 text-slate-700 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
                         Search
                       </h4>
@@ -484,16 +486,15 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 2 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center sm:items-start gap-2.5 flex-1 min-w-0 bg-slate-50/90 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-5 h-5 bg-slate-900 text-white font-black flex items-center justify-center text-[10px] shrink-0 rounded-md"
                   >
                     2
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                      <MessageSquare className="h-3.5 w-3.5 text-slate-700 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
                         Chat
                       </h4>
@@ -508,16 +509,15 @@ export default function LandingHome({
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
 
                 {/* Step 3 */}
-                <div className="flex items-start gap-2.5 sm:gap-2.5 flex-1 min-w-0 bg-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center sm:items-start gap-2.5 flex-1 min-w-0 bg-slate-50/90 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-none">
                   <span
-                    className="w-5 h-5 bg-slate-100 text-black border border-slate-200 font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5"
-                    style={{ borderRadius: '4px' }}
+                    className="w-5 h-5 bg-slate-900 text-white font-black flex items-center justify-center text-[10px] shrink-0 rounded-md"
                   >
                     3
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <Ticket className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                      <Ticket className="h-3.5 w-3.5 text-slate-700 shrink-0" />
                       <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 truncate">
                         Book Directly
                       </h4>
