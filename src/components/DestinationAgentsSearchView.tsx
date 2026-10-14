@@ -833,27 +833,18 @@ export default function DestinationAgentsSearchView({
                 type="text"
                 value={currentSearch}
                 onChange={(e) => setCurrentSearch(e.target.value)}
-                placeholder="Search destination (e.g. Mumbai, Rajasthan, Kashmir)..."
+                placeholder="Search destination..."
                 className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
-            </div>
-
-            <div className="h-4 w-px bg-slate-200 hidden md:block" />
-
-            {/* Field 2: Dates Dropdown */}
-            <div className="flex items-center px-2.5 py-1 gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
-              <span>{selectedDates}</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
-            </div>
-
-            <div className="h-4 w-px bg-slate-200 hidden md:block" />
-
-            {/* Field 3: Travelers Dropdown */}
-            <div className="flex items-center px-2.5 py-1 gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer">
-              <Users className="h-3.5 w-3.5 text-slate-400" />
-              <span>{selectedTravelers}</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
+              {currentSearch && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentSearch('')}
+                  className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer mr-1"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Submit Search Button */}
