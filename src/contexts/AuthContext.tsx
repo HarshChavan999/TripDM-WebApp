@@ -30,6 +30,7 @@ interface UserData {
   freeChats?: number;
   unlockedAgencies?: string[];
   unlockedUsers?: string[];
+  isOnline?: boolean;
   creditHistory?: Array<{
     id: string;
     type: string;
@@ -109,8 +110,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               try {
                 sessionStorage.setItem('tripdm_auth_userdata', JSON.stringify(data));
               } catch {}
-              // Update online status immediately on login
-              updateDoc(docRef, { isOnline: true }).catch(() => {});
+              // Update online status immediately on login if not already online
+              if (!data.isOnline) {
+                updateDoc(docRef, { isOnline: true }).catch(() => {});
+              }
             } else {
               setUserData(null);
               try {

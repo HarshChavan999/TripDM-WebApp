@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, Fragment } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -657,6 +657,11 @@ export default function HomeClient({
     }
     setCheckoutModalOpen(true);
   };
+
+  const handleCloseCheckoutModal = useCallback(() => {
+    setCheckoutModalOpen(false);
+  }, []);
+
   const [currentChatAgencyName, setCurrentChatAgencyName] = useState<string>(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -4990,7 +4995,7 @@ export default function HomeClient({
           </div>
           <CheckoutModal
             isOpen={checkoutModalOpen}
-            onClose={() => setCheckoutModalOpen(false)}
+            onClose={handleCloseCheckoutModal}
             targetPlan={checkoutTargetPlan}
             planTitle={checkoutPlanTitle}
             originalPrice={checkoutOriginalPrice}
@@ -10674,7 +10679,7 @@ export default function HomeClient({
 
           <CheckoutModal
             isOpen={checkoutModalOpen}
-            onClose={() => setCheckoutModalOpen(false)}
+            onClose={handleCloseCheckoutModal}
             targetPlan={checkoutTargetPlan}
             planTitle={checkoutPlanTitle}
             originalPrice={checkoutOriginalPrice}
@@ -10970,7 +10975,7 @@ export default function HomeClient({
       {/* Checkout Modal Overlay for Agency Plan Upgrades */}
       <CheckoutModal
         isOpen={checkoutModalOpen}
-        onClose={() => setCheckoutModalOpen(false)}
+        onClose={handleCloseCheckoutModal}
         targetPlan={checkoutTargetPlan}
         planTitle={checkoutPlanTitle}
         originalPrice={checkoutOriginalPrice}
