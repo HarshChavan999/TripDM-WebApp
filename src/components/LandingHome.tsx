@@ -198,11 +198,11 @@ export default function LandingHome({
         {/* Soft top gradient: blends seamlessly from navbar down into the sky, keeping title & subtitle 100% clean with zero box/seam */}
         <div className="absolute inset-x-0 top-0 h-48 sm:h-64 bg-gradient-to-b from-white via-white/85 to-transparent pointer-events-none" />
 
-        {/* Soft bottom gradient: ensures clean white mist sits behind the 4 cards and blends into How TripDM Works bottom bar */}
-        <div className="absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
+        {/* Soft bottom gradient: ensures clean white mist sits behind both rows of cards and blends into How TripDM Works bottom bar */}
+        <div className="absolute inset-x-0 bottom-0 h-44 sm:h-48 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
 
         {/* ── UPPER FLOW: HEADLINE, SUBTITLE, SEARCH BAR & POPULAR TAGS ── */}
-        <div className="relative z-20 w-full pt-4 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
+        <div className="relative z-20 w-full pt-6 sm:pt-12 md:pt-14 px-4 sm:px-6 text-center">
           <div className="max-w-3xl mx-auto px-2">
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-[1.12]">
@@ -211,14 +211,14 @@ export default function LandingHome({
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-[12.5px] md:text-[13px] text-slate-600 font-medium text-center max-w-xl mx-auto mt-1 sm:mt-1.5 leading-snug px-2">
+            <p className="text-xs sm:text-[12.5px] md:text-[13px] text-slate-600 font-medium text-center max-w-xl mx-auto mt-1.5 sm:mt-1.5 leading-snug px-2">
               Search destinations and connect directly with multiple verified travel agents. <br className="hidden sm:inline" />
               Compare options, chat, customize and book — with zero commission on package price.
             </p>
           </div>
 
           {/* ─── SEARCH BAR & POPULAR TAGS (POSITIONED FURTHER DOWN) ─── */}
-          <div className="mt-3.5 sm:mt-7 md:mt-8 max-w-4xl mx-auto px-2">
+          <div className="mt-4 sm:mt-7 md:mt-8 max-w-4xl mx-auto px-2">
             {/* SEARCH BAR */}
             <form
               onSubmit={handleSearchSubmit}
@@ -421,9 +421,9 @@ export default function LandingHome({
         </div>
 
         {/* ── LOWER PART: 4 VALUE PROPOSITIONS (BLENDING OVER MISTY BOTTOM) ── */}
-        <div className="relative z-20 w-full pt-1.5 sm:pt-3 pb-1 sm:pb-2 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
-          <div className="max-w-4xl mx-auto py-0.5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2">
+        <div className="relative z-20 w-full mt-auto pt-2 sm:pt-3 pb-0.5 sm:pb-1 px-3 sm:px-6 bg-gradient-to-t from-white via-white/85 to-transparent">
+          <div className="max-w-4xl mx-auto pb-0.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-2.5 sm:gap-2">
               {/* Item 1 */}
               <div className="flex flex-col items-center text-center p-1 sm:p-1">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-900 mb-1 shrink-0">
