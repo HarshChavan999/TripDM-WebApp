@@ -1580,8 +1580,8 @@ export default function PackageDetailView({
               {user ? (
                 <button
                   onClick={() => setShowWriteReviewModal(true)}
-                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white px-4 py-2 cursor-pointer transition-all hover:opacity-95 shadow-2xs active:scale-[0.98]"
-                  style={{ background: '#b84814', borderRadius: '6px' }}
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-white px-4 py-2 cursor-pointer transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-sm shadow-amber-500/25 border border-amber-400/40 active:scale-[0.98]"
+                  style={{ borderRadius: '6px' }}
                 >
                   <Plus className="h-4 w-4" /> Write a Review
                 </button>
@@ -1717,8 +1717,8 @@ export default function PackageDetailView({
                         <button
                           type="submit"
                           disabled={isSubmittingReview || !newReview.comment.trim() || !newReview.name.trim()}
-                          className="px-8 py-2 text-sm font-semibold text-white transition-all disabled:opacity-50 cursor-pointer shadow-2xs hover:opacity-95 active:scale-[0.98]"
-                          style={{ background: '#b84814', borderRadius: '6px' }}
+                          className="px-8 py-2 text-sm font-bold text-white transition-all disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-sm shadow-amber-500/25 border border-amber-400/40 active:scale-[0.98]"
+                          style={{ borderRadius: '6px' }}
                         >
                           {isSubmittingReview ? 'Posting Review...' : 'Submit Review'}
                         </button>
@@ -1816,8 +1816,8 @@ export default function PackageDetailView({
                     {user ? (
                       <button
                         onClick={() => setShowWriteReviewModal(true)}
-                        className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-white px-5 py-2.5 cursor-pointer transition-all hover:opacity-95 shadow-2xs active:scale-[0.98]"
-                        style={{ background: '#b84814', borderRadius: '6px' }}
+                        className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-white px-5 py-2.5 cursor-pointer transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-sm shadow-amber-500/25 border border-amber-400/40 active:scale-[0.98]"
+                        style={{ borderRadius: '6px' }}
                       >
                         <Plus className="h-4 w-4" /> Write a Review
                       </button>
@@ -1949,7 +1949,7 @@ export default function PackageDetailView({
       {/* ─── DESKTOP SCROLL-TRIGGERED FLOATING CHAT POPUP WITH AGENCY LOGO ───────────────────── */}
       {!isPreview && onChat && (
         <div
-          className={`hidden md:block fixed bottom-6 right-6 z-[150] transition-all duration-500 ease-out ${
+          className={`hidden md:block fixed bottom-6 right-2 sm:right-3 z-[150] transition-all duration-500 ease-out ${
             showStickyBar ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
           }`}
         >
@@ -2272,8 +2272,8 @@ export default function PackageDetailView({
                 <button
                   type="submit"
                   disabled={isSubmittingReview || !newReview.comment.trim()}
-                  className="px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-50 shadow-2xs hover:opacity-95 active:scale-[0.98]"
-                  style={{ background: '#b84814', borderRadius: '6px' }}
+                  className="px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm shadow-amber-500/25 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border border-amber-400/40 active:scale-[0.98]"
+                  style={{ borderRadius: '6px' }}
                 >
                   {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                 </button>

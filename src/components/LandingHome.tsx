@@ -210,13 +210,20 @@ export default function LandingHome({
         <div className="relative z-20 w-full pt-2 sm:pt-6 md:pt-12 px-3 sm:px-6 text-center">
           <div className="max-w-3xl mx-auto px-2">
             {/* Main Headline */}
-            <h1 className="text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] font-black text-slate-900 tracking-tight leading-[1.18]">
-              Find Travel Agents <br />
-              for <span className="text-[#FF5500]">Your Next Trip</span>
+            <h1 className="font-heading font-[family-name:var(--font-outfit)] font-extrabold text-[26px] xs:text-[28px] sm:text-[32px] md:text-[38px] lg:text-[42px] text-slate-900 tracking-tight leading-[1.16] sm:leading-[1.16] md:leading-[1.14]">
+              <span>Find </span>
+              <span className="text-[#FF6A00] bg-gradient-to-r from-amber-500 via-orange-500 to-[#FF5500] bg-clip-text text-transparent inline-block">
+                Travel Agents
+              </span>
+              <br />
+              <span>For Your </span>
+              <span className="text-[#FF6A00] bg-gradient-to-r from-amber-500 via-orange-500 to-[#FF5500] bg-clip-text text-transparent inline-block">
+                Next Trip
+              </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-[12.5px] md:text-[13px] text-slate-600 font-medium text-center max-w-xl mx-auto mt-2 sm:mt-1.5 leading-relaxed px-2">
+            <p className="text-xs sm:text-[12.5px] md:text-[13px] text-slate-600 font-medium text-center max-w-xl mx-auto mt-2.5 sm:mt-3 leading-relaxed px-2">
               Search destinations and connect directly with multiple verified travel agents. <br className="hidden sm:inline" />
               Compare options, chat, customize and book — with zero commission on package price.
             </p>

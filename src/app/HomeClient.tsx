@@ -8348,7 +8348,7 @@ export default function HomeClient({
                       setUserActiveSection('listings');
                       setShowComparison(true);
                     }}
-                    className="bg-[#b84814] hover:bg-[#963b10] text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 sm:gap-2"
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border border-amber-400/40 text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-lg shadow-sm shadow-amber-500/25 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 sm:gap-2"
                   >
                     <span>Compare Now</span>
                     <ChevronRight className="h-4 w-4" />
