@@ -330,7 +330,14 @@ Return ONLY a valid JSON object matching this schema:
 NOW GENERATE THE COMPLETE, ULTRA-HIGH-QUALITY JSON FOR: "${topic}"
 `;
 
-    const tryModels = ['gemini-pro-latest', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+    // Priority order: best quality first, fallback to lighter models on 503/quota errors
+    const tryModels = [
+      'gemini-2.5-flash',       // Best free-tier: fast, high output, 1M context
+      'gemini-2.0-flash',       // Stable fallback, very capable
+      'gemini-2.0-flash-lite',  // Lightweight fallback for high-demand periods
+      'gemini-1.5-flash',       // Legacy fallback
+      'gemini-1.5-flash-8b',    // Ultra-lite last resort
+    ];
     let result = null;
     let lastError = null;
 
