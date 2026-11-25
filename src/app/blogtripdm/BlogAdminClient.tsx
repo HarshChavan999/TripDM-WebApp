@@ -230,7 +230,7 @@ export default function BlogAdminClient() {
   const [bulkPaused, setBulkPaused] = useState<boolean>(false);
   const [bulkCurrentIndex, setBulkCurrentIndex] = useState<number>(-1);
   const [bulkCoolingTimer, setBulkCoolingTimer] = useState<number>(0);
-  const [bulkDelaySeconds, setBulkDelaySeconds] = useState<number>(8); // 8s default between calls
+  const [bulkDelaySeconds, setBulkDelaySeconds] = useState<number>(15); // 15s recommended to stay within TPM rate limits
   const [bulkSaveMode, setBulkSaveMode] = useState<'draft' | 'publish'>('draft');
   const [bulkCategoryOverride, setBulkCategoryOverride] = useState<string>('Auto-Detect');
   const [bulkLogs, setBulkLogs] = useState<BulkLog[]>([]);

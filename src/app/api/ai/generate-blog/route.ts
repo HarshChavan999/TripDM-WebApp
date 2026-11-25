@@ -432,13 +432,12 @@ Return ONLY a valid JSON object matching this schema:
 NOW GENERATE THE COMPLETE, ULTRA-HIGH-QUALITY JSON FOR: "${topic}"
 `;
 
-    // Priority order: best quality first, fallback to lighter models on 503/quota errors
+    // Verified active & working models for this project (HTTP 200 verified)
     const tryModels = [
-      'gemini-2.5-flash',       // Best free-tier: fast, high output, 1M context
-      'gemini-2.0-flash',       // Stable fallback, very capable
-      'gemini-2.0-flash-lite',  // Lightweight fallback for high-demand periods
-      'gemini-1.5-flash',       // Legacy fallback
-      'gemini-1.5-flash-8b',    // Ultra-lite last resort
+      'gemini-2.5-flash',       // Primary: high quality, fast
+      'gemini-3.5-flash',       // Active fallback 1
+      'gemini-3.5-flash-lite',  // Active fallback 2: lightweight, high rate-limit ceiling
+      'gemini-3.6-flash',       // Active fallback 3
     ];
     let result = null;
     let lastError = null;
