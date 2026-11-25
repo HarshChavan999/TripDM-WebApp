@@ -1431,6 +1431,10 @@ export default function TravelAgentsView({
                             src={currentImg}
                             alt={`${agency.name} tour package`}
                             className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy"
+                            decoding="async"
+                            width={288}
+                            height={220}
                           />
 
                           {/* Featured Badge */}
@@ -1489,6 +1493,8 @@ export default function TravelAgentsView({
                                 src={agency.logoUrl}
                                 alt={agency.name}
                                 className="max-h-12 max-w-[120px] object-contain mb-2 drop-shadow-2xs"
+                                loading="lazy"
+                                decoding="async"
                               />
                             ) : (
                               <div
@@ -1526,6 +1532,8 @@ export default function TravelAgentsView({
                                   src={agency.logoUrl}
                                   alt={agency.name}
                                   className="max-h-10 max-w-full object-contain"
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                               </div>
                             ) : (
