@@ -1,4 +1,5 @@
-import TravelAgentsPage, { metadata } from '../travel-agents/page';
+import { permanentRedirect } from 'next/navigation';
 
-export { metadata };
-export default TravelAgentsPage;
+export default function AgentsRedirect() {
+  permanentRedirect('/travel-agents');
+}

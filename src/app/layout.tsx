@@ -55,6 +55,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tripdm.com'),
   title: "TripDM: Direct Message. Better Travel.",
   description: "TripDM connects travelers directly with trusted travel agents through instant messaging.",
   manifest: "/manifest.json",
@@ -65,6 +66,10 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "w1V-GlWBQftzDwWc-qjkfD9-W384Q5be7h465tV5cF4",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -77,7 +82,7 @@ export default function RootLayout({
   injectImageStyles();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {GA_MEASUREMENT_ID && (
           <>
@@ -104,6 +109,7 @@ export default function RootLayout({
         <MicrosoftClarity />
       </head>
       <body
+        suppressHydrationWarning
         className={`${poppins.variable} ${inter.variable} ${playfair.variable} ${dmSans.variable} ${jakarta.variable} ${outfit.variable} font-sans antialiased`}
       >
         <AuthProvider>

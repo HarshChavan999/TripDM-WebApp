@@ -141,12 +141,85 @@ async function fetchAllBlogs(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   return blogUrls;
 }
 
+async function fetchActiveDestinationAgentUrls(baseUrl: string): Promise<MetadataRoute.Sitemap> {
+  const destUrls: MetadataRoute.Sitemap = [];
+  const knownActiveDestinations = new Set<string>();
+
+  // Always include key verified destination hubs
+  const coreHubs = [
+    'kashmir',
+    'himachal',
+    'manali',
+    'kerala',
+    'goa',
+    'rajasthan',
+    'uttarakhand',
+    'andaman',
+    'ladakh',
+    'gujarat',
+    'dubai',
+    'bali',
+  ];
+  coreHubs.forEach(d => knownActiveDestinations.add(d));
+
+  // Dynamically extract any additional distinct states and destinations from Firestore listings
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'listings' }],
+        where: {
+          fieldFilter: { field: { fieldPath: 'approved' }, op: 'EQUAL', value: { booleanValue: true } }
+        },
+        limit: 1000
+      }
+    };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+      next: { revalidate: 3600 }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      for (const item of data) {
+        if (!item.document?.fields) continue;
+        const fields = item.document.fields;
+        const stateName = fields.stateName?.stringValue;
+        const countryName = fields.countryName?.stringValue;
+        if (stateName && stateName.trim().length > 2) {
+          const clean = stateName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
+          if (clean && !['india', 'unknown'].includes(clean)) knownActiveDestinations.add(clean);
+        }
+        if (countryName && countryName.trim().length > 2 && countryName.toLowerCase() !== 'india') {
+          const clean = countryName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
+          if (clean) knownActiveDestinations.add(clean);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Note scanning destinations for sitemap:", err);
+  }
+
+  for (const dest of Array.from(knownActiveDestinations)) {
+    destUrls.push({
+      url: `${baseUrl}/travel-agents/${dest}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    });
+  }
+
+  return destUrls;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://tripdm.com';
 
-  const [packageUrls, blogUrls] = await Promise.all([
+  const [packageUrls, blogUrls, destinationAgentUrls] = await Promise.all([
     fetchAllListings(baseUrl),
     fetchAllBlogs(baseUrl),
+    fetchActiveDestinationAgentUrls(baseUrl),
   ]);
 
   const staticUrls: MetadataRoute.Sitemap = [
@@ -155,6 +228,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
+    },
+    {
+      url: `${baseUrl}/destinations`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/travel-agents`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/how-it-works`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/blog`,
@@ -188,5 +279,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  return [...staticUrls, ...packageUrls, ...blogUrls];
+  return [...staticUrls, ...destinationAgentUrls, ...packageUrls, ...blogUrls];
 }

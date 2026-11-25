@@ -109,7 +109,26 @@ async function getInitialData() {
       }
     }
 
-    const agencies = Object.values(agencyMap).filter((u: any) => u.role === 'agency');
+    const agencies = Object.values(agencyMap)
+      .filter((u: any) => u.role === 'agency')
+      .map((u: any) => {
+        const company = (u.companyName || u.agencyName || '').trim();
+        const personal = (u.name || u.displayName || '').trim();
+        const isGeneric = (str: string) =>
+          ['admin', 'travel agency', 'verified agency', 'verified travel agency', 'unknown agency', 'unknown'].includes(str.toLowerCase());
+        const resolvedName = (company && !isGeneric(company))
+          ? company
+          : (personal && !isGeneric(personal))
+          ? personal
+          : company || personal || 'Travel Agency';
+        return {
+          ...u,
+          name: resolvedName,
+          companyName: u.companyName || resolvedName,
+          agencyName: u.agencyName || resolvedName,
+          ownerName: personal || u.ownerName,
+        };
+      });
 
     const listings = data
       .filter((item: any) => item.document)

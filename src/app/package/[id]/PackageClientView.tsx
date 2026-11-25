@@ -237,7 +237,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
             </div>
 
             {/* User Status Card */}
-            <div className="p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border-b border-slate-100">
+            <div className="p-4 bg-slate-50/70 border-b border-slate-100">
               {user ? (
                 <div className="flex items-center gap-3">
                   {userAvatar ? (
@@ -269,9 +269,11 @@ export default function PackageClientView({ listing }: { listing: any }) {
                       setMobileMenuOpen(false);
                       setShowAuthModal(true);
                     }}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold text-xs py-2 h-9 rounded-xl shadow-sm flex items-center justify-center gap-1.5"
+                    className="w-full bg-white hover:bg-slate-50 text-slate-800 hover:text-slate-950 font-bold text-xs py-2 h-9 border border-slate-300 shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    style={{ borderRadius: '6px' }}
                   >
-                    <User className="h-4 w-4" /> Sign In / Register
+                    <User className="h-4 w-4 text-slate-700" />
+                    <span>Sign In / Register</span>
                   </button>
                 </div>
               )}
@@ -285,12 +287,12 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=destinations');
+                  router.push('/destinations');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-orange-500" />
+                  <MapPin className="h-4 w-4 text-slate-700" />
                   <span>Destinations</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -300,12 +302,12 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=agents');
+                  router.push('/travel-agents');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <Building2 className="h-4 w-4 text-blue-500" />
+                  <Building2 className="h-4 w-4 text-slate-700" />
                   <span>Travel Agents</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -315,12 +317,12 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=how-it-works');
+                  router.push('/how-it-works');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <Sparkles className="h-4 w-4 text-slate-700" />
                   <span>How It Works</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -333,7 +335,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="h-4 w-4 text-purple-500" />
+                  <FileText className="h-4 w-4 text-slate-700" />
                   <span>Travel Stories</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -348,7 +350,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <Scale className="h-4 w-4 text-blue-500" />
+                  <Scale className="h-4 w-4 text-slate-700" />
                   <span>Compare Packages</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -374,12 +376,12 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <Heart className="h-4 w-4 text-rose-500" />
+                  <Heart className="h-4 w-4 text-slate-700" />
                   <span>My Wishlist</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {wishlist.length > 0 && (
-                    <span className="bg-rose-100 text-rose-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span className="bg-slate-200 text-slate-800 text-xs font-bold px-2 py-0.5 rounded-full">
                       {wishlist.length}
                     </span>
                   )}
@@ -401,7 +403,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <MessageSquare className="h-4 w-4 text-emerald-500" />
+                    <MessageSquare className="h-4 w-4 text-slate-700" />
                     <span>Messages & Enquiries</span>
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -421,7 +423,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-purple-500" />
+                  <User className="h-4 w-4 text-slate-700" />
                   <span>My Profile & Bookings</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -434,7 +436,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="h-4 w-4 text-amber-500" />
+                    <FileText className="h-4 w-4 text-slate-700" />
                     <span>Travel Guides & Stories</span>
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -443,12 +445,12 @@ export default function PackageClientView({ listing }: { listing: any }) {
                   href="/agencytripdm"
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     userData?.role === 'agency'
-                      ? 'bg-orange-50 text-orange-600 font-bold border border-orange-200'
+                      ? 'bg-slate-100 text-slate-900 font-bold border border-slate-300'
                       : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Briefcase className="h-4 w-4 text-orange-500" />
+                    <Briefcase className="h-4 w-4 text-slate-700" />
                     <span>{userData?.role === 'agency' ? 'Agency Portal Dashboard' : 'For Travel Agencies'}</span>
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -458,7 +460,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                 >
                   <div className="flex items-center gap-3">
-                    <Shield className="h-4 w-4 text-slate-400" />
+                    <Shield className="h-4 w-4 text-slate-700" />
                     <span>Policies & Terms</span>
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -487,51 +489,51 @@ export default function PackageClientView({ listing }: { listing: any }) {
       {/* Top Header */}
       <header className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
         {/* Desktop Header Layout */}
-        <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-8 px-4 sm:px-6 h-16 md:h-[70px] w-full">
+        <div className="hidden md:flex relative max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-8 px-4 sm:px-6 h-16 md:h-[70px] w-full">
           {/* Logo */}
           <div
-            className="flex items-center cursor-pointer shrink-0 py-1"
+            className="flex items-center cursor-pointer shrink-0 py-1 z-10"
             onClick={() => router.push('/')}
           >
             <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-12 sm:h-[54px] md:h-[60px] w-auto object-contain" />
           </div>
 
-          {/* Center Navigation Links */}
-          <nav className="flex items-center gap-5 lg:gap-8 shrink-0">
+          {/* Center Navigation Links - Dead Centered */}
+          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 lg:gap-6 xl:gap-8 shrink-0 z-10">
             <button
               type="button"
-              onClick={() => router.push('/?section=destinations')}
-              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+              onClick={() => router.push('/destinations')}
+              className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               Destinations
             </button>
 
             <button
               type="button"
-              onClick={() => router.push('/?section=agents')}
-              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+              onClick={() => router.push('/travel-agents')}
+              className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               Travel Agents
             </button>
 
             <button
               type="button"
-              onClick={() => router.push('/?section=how-it-works')}
-              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+              onClick={() => router.push('/how-it-works')}
+              className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               How It Works
             </button>
 
             <a
               href="/blog"
-              className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+              className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               Travel Stories
             </a>
           </nav>
 
           {/* Right Action Icons & Profile / Login */}
-          <div className="flex items-center gap-4 lg:gap-5 shrink-0">
+          <div className="flex items-center gap-4 lg:gap-5 shrink-0 z-10 ml-auto">
             {/* Messages (Only for non-agency users / travelers) */}
             {(!userData || userData.role !== 'agency') && (
               <button
@@ -737,10 +739,11 @@ export default function PackageClientView({ listing }: { listing: any }) {
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="px-3 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-bold text-slate-800 hover:text-slate-950 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5"
+                style={{ borderRadius: '6px' }}
                 aria-label="Login"
               >
-                <User className="h-4 w-4 text-orange-500" /> Login
+                <User className="h-4 w-4 text-slate-700" /> Login
               </button>
             )}
           </div>

@@ -174,7 +174,7 @@ export default async function BlogPage() {
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
               <div className="hidden md:flex items-center gap-6">
-                <Link href="/?section=destinations" className="nav-link" style={{ color: '#475569', fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>
+                <Link href="/destinations" className="nav-link" style={{ color: '#475569', fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>
                   Destinations
                 </Link>
                 <Link href="/travel-agents" className="nav-link" style={{ color: '#475569', fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>

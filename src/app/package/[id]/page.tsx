@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import PackageClientView from './PackageClientView';
 import { parseFirestoreDocument } from '@/lib/firestoreParser';
 
@@ -42,16 +43,18 @@ async function getListing(id: string) {
   }
 }
 
-
-
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const listing = await getListing(resolvedParams.id);
 
-  if (!listing) {
+  if (!listing || listing.approved === false) {
     return {
       title: 'Package Not Found | TripDM',
       description: 'The requested travel package could not be found.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -97,7 +100,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title,
       description,
       images: imageUrl ? [imageUrl] : [],
-    }
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 
@@ -105,17 +112,72 @@ export default async function PackagePage({ params }: { params: Promise<{ id: st
   const resolvedParams = await params;
   const listing = await getListing(resolvedParams.id);
 
-  if (!listing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Package Not Found</h1>
-          <p className="text-gray-500 mb-6">The travel package you are looking for does not exist or has been removed.</p>
-          <a href="/" className="px-6 py-2 bg-[#FF9900] text-white rounded-lg font-bold">Return Home</a>
-        </div>
-      </div>
-    );
+  if (!listing || listing.approved === false) {
+    notFound();
   }
 
-  return <PackageClientView listing={listing} />;
+  const destination = listing.countryName || listing.stateName || 'Worldwide';
+  const title = listing.title || 'Travel Package';
+  const price = listing.discountedPrice || listing.price || 0;
+  const canonicalUrl = `https://tripdm.com/package/${resolvedParams.id}`;
+
+  // Structured JSON-LD Data for Google Search Indexing & Rich Snippets
+  const jsonLdTouristTrip = {
+    '@context': 'https://schema.org',
+    '@type': 'TouristTrip',
+    name: title,
+    description: listing.description || `Tour package to ${destination}`,
+    touristType: ['Sightseeing', 'Adventure', 'Leisure'],
+    offers: {
+      '@type': 'Offer',
+      price: price.toString(),
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+      url: canonicalUrl,
+    },
+    provider: {
+      '@type': 'Organization',
+      name: listing.agencyName || 'TripDM Verified Travel Agency',
+      url: 'https://tripdm.com',
+    },
+  };
+
+  const jsonLdBreadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://tripdm.com',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Destinations',
+        item: 'https://tripdm.com/destinations',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: title,
+        item: canonicalUrl,
+      },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdTouristTrip) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }}
+      />
+      <PackageClientView listing={listing} />
+    </>
+  );
 }

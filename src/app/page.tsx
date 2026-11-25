@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 import HomeClient from './HomeClient';
 import { parseFirestoreDocument } from '@/lib/firestoreParser';
 
@@ -73,7 +74,26 @@ async function getInitialData() {
       }
     }
 
-    const agencies = Object.values(agencyMap).filter((u: any) => u.role === 'agency');
+    const agencies = Object.values(agencyMap)
+      .filter((u: any) => u.role === 'agency')
+      .map((u: any) => {
+        const company = (u.companyName || u.agencyName || '').trim();
+        const personal = (u.name || u.displayName || '').trim();
+        const isGeneric = (str: string) =>
+          ['admin', 'travel agency', 'verified agency', 'verified travel agency', 'unknown agency', 'unknown'].includes(str.toLowerCase());
+        const resolvedName = (company && !isGeneric(company))
+          ? company
+          : (personal && !isGeneric(personal))
+          ? personal
+          : company || personal || 'Travel Agency';
+        return {
+          ...u,
+          name: resolvedName,
+          companyName: u.companyName || resolvedName,
+          agencyName: u.agencyName || resolvedName,
+          ownerName: personal || u.ownerName,
+        };
+      });
 
     // runQuery returns an array of { document: { name, fields, ... } }
     const listings = data
@@ -116,22 +136,30 @@ export const metadata: Metadata = {
     description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
   },
 };
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ section?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  if (resolvedSearchParams?.section === 'destinations') {
+    permanentRedirect('/destinations');
+  }
+  if (resolvedSearchParams?.section === 'agents') {
+    permanentRedirect('/travel-agents');
+  }
+  if (resolvedSearchParams?.section === 'how-it-works') {
+    permanentRedirect('/how-it-works');
+  }
 
-import { Suspense } from 'react';
-import PageLoader from '@/components/PageLoader';
-
-export default async function HomePage() {
   // Fetch initial data on the server for pure HTML SSR
   const { listings, agencies } = await getInitialData();
 
-  // Render the client component monolith, passing the server-fetched data as initial state
   return (
-    <Suspense fallback={<PageLoader text="Fetching details..." />}>
-      <HomeClient
-        initialListings={listings}
-        initialAgencies={agencies}
-        routeMode="user"
-      />
-    </Suspense>
+    <HomeClient
+      initialListings={listings}
+      initialAgencies={agencies}
+      routeMode="user"
+    />
   );
 }

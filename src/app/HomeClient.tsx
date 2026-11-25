@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import AgencyListingForm from '@/components/AgencyListingForm';
 import AdminChatViewer from '@/components/AdminChatViewer';
+import AdminTravelersViewer from '@/components/AdminTravelersViewer';
 import BulkUploadForm from '@/components/BulkUploadForm';
 import SearchFilters from '@/components/SearchFilters';
 import ListingCard from '@/components/ListingCard';
@@ -340,16 +341,44 @@ const HERO_IMAGES = [
 ];
 
 
+const normalizeAgencyData = (raw: any) => {
+  if (!raw) return raw;
+  const company = (raw.companyName || raw.agencyName || '').trim();
+  const personal = (raw.name || raw.displayName || '').trim();
+  const isGeneric = (str: string) =>
+    ['admin', 'travel agency', 'verified agency', 'verified travel agency', 'unknown agency', 'unknown'].includes(
+      str.toLowerCase()
+    );
+
+  const resolvedName = (company && !isGeneric(company))
+    ? company
+    : (personal && !isGeneric(personal))
+    ? personal
+    : company || personal || 'Travel Agency';
+
+  return {
+    ...raw,
+    name: resolvedName,
+    companyName: raw.companyName || resolvedName,
+    agencyName: raw.agencyName || resolvedName,
+    ownerName: personal || raw.ownerName,
+  };
+};
+
 export default function HomeClient({
   initialListings = [],
   initialAgencies = [],
   defaultSection,
-  routeMode
+  defaultAgencyId,
+  routeMode,
+  defaultDestination,
 }: {
   initialListings?: any[];
   initialAgencies?: any[];
   defaultSection?: string;
+  defaultAgencyId?: string;
   routeMode?: string;
+  defaultDestination?: string;
 }) {
   const { user, userData, loading, signIn, signInWithGoogle, signOut, register } = useAuth();
   
@@ -405,7 +434,29 @@ export default function HomeClient({
   });
   const [pendingListings, setPendingListings] = useState<any[]>([]);
   const [agencyActiveSection, setAgencyActiveSection] = useState('listings');
-  const [userActiveSection, setUserActiveSection] = useState(defaultSection || (routeMode === 'agency' ? 'agencyDashboard' : routeMode === 'admin' ? 'adminDashboard' : 'home'));
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get('section');
+  const agencyIdParam = searchParams.get('agencyId');
+
+  const [userActiveSection, setUserActiveSection] = useState(() => {
+    if (defaultSection) return defaultSection;
+    if (defaultAgencyId || agencyIdParam) return 'agents';
+    if (sectionParam) return sectionParam;
+    if (typeof window !== 'undefined') {
+      const a = new URLSearchParams(window.location.search).get('agencyId');
+      if (a) return 'agents';
+      const s = new URLSearchParams(window.location.search).get('section');
+      if (s) return s;
+      if (window.location.pathname === '/travel-agents' || window.location.pathname.startsWith('/travel-agents/')) {
+        return 'agents';
+      }
+      const saved = sessionStorage.getItem('tripdm_user_active_section');
+      if (saved && ['home', 'agents', 'destinations', 'how-it-works', 'chat', 'profile', 'wishlist'].includes(saved)) {
+        return saved;
+      }
+    }
+    return routeMode === 'agency' ? 'agencyDashboard' : routeMode === 'admin' ? 'adminDashboard' : 'home';
+  });
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showAgencyWelcomeModal, setShowAgencyWelcomeModal] = useState(false);
@@ -413,8 +464,106 @@ export default function HomeClient({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [agencyMobileMenuOpen, setAgencyMobileMenuOpen] = useState(false);
   const [pricingConfig, setPricingConfig] = useState({ starterPrice: 2000, premiumPrice: 5000, vipPrice: 10000, addonCreditPrice: 1 });
-  const searchParams = useSearchParams();
-  const sectionParam = searchParams.get('section');
+
+  const [selectedAgencyProfile, setSelectedAgencyProfile] = useState<any>(() => {
+    const targetAgencyId = defaultAgencyId || agencyIdParam || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('agencyId') : null);
+    if (targetAgencyId) {
+      let pool = initialAgencies && initialAgencies.length > 0 ? initialAgencies : [];
+      if (pool.length === 0 && typeof window !== 'undefined') {
+        try {
+          const cached = sessionStorage.getItem('tripdm_agency_users_cache');
+          if (cached) pool = JSON.parse(cached);
+        } catch (_) {}
+      }
+      const found = pool?.find((a: any) => a.id === targetAgencyId || a.userId === targetAgencyId || a.email === targetAgencyId);
+      if (found) return normalizeAgencyData(found);
+    }
+    return null;
+  });
+
+  // Deep-link / refresh persistence for Agency Profile
+  useEffect(() => {
+    const urlAgencyId = searchParams.get('agencyId') || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('agencyId') : null);
+    if (!urlAgencyId) return;
+
+    if (selectedAgencyProfile && (selectedAgencyProfile.id === urlAgencyId || selectedAgencyProfile.userId === urlAgencyId || selectedAgencyProfile.email === urlAgencyId)) {
+      return;
+    }
+
+    let pool = allAgencies.length > 0 ? allAgencies : initialAgencies;
+    if ((!pool || pool.length === 0) && typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('tripdm_agency_users_cache');
+        if (cached) pool = JSON.parse(cached);
+      } catch (_) {}
+    }
+    const found = pool?.find((a: any) => a.id === urlAgencyId || a.userId === urlAgencyId || a.email === urlAgencyId);
+    if (found) {
+      setSelectedAgencyProfile(normalizeAgencyData(found));
+      setUserActiveSection('agents');
+    } else {
+      const dbInstance = getDbInstance();
+      if (!dbInstance) return;
+      getDoc(doc(dbInstance, 'users', urlAgencyId)).then((snap) => {
+        if (snap.exists()) {
+          const data = { id: snap.id, ...snap.data() };
+          setSelectedAgencyProfile(normalizeAgencyData(data));
+          setUserActiveSection('agents');
+        }
+      }).catch((err) => {
+        console.warn('Error fetching agency by agencyId param:', err);
+      });
+    }
+  }, [searchParams, allAgencies, initialAgencies]);
+
+  const handleOpenAgencyProfile = (agency: any, originSection?: string) => {
+    if (originSection) setFromSection(originSection);
+    const rawAgency = allAgencies.find((a: any) => a.id === agency.id || a.email === agency.email) || {};
+    const fullAgency = normalizeAgencyData({ ...rawAgency, ...agency });
+    setSelectedAgencyProfile(fullAgency);
+    setUserActiveSection('agents');
+    const agencyIdentifier = fullAgency.id || fullAgency.userId || fullAgency.email;
+    if (typeof window !== 'undefined' && agencyIdentifier) {
+      const url = new URL(window.location.href);
+      if (url.pathname === '/travel-agents' || url.pathname.startsWith('/travel-agents/')) {
+        url.searchParams.set('agencyId', agencyIdentifier);
+      } else {
+        url.searchParams.set('section', 'agents');
+        url.searchParams.set('agencyId', agencyIdentifier);
+      }
+      window.history.pushState({ section: 'agents', agencyId: agencyIdentifier }, '', url.toString());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleCloseAgencyProfile = () => {
+    if (typeof window !== 'undefined') {
+      if (window.history.state && window.history.state.agencyId) {
+        window.history.back();
+        return;
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.delete('agencyId');
+      const targetSec = fromSection || 'agents';
+      if (url.pathname === '/travel-agents' || url.pathname.startsWith('/travel-agents/')) {
+        window.history.replaceState({ section: 'agents' }, '', url.toString());
+      } else if (targetSec !== 'home') {
+        url.searchParams.set('section', targetSec);
+        window.history.replaceState({ section: targetSec }, '', url.toString());
+      } else {
+        url.searchParams.delete('section');
+        window.history.replaceState({ section: 'home' }, '', url.pathname === '/' ? '/' : url.toString());
+      }
+      setSelectedAgencyProfile(null);
+      if (fromSection) {
+        setUserActiveSection(fromSection);
+        setFromSection('home');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setSelectedAgencyProfile(null);
+    }
+  };
 
   const handleSignOut = async () => {
     setUserActiveSection('home');
@@ -475,16 +624,17 @@ export default function HomeClient({
   // Pre-fetch & synchronize registered agency users on mount for instant zero-latency loading
   useEffect(() => {
     if (initialAgencies && initialAgencies.length > 0) {
-      setAllAgencies(initialAgencies);
+      const normalized = initialAgencies.map(normalizeAgencyData);
+      setAllAgencies(normalized);
       try {
-        sessionStorage.setItem('tripdm_agency_users_cache', JSON.stringify(initialAgencies));
+        sessionStorage.setItem('tripdm_agency_users_cache', JSON.stringify(normalized));
       } catch (_) {}
     } else {
       const dbInstance = getDbInstance();
       if (!dbInstance) return;
       const q = query(collection(dbInstance, 'users'), where('role', '==', 'agency'));
       getDocs(q).then((snap) => {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const list = snap.docs.map((d) => normalizeAgencyData({ id: d.id, ...d.data() }));
         if (list.length > 0) {
           setAllAgencies(list);
           try {
@@ -529,31 +679,41 @@ export default function HomeClient({
   }, [user?.uid, loading]);
   
   useEffect(() => {
-    if (loading) return;
-    if (sectionParam) {
-      if (sectionParam === 'compare') {
-        setUserActiveSection('destinations');
-        setShowComparison(true);
-      } else if (sectionParam === 'destinations') {
-        setUserActiveSection('destinations');
-        setDashboardViewMode('categories');
-      } else if (sectionParam === 'home') {
-        setUserActiveSection('home');
-      } else if (sectionParam === 'chat' || sectionParam === 'messages') {
-        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
-        if (!user && !hasCachedAuth) {
-          setAuthModalTab('login');
-          setShowAuthModal(true);
-        } else {
-          setUserActiveSection('chat');
-        }
+    const target = sectionParam || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('section') : null);
+    if (!target) return;
+    if (target === 'compare') {
+      setUserActiveSection('destinations');
+      setShowComparison(true);
+    } else if (target === 'destinations') {
+      setUserActiveSection('destinations');
+      setDashboardViewMode('categories');
+    } else if (target === 'home') {
+      setUserActiveSection('home');
+    } else if (target === 'chat' || target === 'messages') {
+      if (loading) return;
+      const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+      if (!user && !hasCachedAuth) {
+        setAuthModalTab('login');
+        setShowAuthModal(true);
       } else {
-        setUserActiveSection(sectionParam);
+        setUserActiveSection('chat');
       }
+    } else if (target === 'profile') {
+      if (loading) return;
+      const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+      if (!user && !hasCachedAuth) {
+        setAuthModalTab('login');
+        setShowAuthModal(true);
+      } else {
+        setUserActiveSection('profile');
+      }
+    } else {
+      setUserActiveSection(target);
     }
   }, [sectionParam, user, loading]);
 
   const isPopStateRef = useRef(false);
+  const isFirstMountRef = useRef(true);
 
   // Synchronize browser Back & Forward button navigation for sections
   useEffect(() => {
@@ -564,46 +724,104 @@ export default function HomeClient({
 
       isPopStateRef.current = true;
       const currentParam = new URLSearchParams(window.location.search).get('section');
-      if (currentParam) {
-        setUserActiveSection(currentParam);
-        setSelectedAgencyProfile(null);
-        setViewingListing(null);
-        setShowComparison(false);
-      } else if (routeMode === 'agency') {
-        setUserActiveSection('agencyDashboard');
-      } else if (routeMode === 'admin') {
-        setUserActiveSection('adminDashboard');
+      const agencyIdParam = new URLSearchParams(window.location.search).get('agencyId');
+      if (agencyIdParam) {
+        let pool = allAgencies.length > 0 ? allAgencies : initialAgencies;
+        if ((!pool || pool.length === 0) && typeof window !== 'undefined') {
+          try {
+            const cached = sessionStorage.getItem('tripdm_agency_users_cache');
+            if (cached) pool = JSON.parse(cached);
+          } catch (_) {}
+        }
+        const found = pool?.find((a: any) => a.id === agencyIdParam || a.userId === agencyIdParam || a.email === agencyIdParam);
+        if (found) {
+          setSelectedAgencyProfile(normalizeAgencyData(found));
+        } else {
+          const dbInstance = getDbInstance();
+          if (dbInstance) {
+            getDoc(doc(dbInstance, 'users', agencyIdParam)).then((snap) => {
+              if (snap.exists()) {
+                setSelectedAgencyProfile(normalizeAgencyData({ id: snap.id, ...snap.data() }));
+              }
+            }).catch(() => {});
+          }
+        }
+        setUserActiveSection('agents');
       } else {
-        // Normal user route: return cleanly to home
-        setUserActiveSection('home');
         setSelectedAgencyProfile(null);
-        setViewingListing(null);
-        setShowComparison(false);
-        setSearchTerm('');
+        if (currentParam) {
+          setUserActiveSection(currentParam);
+          setViewingListing(null);
+          setShowComparison(false);
+        } else if (routeMode === 'agency') {
+          setUserActiveSection('agencyDashboard');
+        } else if (routeMode === 'admin') {
+          setUserActiveSection('adminDashboard');
+        } else {
+          // Normal user route: return cleanly to home
+          setUserActiveSection('home');
+          setViewingListing(null);
+          setShowComparison(false);
+          setSearchTerm('');
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [routeMode]);
+  }, [routeMode, allAgencies, initialAgencies]);
 
   // Push section changes into browser history so browser Back (and Google Chrome back arrow) goes back within TripDM instead of exiting to Google
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
+    }
     if (isPopStateRef.current) {
       isPopStateRef.current = false;
       return;
     }
-    const currentParam = new URLSearchParams(window.location.search).get('section');
+    try {
+      sessionStorage.setItem('tripdm_user_active_section', userActiveSection);
+    } catch (_) {}
+
+    const currentParams = new URLSearchParams(window.location.search);
+
+    // If user is viewing travel agents section
+    if (userActiveSection === 'agents') {
+      if (selectedAgencyProfile) {
+        const agencyIdentifier = selectedAgencyProfile.id || selectedAgencyProfile.userId || selectedAgencyProfile.email;
+        if (agencyIdentifier && currentParams.get('agencyId') !== agencyIdentifier) {
+          window.history.pushState({ section: 'agents', agencyId: agencyIdentifier }, '', `/travel-agents?agencyId=${agencyIdentifier}`);
+        }
+      } else {
+        if (currentParams.get('agencyId') || window.location.pathname !== '/travel-agents') {
+          window.history.pushState({ section: 'agents' }, '', '/travel-agents');
+        }
+      }
+      return;
+    }
+
+    // For any other section (chat, destinations, home, etc.): clear agencyId and sync section URL
+    const currentParam = currentParams.get('section');
     const targetParam = userActiveSection === 'home' ? null : userActiveSection;
-    if (currentParam !== targetParam) {
+    if (targetParam === 'destinations') {
+      if (window.location.pathname !== '/destinations') {
+        window.history.pushState({ section: 'destinations' }, '', '/destinations');
+      }
+    } else if (targetParam === 'how-it-works') {
+      if (window.location.pathname !== '/how-it-works') {
+        window.history.pushState({ section: 'how-it-works' }, '', '/how-it-works');
+      }
+    } else if (currentParam !== targetParam || currentParams.has('agencyId')) {
       const newUrl = targetParam ? `/?section=${targetParam}` : '/';
       window.history.pushState({ section: userActiveSection }, '', newUrl);
     }
-  }, [userActiveSection]);
+  }, [userActiveSection, selectedAgencyProfile]);
 
   const fetchPricingConfig = async () => {
     try {
-      const response = await fetch('/api/admin/get-config/', { cache: 'no-store' });
+      const response = await fetch('/api/admin/get-config', { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         if (data && typeof data === 'object') {
@@ -696,7 +914,14 @@ export default function HomeClient({
     return '';
   });
   const [currentChatAgencyIsOnline, setCurrentChatAgencyIsOnline] = useState<boolean>(false);
-  const [currentChatAgencyLogo, setCurrentChatAgencyLogo] = useState<string | null>(null);
+  const [currentChatAgencyLogo, setCurrentChatAgencyLogo] = useState<string | null>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        return sessionStorage.getItem('user_current_chat_agency_logo') || null;
+      }
+    } catch {}
+    return null;
+  });
   const [selectedChatPackageId, setSelectedChatPackageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   const [chatSearchQuery, setChatSearchQuery] = useState<string>('');
@@ -858,7 +1083,6 @@ export default function HomeClient({
     }
   };
 
-  const [selectedAgencyProfile, setSelectedAgencyProfile] = useState<any>(null);
   const [tempPhotoFiles, setTempPhotoFiles] = useState<File[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [bookingListing, setBookingListing] = useState<any>(null);
@@ -1045,12 +1269,18 @@ export default function HomeClient({
       if (currentChatAgency) {
         sessionStorage.setItem('user_current_chat_agency', currentChatAgency);
         sessionStorage.setItem('user_current_chat_agency_name', currentChatAgencyName);
+        if (currentChatAgencyLogo) {
+          sessionStorage.setItem('user_current_chat_agency_logo', currentChatAgencyLogo);
+        } else {
+          sessionStorage.removeItem('user_current_chat_agency_logo');
+        }
       } else {
         sessionStorage.removeItem('user_current_chat_agency');
         sessionStorage.removeItem('user_current_chat_agency_name');
+        sessionStorage.removeItem('user_current_chat_agency_logo');
       }
     } catch {}
-  }, [currentChatAgency, currentChatAgencyName]);
+  }, [currentChatAgency, currentChatAgencyName, currentChatAgencyLogo]);
 
   // Auto-mark incoming messages as 'read' (double blue tick) when traveler is actively viewing the conversation
   useEffect(() => {
@@ -1082,30 +1312,106 @@ export default function HomeClient({
     }
   }, [agencyChatMessages, selectedConversation?.userId]);
 
-  // Synchronize current chat agency details when conversations change
+  // Synchronize current chat agency details whenever currentChatAgency changes, or conversations/listings update
   useEffect(() => {
-    if (currentChatAgency && userConversations.length > 0) {
-      const matched = userConversations.find(c => c.agencyId === currentChatAgency);
-      if (matched) {
-        if (matched.agencyName && matched.agencyName !== 'Unknown Agency' && currentChatAgencyName !== matched.agencyName) {
-          setCurrentChatAgencyName(matched.agencyName);
-        }
-        if (matched.logoUrl && matched.logoUrl !== currentChatAgencyLogo) {
-          setCurrentChatAgencyLogo(matched.logoUrl || null);
-        }
-        if (typeof matched.isOnline === 'boolean' && matched.isOnline !== currentChatAgencyIsOnline) {
-          setCurrentChatAgencyIsOnline(matched.isOnline);
-        }
+    if (!currentChatAgency) {
+      setCurrentChatAgencyLogo(null);
+      setCurrentChatAgencyIsOnline(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    // 1. Check userConversations first
+    const matchedConv = userConversations.find(c => c.agencyId === currentChatAgency);
+    if (matchedConv) {
+      if (matchedConv.agencyName && matchedConv.agencyName !== 'Unknown Agency' && currentChatAgencyName !== matchedConv.agencyName) {
+        setCurrentChatAgencyName(matchedConv.agencyName);
+      }
+      if (matchedConv.logoUrl !== undefined && matchedConv.logoUrl !== currentChatAgencyLogo) {
+        setCurrentChatAgencyLogo(matchedConv.logoUrl || null);
+      }
+      if (typeof matchedConv.isOnline === 'boolean' && matchedConv.isOnline !== currentChatAgencyIsOnline) {
+        setCurrentChatAgencyIsOnline(matchedConv.isOnline);
+      }
+      if (matchedConv.logoUrl) {
+        return;
       }
     }
-  }, [userConversations, currentChatAgency]);
+
+    // 2. Check profile cache ref
+    const cachedProfile = userAgencyProfileCacheRef.current.get(currentChatAgency);
+    if (cachedProfile) {
+      if (cachedProfile.name && cachedProfile.name !== 'Unknown Agency' && currentChatAgencyName !== cachedProfile.name) {
+        setCurrentChatAgencyName(cachedProfile.name);
+      }
+      if (cachedProfile.logoUrl !== undefined && cachedProfile.logoUrl !== currentChatAgencyLogo) {
+        setCurrentChatAgencyLogo(cachedProfile.logoUrl || null);
+      }
+      if (typeof cachedProfile.isOnline === 'boolean' && cachedProfile.isOnline !== currentChatAgencyIsOnline) {
+        setCurrentChatAgencyIsOnline(cachedProfile.isOnline);
+      }
+      if (cachedProfile.logoUrl) {
+        return;
+      }
+    }
+
+    // 3. Check listings fallback
+    const matchedListing = listings.find(l => l.agencyId === currentChatAgency || l.userId === currentChatAgency);
+    const listingLogo = matchedListing?.agencyLogo || matchedListing?.logoUrl || matchedListing?.agencyData?.logoUrl || matchedListing?.agencyData?.agencyLogo || matchedListing?.agencyData?.avatarUrl || null;
+    const listingAgencyName = matchedListing?.agencyName || matchedListing?.agencyData?.companyName || matchedListing?.agencyData?.name;
+    if (listingLogo && listingLogo !== currentChatAgencyLogo) {
+      setCurrentChatAgencyLogo(listingLogo);
+    }
+    if (listingAgencyName && listingAgencyName !== 'Unknown Agency' && currentChatAgencyName !== listingAgencyName) {
+      setCurrentChatAgencyName(listingAgencyName);
+    }
+
+    // 4. Fetch directly from Firestore users collection
+    async function fetchAgencyProfile() {
+      try {
+        const dbInstance = getDbInstance();
+        if (!dbInstance) return;
+        const agencyDoc = await getDoc(doc(dbInstance, 'users', currentChatAgency));
+        if (agencyDoc.exists() && isMounted) {
+          const d = agencyDoc.data() as any;
+          const name = d?.companyName || d?.name || d?.agencyName || d?.displayName || listingAgencyName || currentChatAgencyName || 'Travel Agency';
+          const isOnline = Boolean(d?.isOnline || d?.is_online);
+          const logoUrl = d?.logoUrl || d?.agencyLogo || d?.avatarUrl || d?.photoURL || d?.logo || listingLogo || null;
+
+          userAgencyProfileCacheRef.current.set(currentChatAgency, {
+            name,
+            isOnline,
+            logoUrl,
+          });
+
+          if (name && name !== 'Unknown Agency') {
+            setCurrentChatAgencyName(name);
+          }
+          setCurrentChatAgencyIsOnline(isOnline);
+          setCurrentChatAgencyLogo(logoUrl);
+        } else if (isMounted && !listingLogo && !matchedConv?.logoUrl && !cachedProfile?.logoUrl) {
+          // If agency has no logo in database or listings, make sure we show initials and not a stale logo
+          setCurrentChatAgencyLogo(null);
+        }
+      } catch (err) {
+        console.warn('Error fetching agency details for chat header:', err);
+      }
+    }
+
+    fetchAgencyProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userConversations, currentChatAgency, listings]);
 
   // Deep linking for Chat, Book, and Wishlist from SEO routes & Push Notifications
   useEffect(() => {
     if (loading) return;
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      const chatAgencyId = urlParams.get('chat') || urlParams.get('agencyId');
+      const chatParam = urlParams.get('chat');
       const actionParam = urlParams.get('action');
       const sectionParam = urlParams.get('section');
       const tabParam = urlParams.get('tab');
@@ -1139,37 +1445,50 @@ export default function HomeClient({
         }
       }
 
-      // Handle Traveler Deep Linking (e.g. /?action=chat&agencyId=...)
-      if (chatAgencyId || actionParam === 'chat' || sectionParam === 'chat' || sectionParam === 'messages' || tabParam === 'chat') {
-        if (routeMode !== 'agency') {
-          const targetAgencyId = chatAgencyId || '';
-          const targetAgencyName = agencyNameParam || 'Travel Agency';
-          const chatPackageId = urlParams.get('packageId');
-          if (chatPackageId) {
-            setSelectedChatPackageId(chatPackageId);
-          }
-          const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
-          if (!user && !hasCachedAuth) {
-            if (targetAgencyId) {
-              sessionStorage.setItem('pending_chat_target', JSON.stringify({
-                agencyId: targetAgencyId,
-                agencyName: targetAgencyName,
-                packageId: chatPackageId || null
-              }));
-            }
-            setAuthModalTab('login');
-            setShowAuthModal(true);
-          } else {
-            setUserActiveSection('chat');
-            if (targetAgencyId) {
-              setCurrentChatAgency(targetAgencyId);
-              if (agencyNameParam) {
-                setCurrentChatAgencyName(agencyNameParam);
-              }
-            }
-          }
-          shouldCleanUrl = true;
+      // Handle Traveler Deep Linking (e.g. /?action=chat&agencyId=... or /?chat=...)
+      // NOTE: agencyId alone is used for viewing an agency profile (section=agents), do NOT hijack into chat!
+      const isChatIntent = Boolean(
+        chatParam ||
+        actionParam === 'chat' ||
+        (sectionParam === 'chat' || sectionParam === 'messages' || tabParam === 'chat')
+      );
+
+      if (isChatIntent && routeMode !== 'agency') {
+        const targetAgencyId = chatParam || (actionParam === 'chat' ? urlParams.get('agencyId') : '') || '';
+        const targetAgencyName = agencyNameParam || 'Travel Agency';
+        const chatPackageId = urlParams.get('packageId');
+        if (chatPackageId) {
+          setSelectedChatPackageId(chatPackageId);
         }
+        const hasCachedAuth = typeof window !== 'undefined' && localStorage.getItem('tripdm_auth_uid');
+        if (!user && !hasCachedAuth) {
+          if (targetAgencyId) {
+            const fallbackListing = listings.find(l => l.agencyId === targetAgencyId || l.userId === targetAgencyId);
+            const fallbackLogo = fallbackListing?.agencyLogo || fallbackListing?.logoUrl || fallbackListing?.agencyData?.logoUrl || null;
+            sessionStorage.setItem('pending_chat_target', JSON.stringify({
+              agencyId: targetAgencyId,
+              agencyName: targetAgencyName,
+              agencyLogo: fallbackLogo,
+              packageId: chatPackageId || null
+            }));
+          }
+          setAuthModalTab('login');
+          setShowAuthModal(true);
+        } else {
+          setUserActiveSection('chat');
+          if (targetAgencyId) {
+            const fallbackListing = listings.find(l => l.agencyId === targetAgencyId || l.userId === targetAgencyId);
+            const fallbackLogo = fallbackListing?.agencyLogo || fallbackListing?.logoUrl || fallbackListing?.agencyData?.logoUrl || userAgencyProfileCacheRef.current.get(targetAgencyId)?.logoUrl || null;
+            setCurrentChatAgency(targetAgencyId);
+            if (agencyNameParam) {
+              setCurrentChatAgencyName(agencyNameParam);
+            }
+            if (fallbackLogo) {
+              setCurrentChatAgencyLogo(fallbackLogo);
+            }
+          }
+        }
+        shouldCleanUrl = true;
       }
       
       if (bookListingId) {
@@ -1271,10 +1590,13 @@ export default function HomeClient({
         if (packageId) {
           setSelectedChatPackageId(packageId);
         }
+        const fallbackListing = listings.find(l => l.agencyId === agencyId || l.userId === agencyId);
+        const resolvedLogo = fallbackListing?.agencyLogo || fallbackListing?.logoUrl || fallbackListing?.agencyData?.logoUrl || userAgencyProfileCacheRef.current.get(agencyId || '')?.logoUrl || null;
         if (!user) {
           sessionStorage.setItem('pending_chat_target', JSON.stringify({
             agencyId,
             agencyName: agencyName || 'Travel Agency',
+            agencyLogo: resolvedLogo,
             packageId: packageId || null,
             packageTitle: packageTitle || '',
             packageDuration: packageDuration || '',
@@ -1284,8 +1606,11 @@ export default function HomeClient({
           setShowAuthModal(true);
         } else {
           setUserActiveSection('chat');
-          setCurrentChatAgency(agencyId);
-          setCurrentChatAgencyName(agencyName || 'Travel Agency');
+          if (agencyId) {
+            setCurrentChatAgency(agencyId);
+            setCurrentChatAgencyName(agencyName || 'Travel Agency');
+            setCurrentChatAgencyLogo(resolvedLogo);
+          }
           if (packageTitle) {
             const durText = packageDuration ? ` (${packageDuration})` : '';
             const priceText = packagePrice ? ` at ${packagePrice.startsWith('₹') || packagePrice.startsWith('$') ? packagePrice : `₹${packagePrice}`}` : '';
@@ -1396,10 +1721,6 @@ export default function HomeClient({
 
   // Pseudo-page views back handlers
   useModalBackHandler(Boolean(viewingListing), handleCloseListing, 'viewing_listing');
-  useModalBackHandler(Boolean(selectedAgencyProfile), () => {
-    setSelectedAgencyProfile(null);
-    if (fromSection) setUserActiveSection(fromSection);
-  }, 'selected_agency_profile');
   useModalBackHandler(Boolean(selectedStory), () => setSelectedStory(null), 'selected_story');
 
   const isMobileActiveChat = Boolean(
@@ -1900,6 +2221,7 @@ export default function HomeClient({
           if (target.agencyId) {
             setCurrentChatAgency(target.agencyId);
             setCurrentChatAgencyName(target.agencyName || 'Travel Agency');
+            setCurrentChatAgencyLogo(target.agencyLogo || null);
             const matchedConv = userConversations.find(c => c.agencyId === target.agencyId);
             setCurrentChatAgencyIsOnline(matchedConv ? matchedConv.isOnline : false);
             if (target.packageTitle) {
@@ -1925,6 +2247,7 @@ export default function HomeClient({
     const agencyId = listingData?.agencyId || listingData?.userId;
     const agencyName = listingData?.agencyName || 'Travel Agency';
     const packageId = listingData?.id || null;
+    const resolvedAgencyLogo = listingData?.agencyLogo || listingData?.logoUrl || listingData?.agencyData?.logoUrl || listingData?.agencyData?.agencyLogo || listingData?.agencyData?.avatarUrl || listingData?.agencyData?.logo || null;
 
     // Calculate duration
     let duration = '';
@@ -1967,6 +2290,7 @@ export default function HomeClient({
         sessionStorage.setItem('pending_chat_target', JSON.stringify({
           agencyId,
           agencyName,
+          agencyLogo: resolvedAgencyLogo,
           packageId: packageId || null,
           packageTitle: listingData?.title || '',
           packageDuration: duration,
@@ -1993,14 +2317,32 @@ export default function HomeClient({
     // Direct redirect
     setCurrentChatAgency(agencyId);
     setCurrentChatAgencyName(agencyName);
+    setCurrentChatAgencyLogo(resolvedAgencyLogo);
+    try {
+      sessionStorage.setItem('user_current_chat_agency', agencyId);
+      sessionStorage.setItem('user_current_chat_agency_name', agencyName);
+      if (resolvedAgencyLogo) {
+        sessionStorage.setItem('user_current_chat_agency_logo', resolvedAgencyLogo);
+      } else {
+        sessionStorage.removeItem('user_current_chat_agency_logo');
+      }
+      sessionStorage.setItem('tripdm_user_active_section', 'chat');
+    } catch (_) {}
     const matchedConv = userConversations.find(c => c.agencyId === agencyId);
     setCurrentChatAgencyIsOnline(matchedConv ? matchedConv.isOnline : false);
     if (listingData?.title) {
       setChatInput(`Hi, I am interested in "${listingData.title}"${duration ? ` (${duration})` : ''}${formattedPrice ? ` at ${formattedPrice}` : ''}. Could you please share more details?`);
     }
+    setSelectedAgencyProfile(null);
     setUserActiveSection('chat');
     setViewingListing(null);
     setShowComparison(false);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('agencyId');
+      url.searchParams.set('section', 'chat');
+      window.history.pushState({ section: 'chat' }, '', url.toString());
+    }
   };
 
   // Deduct credits/chats and unlock the customer connection for the agency
@@ -2637,19 +2979,22 @@ export default function HomeClient({
         const missingIds = [...otherAgencyIds].filter(id => !userAgencyProfileCacheRef.current.has(id));
         if (missingIds.length > 0) {
           await Promise.all(missingIds.map(async (id) => {
+            const fallbackListing = listings.find(l => l.agencyId === id || l.userId === id);
+            const fallbackLogo = fallbackListing?.agencyLogo || fallbackListing?.logoUrl || fallbackListing?.agencyData?.logoUrl || fallbackListing?.agencyData?.agencyLogo || fallbackListing?.agencyData?.avatarUrl || null;
+            const fallbackName = fallbackListing?.agencyName || fallbackListing?.agencyData?.companyName || fallbackListing?.agencyData?.name;
             try {
               const agencyDoc = await getDoc(doc(getDbInstance()!, 'users', id));
               const d = agencyDoc.exists() ? agencyDoc.data() as any : null;
               userAgencyProfileCacheRef.current.set(id, {
-                name: d?.companyName || d?.name || d?.agencyName || 'Travel Agency',
+                name: d?.companyName || d?.name || d?.agencyName || fallbackName || 'Travel Agency',
                 isOnline: Boolean(d?.isOnline || d?.is_online),
-                logoUrl: d?.logoUrl || d?.agencyLogo || d?.avatarUrl || d?.photoURL || null,
+                logoUrl: d?.logoUrl || d?.agencyLogo || d?.avatarUrl || d?.photoURL || fallbackLogo || null,
               });
             } catch {
               userAgencyProfileCacheRef.current.set(id, {
-                name: 'Travel Agency',
+                name: fallbackName || 'Travel Agency',
                 isOnline: false,
-                logoUrl: null,
+                logoUrl: fallbackLogo || null,
               });
             }
           }));
@@ -2661,10 +3006,15 @@ export default function HomeClient({
           const otherUserId = msg.sender === user.uid ? msg.receiverId : msg.sender;
           if (!otherUserId || typeof otherUserId !== 'string' || !otherUserId.trim()) continue;
 
-          const profile = userAgencyProfileCacheRef.current.get(otherUserId) || {
-            name: 'Travel Agency',
-            isOnline: false,
-            logoUrl: null,
+          const cachedProfile = userAgencyProfileCacheRef.current.get(otherUserId);
+          const fallbackListing = listings.find(l => l.agencyId === otherUserId || l.userId === otherUserId);
+          const fallbackLogo = fallbackListing?.agencyLogo || fallbackListing?.logoUrl || fallbackListing?.agencyData?.logoUrl || fallbackListing?.agencyData?.agencyLogo || fallbackListing?.agencyData?.avatarUrl || null;
+          const fallbackName = fallbackListing?.agencyName || fallbackListing?.agencyData?.companyName || fallbackListing?.agencyData?.name;
+
+          const profile = {
+            name: cachedProfile?.name && cachedProfile.name !== 'Travel Agency' ? cachedProfile.name : (fallbackName || cachedProfile?.name || 'Travel Agency'),
+            isOnline: cachedProfile?.isOnline || false,
+            logoUrl: cachedProfile?.logoUrl || fallbackLogo || null,
           };
 
           if (!conversationsMap.has(otherUserId)) {
@@ -3669,10 +4019,6 @@ export default function HomeClient({
     }
   }
 
-  // For user routes (landing page), only show centered loader if authenticated user is waiting for profile data
-  if (user && !userData && loading) {
-    return <PageLoader text="Fetching details..." />;
-  }
 
   if (user && userData) {
     if (userData.role === 'admin') {
@@ -3716,6 +4062,15 @@ export default function HomeClient({
                     }`}
                 >
                   <Building className="h-4 w-4" /> Agencies
+                </button>
+                <button
+                  onClick={() => setActiveSection('travelers')}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-3 ${activeSection === 'travelers'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                >
+                  <Users className="h-4 w-4 text-emerald-600" /> Travelers
                 </button>
                 <button
                   onClick={() => setActiveSection('listings')}
@@ -3829,6 +4184,7 @@ export default function HomeClient({
                 {activeSection === 'listings' && 'Listing Approvals'}
 
                 {activeSection === 'agencies' && 'All Agencies'}
+                {activeSection === 'travelers' && 'Registered Travelers'}
                 {activeSection === 'manage_packages' && 'Manage Packages'}
                 {activeSection === 'settings' && 'Settings'}
                 {activeSection === 'chats' && 'All Chats'}
@@ -4851,6 +5207,7 @@ export default function HomeClient({
               );
             })()}
 
+              {activeSection === 'travelers' && <AdminTravelersViewer />}
               {activeSection === 'chats' && <AdminChatViewer />}
               {activeSection === 'itinerary_photos' && (
                 <AdminItineraryPhotoManager
@@ -5038,9 +5395,8 @@ export default function HomeClient({
 
   // User Dashboard — render ONLY when routeMode='user' or default public browsing (not on agency/admin portal routes)
   if (routeMode === 'user' || (!routeMode && userData?.role !== 'agency' && userData?.role !== 'admin')) {
-      const showHeaderSearch = isScrolled || (userActiveSection !== 'listings' || !!viewingListing || showBookingForm || showComparison);
       return (
-        <div className={`flex flex-col bg-white ${userActiveSection === 'chat' ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+        <div className={`flex flex-col bg-white w-full max-w-full ${userActiveSection === 'chat' ? 'h-screen overflow-hidden' : userActiveSection === 'agents' ? 'min-h-screen' : 'min-h-screen overflow-x-clip'}`}>
           {/* Mobile Slide-in Navigation Sidebar Drawer */}
           {mobileMenuOpen && (
             <div className="fixed inset-0 z-[150] md:hidden">
@@ -5071,7 +5427,7 @@ export default function HomeClient({
                 </div>
 
                 {/* User Status Card */}
-                <div className="p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border-b border-slate-100">
+                <div className="p-4 bg-slate-50/70 border-b border-slate-100">
                   {user && userData ? (
                     <div className="flex items-center gap-3">
                       {(profilePhotoUrl || userData?.avatarUrl) ? (
@@ -5098,16 +5454,19 @@ export default function HomeClient({
                         <h4 className="text-sm font-bold text-slate-900">Welcome to TripDM</h4>
                         <p className="text-xs text-slate-500">Direct Message with verified travel agents</p>
                       </div>
-                      <Button
+                      <button
+                        type="button"
                         onClick={() => {
                           setMobileMenuOpen(false);
                           setAuthModalTab('login');
                           setShowAuthModal(true);
                         }}
-                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold text-xs py-2 h-9 rounded-xl shadow-sm"
+                        className="w-full bg-white hover:bg-slate-50 text-slate-800 hover:text-slate-950 font-bold text-xs py-2 h-9 border border-slate-300 shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        style={{ borderRadius: '6px' }}
                       >
-                        <User className="h-4 w-4 mr-1.5" /> Sign In / Register
-                      </Button>
+                        <User className="h-4 w-4 text-slate-700" />
+                        <span>Sign In / Register</span>
+                      </button>
                     </div>
                   )}
 
@@ -5119,7 +5478,7 @@ export default function HomeClient({
                         className="w-full flex items-center justify-between p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-semibold transition-all"
                       >
                         <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-gray-600" />
+                          <Building2 className="h-4 w-4 text-slate-700" />
                           <span>Go to Agency Portal</span>
                         </div>
                         <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -5160,7 +5519,7 @@ export default function HomeClient({
                       setMobileMenuOpen(false);
                     }}
                     suggestions={allDestinations}
-                    inputClassName="w-full pl-9 pr-3 py-2 rounded-md text-slate-900 bg-slate-100/90 focus:bg-white focus:ring-2 focus:ring-orange-500/40 focus:outline-none border border-slate-200 text-xs h-9 shadow-none font-medium"
+                    inputClassName="w-full pl-9 pr-3 py-2 rounded-md text-slate-900 bg-slate-100/90 focus:bg-white focus:ring-2 focus:ring-slate-300 focus:outline-none border border-slate-200 text-xs h-9 shadow-none font-medium"
                     inputStyle={{ borderRadius: '6px' }}
                     iconClassName="left-3 top-2.5 text-slate-400"
                   />
@@ -5175,12 +5534,12 @@ export default function HomeClient({
                     onClick={handleNavigateToLanding}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'home' && !showComparison && !viewingListing
-                        ? 'bg-orange-50 text-orange-600 font-bold'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Compass className="h-4 w-4 text-orange-500" />
+                      <Compass className="h-4 w-4 text-slate-700" />
                       <span>Home</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5201,12 +5560,12 @@ export default function HomeClient({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       (userActiveSection === 'destinations' || userActiveSection === 'listings') && !showComparison && !viewingListing
-                        ? 'bg-orange-50 text-orange-600 font-bold'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <MapPin className="h-4 w-4 text-orange-500" />
+                      <MapPin className="h-4 w-4 text-slate-700" />
                       <span>Destinations</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5217,20 +5576,25 @@ export default function HomeClient({
                     onClick={() => {
                       setMobileMenuOpen(false);
                       setUserActiveSection('agents');
+                      setSelectedAgencyProfile(null);
                       setViewingListing(null);
                       setShowBookingForm(false);
                       setShowComparison(false);
                       setSelectedStory(null);
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                      if (typeof window !== 'undefined') {
+                        try { sessionStorage.setItem('tripdm_user_active_section', 'agents'); } catch (_) {}
+                        window.history.pushState({ section: 'agents' }, '', '/?section=agents');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'agents'
-                        ? 'bg-orange-50 text-[#FF5500] font-bold'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Building2 className={`h-4 w-4 ${userActiveSection === 'agents' ? 'text-[#FF5500]' : 'text-blue-500'}`} />
+                      <Building2 className="h-4 w-4 text-slate-700" />
                       <span>Travel Agents</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5249,12 +5613,12 @@ export default function HomeClient({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'how-it-works'
-                        ? 'bg-orange-50 text-[#FF5500] font-bold'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Sparkles className={`h-4 w-4 ${userActiveSection === 'how-it-works' ? 'text-[#FF5500]' : 'text-amber-500'}`} />
+                      <Sparkles className="h-4 w-4 text-slate-700" />
                       <span>How It Works</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5267,7 +5631,7 @@ export default function HomeClient({
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className="h-4 w-4 text-purple-500" />
+                      <FileText className="h-4 w-4 text-slate-700" />
                       <span>Travel Stories</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5288,17 +5652,17 @@ export default function HomeClient({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'wishlist'
-                        ? 'bg-orange-50 text-orange-600 font-bold'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Heart className="h-4 w-4 text-rose-500" />
+                      <Heart className="h-4 w-4 text-slate-700" />
                       <span>My Wishlist</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {wishlist.length > 0 && (
-                        <span className="bg-rose-100 text-rose-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                        <span className="bg-slate-200 text-slate-800 text-xs font-bold px-2 py-0.5 rounded-full">
                           {wishlist.length}
                         </span>
                       )}
@@ -5322,12 +5686,12 @@ export default function HomeClient({
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                         userActiveSection === 'chat'
-                          ? 'bg-orange-50 text-orange-600 font-bold'
+                          ? 'bg-slate-100 text-slate-900 font-bold'
                           : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <MessageSquare className="h-4 w-4 text-emerald-500" />
+                        <MessageSquare className="h-4 w-4 text-slate-700" />
                         <span>Messages & Enquiries</span>
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5348,17 +5712,16 @@ export default function HomeClient({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       userActiveSection === 'profile'
-                        ? 'bg-orange-50 text-orange-600 font-bold'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 text-purple-500" />
+                      <User className="h-4 w-4 text-slate-700" />
                       <span>My Profile & Bookings</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-300" />
                   </button>
-
 
                   <div className="pt-4">
                     <p className="text-[10px] uppercase font-bold text-slate-400 px-3 pb-1 tracking-wider">Explore More</p>
@@ -5367,7 +5730,7 @@ export default function HomeClient({
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="h-4 w-4 text-amber-500" />
+                        <FileText className="h-4 w-4 text-slate-700" />
                         <span>Travel Guides & Stories</span>
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5376,12 +5739,12 @@ export default function HomeClient({
                       href="/agencytripdm"
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         userData?.role === 'agency'
-                          ? 'bg-orange-50 text-orange-600 font-bold border border-orange-200'
+                          ? 'bg-slate-100 text-slate-900 font-bold border border-slate-300'
                           : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Briefcase className="h-4 w-4 text-orange-500" />
+                        <Briefcase className="h-4 w-4 text-slate-700" />
                         <span>{userData?.role === 'agency' ? 'Agency Portal Dashboard' : 'For Travel Agencies'}</span>
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5391,7 +5754,7 @@ export default function HomeClient({
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                     >
                       <div className="flex items-center gap-3">
-                        <Shield className="h-4 w-4 text-slate-400" />
+                        <Shield className="h-4 w-4 text-slate-700" />
                         <span>Policies & Terms</span>
                       </div>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -5418,19 +5781,19 @@ export default function HomeClient({
           )}
 
           {/* Top Navigation Bar */}
-          <header className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
+          <header suppressHydrationWarning className="header-transition text-gray-900 z-[100] sticky top-0 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
             {/* Desktop Header Layout */}
-            <div className="hidden md:flex max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-8 px-4 sm:px-6 h-16 md:h-[70px] w-full">
+            <div className="hidden md:flex relative max-w-7xl mx-auto items-center justify-between gap-4 lg:gap-8 px-4 sm:px-6 h-16 md:h-[70px] w-full">
               {/* Logo */}
               <div
-                className="flex items-center cursor-pointer shrink-0 py-1"
+                className="flex items-center cursor-pointer shrink-0 py-1 z-10"
                 onClick={handleNavigateToLanding}
               >
                 <img src="/tripdm-logo.png" alt="TripDM Logo" className="h-12 sm:h-[54px] md:h-[60px] w-auto object-contain" />
               </div>
 
-              {/* Center Navigation Links */}
-              <nav className="flex items-center gap-5 lg:gap-8 shrink-0">
+              {/* Center Navigation Links - Dead Centered */}
+              <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 lg:gap-6 xl:gap-8 shrink-0 z-10">
                 <button
                   type="button"
                   onClick={() => {
@@ -5447,7 +5810,7 @@ export default function HomeClient({
                     setShowComparison(false);
                     setSelectedStory(null);
                   }}
-                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                  className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
                 >
                   Destinations
                 </button>
@@ -5461,9 +5824,19 @@ export default function HomeClient({
                     setShowBookingForm(false);
                     setShowComparison(false);
                     setSelectedStory(null);
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (typeof window !== 'undefined') {
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete('agencyId');
+                      if (url.pathname === '/travel-agents' || url.pathname.startsWith('/travel-agents/')) {
+                        window.history.pushState({ section: 'agents' }, '', url.toString());
+                      } else {
+                        url.searchParams.set('section', 'agents');
+                        window.history.pushState({ section: 'agents' }, '', url.toString());
+                      }
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
-                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                  className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
                 >
                   Travel Agents
                 </button>
@@ -5478,21 +5851,21 @@ export default function HomeClient({
                     setSelectedStory(null);
                     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                  className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
                 >
                   How It Works
                 </button>
 
                 <a
                   href="/blog"
-                  className="text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
+                  className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
                 >
                   Travel Stories
                 </a>
               </nav>
 
               {/* Right Links */}
-              <div className="flex items-center gap-4 lg:gap-5 shrink-0">
+              <div className="flex items-center gap-4 lg:gap-5 shrink-0 z-10 ml-auto">
                 {/* Messages (Only for non-agency users / travelers) */}
                 {(!userData || userData.role !== 'agency') && (
                   <button
@@ -5515,10 +5888,10 @@ export default function HomeClient({
                 )}
 
                 {/* Profile / Sign In */}
-                {user && userData ? (
+                {user ? (
                   <div className="flex items-center gap-3 ml-1 border-l border-gray-200 pl-4">
                     {/* ONLY VISIBLE TO LOGGED-IN AGENCIES */}
-                    {userData.role === 'agency' && (
+                    {userData?.role === 'agency' && (
                       <Link
                         href="/agencytripdm"
                         className="cursor-pointer text-[14px] font-semibold flex items-center gap-1.5 text-slate-800 hover:text-slate-950 shrink-0"
@@ -5528,7 +5901,7 @@ export default function HomeClient({
                         <span>Agency Portal</span>
                       </Link>
                     )}
-                    {userData.role === 'admin' && (
+                    {userData?.role === 'admin' && (
                       <a
                         href="/admin"
                         className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-slate-800 text-white shadow-sm shrink-0"
@@ -5597,10 +5970,11 @@ export default function HomeClient({
             </div>
 
             {/* Mobile Header Layout */}
-            <div className="flex md:hidden items-center justify-between px-3 sm:px-4 h-16 w-full">
+            <div suppressHydrationWarning className="flex md:hidden items-center justify-between px-3 sm:px-4 h-16 w-full">
               {/* Left: Hamburger Button & Logo */}
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
+                  suppressHydrationWarning
                   onClick={() => setMobileMenuOpen(true)}
                   className="p-2 -ml-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
                   aria-label="Open navigation menu"
@@ -5618,27 +5992,10 @@ export default function HomeClient({
 
               {/* Right: Quick Action Icons */}
               <div className="flex items-center gap-1 sm:gap-1.5">
-                {/* Compare Icon with Badge */}
-                <button
-                  onClick={() => {
-                    setFromSection(userActiveSection);
-                    setUserActiveSection('listings');
-                    setShowComparison(true);
-                  }}
-                  className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors relative"
-                  aria-label="Compare packages"
-                >
-                  <Scale className="h-5 w-5" />
-                  {comparisonList.length > 0 && (
-                    <span className="absolute top-1 right-1 bg-slate-900 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
-                      {comparisonList.length}
-                    </span>
-                  )}
-                </button>
-
                 {/* Messages Icon (Only for non-agency users / travelers) */}
                 {(!userData || userData.role !== 'agency') && (
                   <button
+                    suppressHydrationWarning
                     onClick={() => {
                       if (!user) {
                         setAuthModalTab('login');
@@ -5656,9 +6013,9 @@ export default function HomeClient({
                 )}
 
                 {/* Profile / Login Avatar */}
-                {user && userData ? (
+                {user ? (
                   <div className="flex items-center gap-1.5">
-                    {userData.role === 'agency' && (
+                    {userData?.role === 'agency' && (
                       <Link
                         href="/agencytripdm"
                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 transition-all shrink-0"
@@ -5668,7 +6025,7 @@ export default function HomeClient({
                         <span>Portal</span>
                       </Link>
                     )}
-                    {userData.role === 'admin' && (
+                    {userData?.role === 'admin' && (
                       <a
                         href="/admin"
                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-sm transition-all shrink-0"
@@ -5679,11 +6036,13 @@ export default function HomeClient({
                       </a>
                     )}
                     <button
+                      suppressHydrationWarning
                       onClick={() => {
+                        sessionStorage.setItem('tripdm_user_active_section', 'profile');
                         setFromSection(userActiveSection);
                         setUserActiveSection('profile');
                       }}
-                      className="ml-0.5 p-0.5 rounded-full ring-2 ring-orange-400 focus:outline-none"
+                      className="ml-0.5 p-0.5 rounded-full ring-2 ring-slate-300 focus:outline-none"
                       aria-label="User Profile"
                     >
                       {(profilePhotoUrl || userData?.avatarUrl) ? (
@@ -5702,11 +6061,13 @@ export default function HomeClient({
                   </div>
                 ) : (
                   <button
+                    suppressHydrationWarning
                     onClick={() => {
                       setAuthModalTab('login');
                       setShowAuthModal(true);
                     }}
-                    className="ml-1 px-2.5 py-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                    className="ml-1 px-3 py-1.5 text-xs font-bold text-slate-800 hover:text-slate-950 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-colors"
+                    style={{ borderRadius: '6px' }}
                   >
                     Login
                   </button>
@@ -5714,8 +6075,8 @@ export default function HomeClient({
               </div>
             </div>
 
-            {/* Mobile Search Bar (Only shown on non-home pages so home hero search isn't duplicated) */}
-            {userActiveSection !== 'home' && (
+            {/* Mobile Search Bar (Only shown on non-home pages so home hero search isn't duplicated, hidden on profile and chat) */}
+            {userActiveSection !== 'home' && userActiveSection !== 'profile' && userActiveSection !== 'chat' && userActiveSection !== 'bookings' && (
               <div className="md:hidden px-3.5 sm:px-4 pb-2.5 pt-0.5 border-t border-slate-100/80 bg-white/95">
                 <AutocompleteSearch
                   placeholder="Search for destination"
@@ -5743,11 +6104,15 @@ export default function HomeClient({
           {/* Main Dashboard Scroll Area */}
           <div
             className={`flex-1 w-full min-w-0 ${
-              userActiveSection === 'chat' ? 'overflow-hidden flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] min-h-0' : ''
+              userActiveSection === 'chat'
+                ? 'overflow-hidden flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] min-h-0'
+                : userActiveSection === 'agents' && !selectedAgencyProfile
+                ? 'overflow-x-clip lg:overflow-x-visible'
+                : 'overflow-x-clip'
             }`}
             id="user-dashboard-scroll-container"
           >
-            <main className={`${(Boolean(viewingListing) || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || userActiveSection === 'chat' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations'))) ? 'w-full flex-1 flex flex-col min-h-0 min-w-0 !p-0 !max-w-none' : (userActiveSection === 'profile' || userActiveSection === 'comparison' || userActiveSection === 'wishlist' || userActiveSection === 'listings' || userActiveSection === 'destinations') ? 'w-full max-w-[1600px] mx-auto px-4 sm:px-8' : 'px-6 max-w-7xl mx-auto w-full'} ${Boolean(viewingListing) || userActiveSection === 'chat' || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') ? '' : (userActiveSection === 'wishlist' && wishlist.length === 0) ? 'pb-0' : (userActiveSection === 'comparison' || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations')) || userActiveSection === 'profile') ? 'pb-0' : 'pb-10'}`}>
+            <main className={`${(Boolean(viewingListing) || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || userActiveSection === 'chat' || userActiveSection === 'profile' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations'))) ? 'w-full flex-1 flex flex-col min-h-0 min-w-0 !p-0 !max-w-none' : (userActiveSection === 'comparison' || userActiveSection === 'wishlist' || userActiveSection === 'listings' || userActiveSection === 'destinations') ? 'w-full max-w-[1600px] mx-auto px-4 sm:px-8' : 'px-6 max-w-7xl mx-auto w-full'} ${Boolean(viewingListing) || userActiveSection === 'chat' || userActiveSection === 'home' || userActiveSection === 'agents' || userActiveSection === 'how-it-works' || userActiveSection === 'profile' || ((userActiveSection === 'listings' || userActiveSection === 'destinations') && searchTerm.trim() !== '') ? '' : (userActiveSection === 'wishlist' && wishlist.length === 0) ? 'pb-0' : (userActiveSection === 'comparison' || (showComparison && (userActiveSection === 'listings' || userActiveSection === 'destinations'))) ? 'pb-0' : 'pb-10'}`}>
               {/* Header logic adjusted for non-listings sections (excludes bookings, profile, how-it-works which have their own layouts) */}
               {userActiveSection !== 'home' && userActiveSection !== 'agents' && userActiveSection !== 'how-it-works' && userActiveSection !== 'listings' && userActiveSection !== 'destinations' && userActiveSection !== 'bookings' && userActiveSection !== 'profile' && userActiveSection !== 'comparison' && userActiveSection !== 'wishlist' && userActiveSection !== 'chat' && (
                 <div className="mb-6 mt-6 px-6 max-w-7xl mx-auto flex justify-between items-center border-b pb-4 border-gray-200">
@@ -5793,11 +6158,16 @@ export default function HomeClient({
                   }}
                   onNavigateToAgents={() => {
                     setUserActiveSection('agents');
+                    setSelectedAgencyProfile(null);
                     setViewingListing(null);
                     setShowBookingForm(false);
                     setShowComparison(false);
                     setSelectedStory(null);
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (typeof window !== 'undefined') {
+                      try { sessionStorage.setItem('tripdm_user_active_section', 'agents'); } catch (_) {}
+                      window.history.pushState({ section: 'agents' }, '', '/?section=agents');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
                   onNavigateToHowItWorks={() => {
                     setUserActiveSection('how-it-works');
@@ -5836,11 +6206,16 @@ export default function HomeClient({
                   }}
                   onNavigateToAgents={(targetDestination) => {
                     setUserActiveSection('agents');
+                    setSelectedAgencyProfile(null);
                     setViewingListing(null);
                     setShowBookingForm(false);
                     setShowComparison(false);
                     setSelectedStory(null);
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (typeof window !== 'undefined') {
+                      try { sessionStorage.setItem('tripdm_user_active_section', 'agents'); } catch (_) {}
+                      window.history.pushState({ section: 'agents' }, '', '/?section=agents');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
                   onInitiateChat={(data) => {
                     handleInitiateChat(data);
@@ -5855,14 +6230,7 @@ export default function HomeClient({
                     agency={selectedAgencyProfile}
                     listings={listings}
                     wishlist={wishlist}
-                    onBack={() => {
-                      setSelectedAgencyProfile(null);
-                      if (fromSection) {
-                        setUserActiveSection(fromSection);
-                        setFromSection('home');
-                      }
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onBack={handleCloseAgencyProfile}
                     onViewListing={handleOpenListing}
                     onInitiateChat={(data) => {
                       handleInitiateChat(data);
@@ -5870,8 +6238,8 @@ export default function HomeClient({
                     onBook={startBooking}
                     onWishlistToggle={handleWishlistToggle}
                     onNavigateToDestinations={(targetSearch) => {
+                      handleCloseAgencyProfile();
                       setUserActiveSection('destinations');
-                      setSelectedAgencyProfile(null);
                       setViewingListing(null);
                       setSelectedCategoryFilter(null);
                       if (targetSearch) {
@@ -5888,21 +6256,23 @@ export default function HomeClient({
                       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                   />
+                ) : (agencyIdParam || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('agencyId'))) ? (
+                  <div className="w-full min-h-[60vh] flex flex-col items-center justify-center py-24 bg-white">
+                    <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-sm font-bold text-slate-700">Loading agency profile...</p>
+                  </div>
                 ) : (
                   <TravelAgentsView
                     listings={listings}
                     initialAgencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
                     wishlist={wishlist}
+                    initialDestination={defaultDestination}
                     onWishlistToggle={handleWishlistToggle}
                     onInitiateChat={(data) => {
                       handleInitiateChat(data);
                     }}
                     onViewAgencyProfile={(agency) => {
-                      setFromSection('agents');
-                      const rawAgency = allAgencies.find((a: any) => a.id === agency.id || a.email === agency.email) || {};
-                      setSelectedAgencyProfile({ ...rawAgency, ...agency });
-                      setUserActiveSection('agents');
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                      handleOpenAgencyProfile(agency, 'agents');
                     }}
                     onViewAgencyPackages={(agencyId, agencyName) => {
                       setUserActiveSection('destinations');
@@ -5928,11 +6298,7 @@ export default function HomeClient({
                       handleInitiateChat(data);
                     }}
                     onViewAgencyProfile={(agency) => {
-                      setFromSection(userActiveSection);
-                      const rawAgency = allAgencies.find((a: any) => a.id === agency.id || a.email === agency.email) || {};
-                      setSelectedAgencyProfile({ ...rawAgency, ...agency });
-                      setUserActiveSection('agents');
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                      handleOpenAgencyProfile(agency, userActiveSection);
                     }}
                     onViewListing={handleOpenListing}
                     onNavigateHome={() => {
@@ -5974,8 +6340,8 @@ export default function HomeClient({
                           )}
                         </button>
 
-                        {/* Desktop View: Classic Category Nav Strip (Direct on Page - No Container Box) */}
-                        <div id="category-nav-strip" className="hidden sm:flex w-fit max-w-full mx-auto items-center justify-center gap-2 sm:gap-3 py-2.5 mb-2 sm:mb-3 sticky top-16 z-[90] relative transition-all duration-300 bg-transparent border-none shadow-none">
+                        {/* Desktop View: Classic Category Nav Strip (Cleanly placed at top of page) */}
+                        <div id="category-nav-strip" className="hidden sm:flex w-full items-center justify-center gap-2 sm:gap-3 py-3 mb-6 bg-white border-b border-slate-100">
                           <div className="flex gap-2 sm:gap-2.5 items-center justify-center px-1 overflow-x-auto horizontal-scroll-nav scrollbar-hide max-w-full">
                             {[
                               { id: 'all_categories', label: 'Categories', type: 'categories', filter: null },
@@ -6736,10 +7102,14 @@ export default function HomeClient({
                     setSelectedCategoryFilter(null);
                   }}
                   onChat={(agencyId: string, agencyName: string) => {
+                    const matchedConv = userConversations.find(c => c.agencyId === agencyId);
+                    const matchedListing = listings.find((l: any) => l.agencyId === agencyId || l.userId === agencyId);
+                    const agencyLogo = matchedConv?.logoUrl || matchedListing?.agencyLogo || matchedListing?.logoUrl || userAgencyProfileCacheRef.current.get(agencyId)?.logoUrl || null;
                     if (!user) {
                       sessionStorage.setItem('pending_chat_target', JSON.stringify({
                         agencyId,
                         agencyName,
+                        agencyLogo,
                       }));
                       setAuthModalTab('login');
                       setShowAuthModal(true);
@@ -6748,7 +7118,7 @@ export default function HomeClient({
                     setShowComparison(false);
                     setCurrentChatAgency(agencyId);
                     setCurrentChatAgencyName(agencyName);
-                    const matchedConv = userConversations.find(c => c.agencyId === agencyId);
+                    setCurrentChatAgencyLogo(agencyLogo);
                     setCurrentChatAgencyIsOnline(matchedConv ? matchedConv.isOnline : false);
                     setUserActiveSection('chat');
                   }}
@@ -7643,53 +8013,53 @@ export default function HomeClient({
               )}
 
               {userActiveSection === 'profile' && (
-                <UserProfile
-                  user={user}
-                  userData={userData}
-                  wishlist={wishlist}
-                  listings={listings}
-                  agencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
-                  profileName={profileName}
-                  setProfileName={setProfileName}
-                  profilePhone={profilePhone}
-                  setProfilePhone={setProfilePhone}
-                  profilePhotoUrl={profilePhotoUrl}
-                  handleProfilePhotoChange={handleProfilePhotoChange}
-                  handleDeleteProfilePhoto={handleDeleteProfilePhoto}
-                  isEditingProfile={isEditingProfile}
-                  setIsEditingProfile={setIsEditingProfile}
-                  savingProfile={savingProfile}
-                  handleSaveProfile={handleSaveProfile}
-                  onWishlistToggle={handleWishlistToggle}
-                  onInitiateChat={handleInitiateChat}
-                  onViewAgencyProfile={(agency) => {
-                    setSelectedAgencyProfile(agency);
-                    setUserActiveSection('agents');
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onViewAgencyPackages={(agencyId, agencyName) => {
-                    setUserActiveSection('destinations');
-                    setSearchTerm(agencyName);
-                    setDashboardViewMode('all');
-                    setViewingListing(null);
-                    setShowComparison(false);
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onViewListing={(listing) => {
-                    setViewingListing(listing);
-                    setShowComparison(false);
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onExploreAgents={() => {
-                    setUserActiveSection('agents');
-                    setSelectedAgencyProfile(null);
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onNavigateToChat={() => {
-                    setFromSection('profile');
-                    setUserActiveSection('chat');
-                  }}
-                />
+                <div className="w-full min-w-0 pb-16 sm:pb-0">
+                  <UserProfile
+                    user={user}
+                    userData={userData}
+                    wishlist={wishlist}
+                    listings={listings}
+                    agencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
+                    profileName={profileName}
+                    setProfileName={setProfileName}
+                    profilePhone={profilePhone}
+                    setProfilePhone={setProfilePhone}
+                    profilePhotoUrl={profilePhotoUrl}
+                    handleProfilePhotoChange={handleProfilePhotoChange}
+                    handleDeleteProfilePhoto={handleDeleteProfilePhoto}
+                    isEditingProfile={isEditingProfile}
+                    setIsEditingProfile={setIsEditingProfile}
+                    savingProfile={savingProfile}
+                    handleSaveProfile={handleSaveProfile}
+                    onWishlistToggle={handleWishlistToggle}
+                    onInitiateChat={handleInitiateChat}
+                    onViewAgencyProfile={(agency) => {
+                      handleOpenAgencyProfile(agency, 'profile');
+                    }}
+                    onViewAgencyPackages={(agencyId, agencyName) => {
+                      setUserActiveSection('destinations');
+                      setSearchTerm(agencyName);
+                      setDashboardViewMode('all');
+                      setViewingListing(null);
+                      setShowComparison(false);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onViewListing={(listing) => {
+                      setViewingListing(listing);
+                      setShowComparison(false);
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onExploreAgents={() => {
+                      handleCloseAgencyProfile();
+                      setUserActiveSection('agents');
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onNavigateToChat={() => {
+                      setFromSection('profile');
+                      setUserActiveSection('chat');
+                    }}
+                  />
+                </div>
               )}
 
               {userActiveSection === 'support' && (
@@ -7988,7 +8358,7 @@ export default function HomeClient({
                       setUserActiveSection('listings');
                       setShowComparison(true);
                     }}
-                    className="bg-[#b84814] hover:bg-[#963b10] text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 sm:gap-2"
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border border-amber-400/40 text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-lg shadow-sm shadow-amber-500/25 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 sm:gap-2"
                   >
                     <span>Compare Now</span>
                     <ChevronRight className="h-4 w-4" />
@@ -8334,7 +8704,14 @@ export default function HomeClient({
                   setShowComparison(false);
                   setSelectedStory(null);
                   if (typeof window !== 'undefined') {
-                    window.history.pushState({ section: 'agents' }, '', '/?section=agents');
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('agencyId');
+                    if (url.pathname === '/travel-agents' || url.pathname.startsWith('/travel-agents/')) {
+                      window.history.pushState({ section: 'agents' }, '', url.toString());
+                    } else {
+                      url.searchParams.set('section', 'agents');
+                      window.history.pushState({ section: 'agents' }, '', url.toString());
+                    }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 } else if (tab === 'stories') {
@@ -8357,6 +8734,7 @@ export default function HomeClient({
                     setShowAuthModal(true);
                     return;
                   }
+                  sessionStorage.setItem('tripdm_user_active_section', 'profile');
                   setFromSection(userActiveSection);
                   setUserActiveSection('profile');
                   if (typeof window !== 'undefined') {
@@ -10588,7 +10966,7 @@ export default function HomeClient({
               onClick={() => setAgencyActiveSection('listings')}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
                 agencyActiveSection === 'listings'
-                  ? 'text-orange-600 font-bold'
+                  ? 'text-slate-900 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -10600,7 +10978,7 @@ export default function HomeClient({
               onClick={() => setAgencyActiveSection('chat')}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors relative cursor-pointer ${
                 agencyActiveSection === 'chat'
-                  ? 'text-orange-600 font-bold'
+                  ? 'text-slate-900 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -10619,7 +10997,7 @@ export default function HomeClient({
               onClick={() => setAgencyActiveSection('credits')}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
                 agencyActiveSection === 'credits'
-                  ? 'text-orange-600 font-bold'
+                  ? 'text-slate-900 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -10631,7 +11009,7 @@ export default function HomeClient({
               onClick={() => setAgencyActiveSection('transactions')}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
                 agencyActiveSection === 'transactions'
-                  ? 'text-orange-600 font-bold'
+                  ? 'text-slate-900 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -10643,7 +11021,7 @@ export default function HomeClient({
               onClick={() => setAgencyActiveSection('settings')}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
                 agencyActiveSection === 'settings'
-                  ? 'text-orange-600 font-bold'
+                  ? 'text-slate-900 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
