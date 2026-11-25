@@ -287,7 +287,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=destinations');
+                  router.push('/destinations');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
@@ -302,7 +302,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=agents');
+                  router.push('/travel-agents');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
@@ -317,7 +317,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  router.push('/?section=how-it-works');
+                  router.push('/how-it-works');
                 }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
@@ -502,7 +502,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
           <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 lg:gap-6 xl:gap-8 shrink-0 z-10">
             <button
               type="button"
-              onClick={() => router.push('/?section=destinations')}
+              onClick={() => router.push('/destinations')}
               className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               Destinations
@@ -510,7 +510,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
 
             <button
               type="button"
-              onClick={() => router.push('/?section=agents')}
+              onClick={() => router.push('/travel-agents')}
               className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               Travel Agents
@@ -518,7 +518,7 @@ export default function PackageClientView({ listing }: { listing: any }) {
 
             <button
               type="button"
-              onClick={() => router.push('/?section=how-it-works')}
+              onClick={() => router.push('/how-it-works')}
               className="text-sm lg:text-[15px] font-semibold whitespace-nowrap text-slate-800 hover:text-slate-950 transition-colors cursor-pointer"
             >
               How It Works

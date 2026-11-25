@@ -55,6 +55,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tripdm.com'),
   title: "TripDM: Direct Message. Better Travel.",
   description: "TripDM connects travelers directly with trusted travel agents through instant messaging.",
   manifest: "/manifest.json",
@@ -65,6 +66,10 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "w1V-GlWBQftzDwWc-qjkfD9-W384Q5be7h465tV5cF4",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

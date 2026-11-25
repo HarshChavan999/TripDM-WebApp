@@ -91,6 +91,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: 'Story Not Found | TripDM',
       description: 'The requested destination story could not be found.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -99,14 +103,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     story.description ||
     story.narrative?.slice(0, 160) ||
     `Explore verified itineraries and immersive travel stories across ${story.stateName} on TripDM.`;
+  const canonicalUrl = `https://tripdm.com/stories/${resolvedParams.id}`;
 
   return {
     title: `${title} | TripDM`,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: `${title} | TripDM`,
       description,
+      url: canonicalUrl,
+      siteName: 'TripDM',
       images: story.coverImage ? [{ url: story.coverImage, alt: story.stateName }] : [],
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

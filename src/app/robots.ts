@@ -4,11 +4,36 @@ export const dynamic = 'force-static';
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: ['/admin/', '/blogtripdm/', '/agencytripdm/', '/api/', '/_next/'], // Disallowing admin, internal portals, api and static build assets
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: [
+          '/admin/',
+          '/blogtripdm/',
+          '/agencytripdm/',
+          '/api/',
+          '/*?*section=chat',
+          '/*?*section=profile',
+          '/*?*section=wishlist',
+          '/*?*action=chat',
+        ],
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: '/',
+        disallow: [
+          '/admin/',
+          '/blogtripdm/',
+          '/agencytripdm/',
+          '/api/',
+          '/*?*section=chat',
+          '/*?*section=profile',
+          '/*?*section=wishlist',
+          '/*?*action=chat',
+        ],
+      },
+    ],
     sitemap: 'https://tripdm.com/sitemap.xml',
   };
 }

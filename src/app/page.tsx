@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 import HomeClient from './HomeClient';
 import { parseFirestoreDocument } from '@/lib/firestoreParser';
 
@@ -135,7 +136,22 @@ export const metadata: Metadata = {
     description: "TripDM connects travelers directly with trusted travel agents through instant messaging. Browse top travel packages.",
   },
 };
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ section?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  if (resolvedSearchParams?.section === 'destinations') {
+    permanentRedirect('/destinations');
+  }
+  if (resolvedSearchParams?.section === 'agents') {
+    permanentRedirect('/travel-agents');
+  }
+  if (resolvedSearchParams?.section === 'how-it-works') {
+    permanentRedirect('/how-it-works');
+  }
+
   // Fetch initial data on the server for pure HTML SSR
   const { listings, agencies } = await getInitialData();
 

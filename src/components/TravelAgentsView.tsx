@@ -93,6 +93,7 @@ interface TravelAgentsViewProps {
   onViewAgencyPackages?: (agencyId: string, agencyName: string) => void;
   onViewAgencyProfile?: (agency: AgencyData) => void;
   onViewListing?: (listing: PackageListing) => void;
+  initialDestination?: string;
 }
 
 // Canonical State & Regional Hub Coordinates for India (Precise geo-coordinates & zero overlap)
@@ -185,12 +186,15 @@ const CATEGORY_TABS = [
 
 const POPULAR_DESTINATIONS_FILTER = [
   'Kashmir',
+  'Himachal',
   'Manali',
+  'Uttarakhand',
   'Rajasthan',
   'Kerala',
   'Andaman',
   'Goa',
   'Ladakh',
+  'Gujarat',
   'Shimla',
   'Dubai',
   'Bali',
@@ -217,11 +221,14 @@ const RATING_FILTER_OPTIONS = [
 const DESTINATION_KEYWORDS: Record<string, string[]> = {
   kashmir: ['kashmir', 'srinagar', 'gulmarg', 'pahalgam', 'sonamarg', 'dal lake', 'jammu & kashmir', 'jammu and kashmir', 'j&k', 'yusmarg', 'doodhpathri', 'gurez'],
   manali: ['manali', 'kullu', 'solang', 'rohtang', 'kasol', 'himachal', 'shimla', 'dharamshala', 'dalhousie', 'spiti', 'jibhi', 'tirthan'],
+  himachal: ['himachal', 'manali', 'shimla', 'dharamshala', 'dalhousie', 'spiti', 'kasol', 'kullu', 'jibhi', 'tirthan'],
   rajasthan: ['rajasthan', 'jaipur', 'udaipur', 'jodhpur', 'jaisalmer', 'pushkar', 'bikaner', 'mount abu', 'ranthambore', 'chittorgarh', 'ajmer', 'kumbhalgarh'],
   kerala: ['kerala', 'kochi', 'cochin', 'munnar', 'alleppey', 'alappuzha', 'thekkady', 'wayanad', 'kovalam', 'varkala', 'kumarakom', 'poovar', 'athirappilly'],
   andaman: ['andaman', 'port blair', 'havelock', 'neil island', 'swaraj dweep', 'shaheed dweep', 'ross island', 'baratang', 'radhanagar'],
   goa: ['goa', 'north goa', 'south goa', 'panaji', 'calangute', 'baga', 'candolim', 'anjuna', 'vagator', 'colva', 'palolem', 'dudhsagar'],
   ladakh: ['ladakh', 'leh', 'nubra', 'pangong', 'khardung', 'zanskar', 'kargil', 'tso moriri', 'changla', 'magnetic hill', 'hemis'],
+  uttarakhand: ['uttarakhand', 'rishikesh', 'haridwar', 'mussoorie', 'nainital', 'dehradun', 'kedarnath', 'badrinath', 'auli', 'jim corbett'],
+  gujarat: ['gujarat', 'ahmedabad', 'rann of kutch', 'kutch', 'gir', 'somnath', 'dwarka', 'statue of unity', 'surat', 'vadodara'],
   shimla: ['shimla', 'kufri', 'chail', 'mashobra', 'narkanda', 'himachal'],
   dubai: ['dubai', 'abu dhabi', 'sharjah', 'uae', 'emirates', 'burj'],
   bali: ['bali', 'ubud', 'kuta', 'seminyak', 'nusa penida', 'canggu', 'denpasar', 'indonesia'],
@@ -342,6 +349,7 @@ export default function TravelAgentsView({
   onViewAgencyPackages,
   onViewAgencyProfile,
   onViewListing,
+  initialDestination,
 }: TravelAgentsViewProps) {
   // Initialize state with SSR initialAgencies or memory/session cache to eliminate 7->18 jumping
   const [firestoreAgencies, setFirestoreAgencies] = useState<any[]>(() => {
@@ -370,7 +378,15 @@ export default function TravelAgentsView({
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [destSearchQuery, setDestSearchQuery] = useState('');
-  const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(() => {
+    return initialDestination ? [initialDestination] : [];
+  });
+
+  useEffect(() => {
+    if (initialDestination) {
+      setSelectedDestinations([initialDestination]);
+    }
+  }, [initialDestination]);
   const [selectedTripTypes, setSelectedTripTypes] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
@@ -1223,18 +1239,22 @@ export default function TravelAgentsView({
             <div className="max-w-xl pl-0 sm:pl-4 lg:pl-6 z-10">
               {/* Main Headline */}
               <h1 className="text-3xl sm:text-4xl md:text-[40px] lg:text-[44px] font-black text-slate-900 tracking-tight leading-none">
-                Travel Agents
+                {initialDestination ? `Travel Agents in ${initialDestination}` : 'Travel Agents'}
               </h1>
 
               {/* Tagline: Orange Verified Travel Agents + Slate Directly on TripDM */}
               <h2 className="text-base sm:text-lg md:text-xl font-bold mt-2 leading-tight">
-                <span className="text-[#FF5500]">Verified Travel Agents.</span>{' '}
+                <span className="text-[#FF5500]">
+                  {initialDestination ? `Verified ${initialDestination} Experts.` : 'Verified Travel Agents.'}
+                </span>{' '}
                 <span className="text-slate-900">Directly on TripDM.</span>
               </h2>
 
               {/* Description Subtitle */}
               <p className="text-xs sm:text-sm text-slate-600 font-normal leading-relaxed mt-2 max-w-lg">
-                Discover and connect with verified travel agencies across India and worldwide. Chat, compare and customize your trip — with no commission on package price.
+                {initialDestination
+                  ? `Discover and connect directly with verified travel agencies specializing in ${initialDestination}. Compare itineraries, chat on DM with no middleman, and book with zero commission.`
+                  : 'Discover and connect with verified travel agencies across India and worldwide. Chat, compare and customize your trip — with no commission on package price.'}
               </p>
             </div>
 

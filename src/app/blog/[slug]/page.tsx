@@ -128,20 +128,32 @@ async function getBlogBySlug(slug: string): Promise<Blog | null> {
       }
     }
 
-    // 3. Fallback: Search by title matching decoded slug
-    const allBlogsUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs?pageSize=100`;
+    // 3. Fallback: Search across published blogs by slug prefix, title or partial match
+    const allBlogsUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogs?pageSize=1000`;
     const allRes = await fetch(allBlogsUrl, { cache: 'no-store' });
     if (allRes.ok) {
       const allData = await allRes.json();
       if (allData.documents && Array.isArray(allData.documents)) {
         for (const doc of allData.documents) {
           const parsed = parseBlogDoc(doc);
-          if (
-            slugCandidates.includes(parsed.slug) ||
-            slugCandidates.includes(parsed.id) ||
-            parsed.title.toLowerCase().includes(decoded.toLowerCase()) ||
-            decoded.toLowerCase().includes(parsed.title.toLowerCase())
-          ) {
+          if (!parsed.published) continue;
+
+          const titleSlug = slugify(parsed.title);
+          const isMatch = slugCandidates.some(cand => {
+            if (!cand || cand.length < 3) return false;
+            return (
+              parsed.slug === cand ||
+              parsed.id === cand ||
+              parsed.slug.startsWith(cand) ||
+              cand.startsWith(parsed.slug) ||
+              titleSlug.includes(cand) ||
+              cand.includes(titleSlug) ||
+              parsed.title.toLowerCase().includes(decoded.toLowerCase()) ||
+              decoded.toLowerCase().includes(parsed.title.toLowerCase())
+            );
+          });
+
+          if (isMatch) {
             return parsed;
           }
         }
@@ -303,7 +315,7 @@ function getFormattedViews(blog: Blog): string {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const blog = await getBlogBySlug(slug);
-  if (!blog) return { title: 'Blog Not Found | TripDM', robots: { index: false, follow: false } };
+  if (!blog || !blog.published) return { title: 'Blog Not Found | TripDM', robots: { index: false, follow: false } };
   const title = blog.metaTitle || blog.title;
   const description = blog.metaDescription || blog.excerpt;
   const image = getBlogCoverImage(blog);
@@ -316,6 +328,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: { title, description, type: 'article', url: `https://tripdm.com/blog/${canonicalSlug}`, images: image ? [{ url: image, width: 1200, height: 630, alt: title }] : [], publishedTime: blog.publishedAt, modifiedTime: blog.updatedAt, authors: [blog.author], tags: blog.tags, section: blog.category },
     twitter: { card: 'summary_large_image', title, description, images: image ? [image] : [] },
     alternates: { canonical: `https://tripdm.com/blog/${canonicalSlug}` },
+    robots: { index: true, follow: true },
   };
 }
 

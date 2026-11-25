@@ -370,13 +370,15 @@ export default function HomeClient({
   initialAgencies = [],
   defaultSection,
   defaultAgencyId,
-  routeMode
+  routeMode,
+  defaultDestination,
 }: {
   initialListings?: any[];
   initialAgencies?: any[];
   defaultSection?: string;
   defaultAgencyId?: string;
   routeMode?: string;
+  defaultDestination?: string;
 }) {
   const { user, userData, loading, signIn, signInWithGoogle, signOut, register } = useAuth();
   
@@ -790,12 +792,11 @@ export default function HomeClient({
       if (selectedAgencyProfile) {
         const agencyIdentifier = selectedAgencyProfile.id || selectedAgencyProfile.userId || selectedAgencyProfile.email;
         if (agencyIdentifier && currentParams.get('agencyId') !== agencyIdentifier) {
-          window.history.pushState({ section: 'agents', agencyId: agencyIdentifier }, '', `/?section=agents&agencyId=${agencyIdentifier}`);
+          window.history.pushState({ section: 'agents', agencyId: agencyIdentifier }, '', `/travel-agents?agencyId=${agencyIdentifier}`);
         }
       } else {
-        if (currentParams.get('agencyId') || currentParams.get('section') !== 'agents') {
-          const targetUrl = window.location.pathname === '/travel-agents' ? '/travel-agents' : '/?section=agents';
-          window.history.pushState({ section: 'agents' }, '', targetUrl);
+        if (currentParams.get('agencyId') || window.location.pathname !== '/travel-agents') {
+          window.history.pushState({ section: 'agents' }, '', '/travel-agents');
         }
       }
       return;
@@ -804,7 +805,15 @@ export default function HomeClient({
     // For any other section (chat, destinations, home, etc.): clear agencyId and sync section URL
     const currentParam = currentParams.get('section');
     const targetParam = userActiveSection === 'home' ? null : userActiveSection;
-    if (currentParam !== targetParam || currentParams.has('agencyId')) {
+    if (targetParam === 'destinations') {
+      if (window.location.pathname !== '/destinations') {
+        window.history.pushState({ section: 'destinations' }, '', '/destinations');
+      }
+    } else if (targetParam === 'how-it-works') {
+      if (window.location.pathname !== '/how-it-works') {
+        window.history.pushState({ section: 'how-it-works' }, '', '/how-it-works');
+      }
+    } else if (currentParam !== targetParam || currentParams.has('agencyId')) {
       const newUrl = targetParam ? `/?section=${targetParam}` : '/';
       window.history.pushState({ section: userActiveSection }, '', newUrl);
     }
@@ -812,7 +821,7 @@ export default function HomeClient({
 
   const fetchPricingConfig = async () => {
     try {
-      const response = await fetch('/api/admin/get-config/', { cache: 'no-store' });
+      const response = await fetch('/api/admin/get-config', { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         if (data && typeof data === 'object') {
@@ -6257,6 +6266,7 @@ export default function HomeClient({
                     listings={listings}
                     initialAgencies={allAgencies.length > 0 ? allAgencies : initialAgencies}
                     wishlist={wishlist}
+                    initialDestination={defaultDestination}
                     onWishlistToggle={handleWishlistToggle}
                     onInitiateChat={(data) => {
                       handleInitiateChat(data);

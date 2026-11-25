@@ -1,5 +1,14 @@
+import { Metadata } from 'next';
 import HomeClient from '../HomeClient';
 import { parseFirestoreDocument } from '@/lib/firestoreParser';
+
+export const metadata: Metadata = {
+  title: 'Admin Portal | TripDM',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'travel-agent-management-29c27';
 
@@ -52,6 +61,7 @@ async function getApprovedListings() {
 
     const data = await listingsRes.json();
     
+    // Build agency map
     const agencyMap: Record<string, any> = {};
     if (usersRes && usersRes.ok) {
       try {
@@ -92,14 +102,13 @@ async function getApprovedListings() {
   }
 }
 
-import { Suspense } from 'react';
-import PageLoader from '@/components/PageLoader';
-
 export default async function AdminPage() {
   const initialListings = await getApprovedListings();
+
   return (
-    <Suspense fallback={<PageLoader text="Fetching details..." />}>
-      <HomeClient initialListings={initialListings} routeMode="admin" />
-    </Suspense>
+    <HomeClient
+      initialListings={initialListings}
+      routeMode="admin"
+    />
   );
 }
