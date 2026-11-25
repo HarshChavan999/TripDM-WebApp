@@ -221,11 +221,18 @@ export async function generateMetadata({
     title,
     description,
     keywords: [
+      `travel agent of ${displayName}`,
       `travel agents in ${displayName}`,
       `best travel agent for ${displayName}`,
+      `best travel agent for ${displayName} trip`,
+      `local travel agents in ${displayName}`,
       `${displayName} travel agency`,
       `verified travel agents in ${displayName}`,
+      `chat with ${displayName} travel agent`,
+      `${displayName} tour operators`,
       `${displayName} tour planners`,
+      `customized ${displayName} tour package travel agents`,
+      `${displayName} travel agency zero commission`,
       `${displayName} tour packages`,
       'TripDM',
     ],
@@ -357,6 +364,14 @@ export default async function DestinationTravelAgentsPage({
         acceptedAnswer: {
           '@type': 'Answer',
           text: `No. TripDM charges zero commission on travel package prices. You communicate and settle payments directly with the verified travel agency.`,
+        },
+      },
+      {
+        '@type': 'Question',
+        name: `How can I chat directly with verified ${displayName} travel agents?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `On TripDM, click 'Chat with Agency' on any verified ${displayName} agency profile to open an instant DM conversation. You can ask questions, discuss custom dates, compare prices, and finalize your trip directly.`,
         },
       },
     ],
