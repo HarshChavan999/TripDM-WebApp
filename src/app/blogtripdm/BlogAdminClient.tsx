@@ -810,8 +810,12 @@ Auli Snowfall & Skiing Guide | auli ropeway, best snowfall month, cost | https:/
             await new Promise(r => setTimeout(r, 12000));
           }
 
+          const controller = new AbortController();
+          const fetchTimeout = setTimeout(() => controller.abort(), 120000);
+
           const res = await fetch('/api/ai/generate-blog', {
             method: 'POST',
+            signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               topic: item.title,
@@ -820,6 +824,7 @@ Auli Snowfall & Skiing Guide | auli ropeway, best snowfall month, cost | https:/
               category: item.category
             }),
           });
+          clearTimeout(fetchTimeout);
 
           const data = await res.json();
           if (data.success && data.data) {
