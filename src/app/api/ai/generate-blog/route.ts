@@ -171,17 +171,22 @@ Content Snippet: ${bodyText}`;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { topic, keywords, competitorUrls, category } = body;
+    const { topic, keywords, competitorUrls, category, apiKey: customApiKey } = body;
 
     if (!topic) {
       return NextResponse.json({ success: false, error: 'Topic is required' }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    // Build API Key pool (custom keys from UI first, then environment secrets)
+    const apiKeyPool = [
+      ...(customApiKey ? String(customApiKey).split(/[\n,]+/).map((k: string) => k.trim()) : []),
+      ...(process.env.GEMINI_API_KEY ? String(process.env.GEMINI_API_KEY).split(/[\n,]+/).map((k: string) => k.trim()) : []),
+    ].filter(Boolean);
+
+    if (apiKeyPool.length === 0) {
       return NextResponse.json({ success: false, error: 'Gemini API Key is not configured' }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const today = new Date().toISOString().split('T')[0];
 
     // Process competitor URLs if provided
@@ -432,40 +437,53 @@ Return ONLY a valid JSON object matching this schema:
 NOW GENERATE THE COMPLETE, ULTRA-HIGH-QUALITY JSON FOR: "${topic}"
 `;
 
-    // Verified active & working models for this project (HTTP 200 verified)
+    // Flash-Lite models first: ~1,500 Requests Per Day on Free Tier (vs strict 20 RPD on standard Flash)
     const tryModels = [
-      'gemini-2.5-flash',       // Primary: high quality, fast
-      'gemini-3.5-flash',       // Active fallback 1
-      'gemini-3.5-flash-lite',  // Active fallback 2: lightweight, high rate-limit ceiling
-      'gemini-3.6-flash',       // Active fallback 3
+      'gemini-3.5-flash-lite',  // High rate-limit ceiling (~1,500 RPD), fast, modern
+      'gemini-3.1-flash-lite',  // High rate-limit ceiling fallback (~1,500 RPD)
+      'gemini-2.5-flash',       // Standard Flash fallback (20 RPD cap)
+      'gemini-3.5-flash',       // Standard Flash fallback (20 RPD cap)
+      'gemini-3.6-flash',       // Standard Flash fallback (20 RPD cap)
     ];
     let result = null;
-    let lastError = null;
+    let lastError: any = null;
 
-    for (const modelName of tryModels) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.6,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 16384,
-            responseMimeType: 'application/json',
-          },
-        });
-        console.log(`Trying model: ${modelName}...`);
-        result = await model.generateContent(prompt);
-        console.log(`Successfully generated content using: ${modelName}`);
-        break; // Success
-      } catch (err: any) {
-        console.warn(`Model ${modelName} failed:`, err.message);
-        lastError = err;
+    outerKeyLoop: for (let keyIdx = 0; keyIdx < apiKeyPool.length; keyIdx++) {
+      const activeKey = apiKeyPool[keyIdx];
+      const genAI = new GoogleGenerativeAI(activeKey);
+
+      for (const modelName of tryModels) {
+        try {
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              temperature: 0.6,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 16384,
+              responseMimeType: 'application/json',
+            },
+          });
+          console.log(`Trying model: ${modelName} (API Key #${keyIdx + 1}/${apiKeyPool.length})...`);
+          result = await model.generateContent(prompt);
+          console.log(`Successfully generated content using: ${modelName} (Key #${keyIdx + 1})`);
+          break outerKeyLoop;
+        } catch (err: any) {
+          const errMsg = err?.message || '';
+          console.warn(`Model ${modelName} with Key #${keyIdx + 1} failed:`, errMsg);
+          lastError = err;
+
+          // If quota reached (429) on this key and we have other keys in the pool, rotate to next key
+          if ((errMsg.includes('429') || errMsg.includes('Quota') || errMsg.includes('quota')) && keyIdx < apiKeyPool.length - 1) {
+            console.log(`Key #${keyIdx + 1} hit quota limit. Rotating to key #${keyIdx + 2}...`);
+            break; // Break inner model loop to try next key in outerKeyLoop
+          }
+        }
       }
     }
 
     if (!result) {
-      throw lastError || new Error('All AI models failed');
+      throw lastError || new Error('All AI models and API keys failed');
     }
 
     const response = await result.response;

@@ -238,6 +238,21 @@ export default function BlogAdminClient() {
   const [previewTab, setPreviewTab] = useState<'render' | 'markdown' | 'seo' | 'faq'>('render');
   const [bulkFilterStatus, setBulkFilterStatus] = useState<'all' | 'pending' | 'success' | 'failed'>('all');
   const [bulkSearchQuery, setBulkSearchQuery] = useState<string>('');
+  const [customApiKey, setCustomApiKey] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedKey = localStorage.getItem('tripdm_gemini_api_key');
+      if (savedKey) setCustomApiKey(savedKey);
+    }
+  }, []);
+
+  const handleApiKeyChange = (val: string) => {
+    setCustomApiKey(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tripdm_gemini_api_key', val);
+    }
+  };
 
   const bulkRunningRef = useRef<boolean>(false);
   const bulkPausedRef = useRef<boolean>(false);
@@ -547,7 +562,12 @@ export default function BlogAdminClient() {
       const res = await fetch('/api/ai/generate-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: aiTopic, keywords: aiKeywords, competitorUrls: aiCompetitors }),
+        body: JSON.stringify({
+          topic: aiTopic,
+          keywords: aiKeywords,
+          competitorUrls: aiCompetitors,
+          apiKey: customApiKey || undefined,
+        }),
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -821,7 +841,8 @@ Auli Snowfall & Skiing Guide | auli ropeway, best snowfall month, cost | https:/
               topic: item.title,
               keywords: item.keywords,
               competitorUrls: item.competitorUrls,
-              category: item.category
+              category: item.category,
+              apiKey: customApiKey || undefined,
             }),
           });
           clearTimeout(fetchTimeout);
@@ -963,7 +984,11 @@ Auli Snowfall & Skiing Guide | auli ropeway, best snowfall month, cost | https:/
       const res = await fetch('/api/ai/generate-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: item.title, category: item.category }),
+        body: JSON.stringify({
+          topic: item.title,
+          category: item.category,
+          apiKey: customApiKey || undefined,
+        }),
       });
       const data = await res.json();
       const timeTaken = Math.round((Date.now() - startTime) / 1000);
@@ -1815,6 +1840,28 @@ Format 4 (JSON Array):
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                {/* Optional Custom Gemini API Keys */}
+                <div style={{ marginTop: 14, padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
+                      🔑 Gemini API Key(s) (Optional Override / Multi-Key Rotation)
+                    </label>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>
+                      Default: Production Secret Key
+                    </span>
+                  </div>
+                  <input
+                    type="password"
+                    value={customApiKey}
+                    onChange={e => handleApiKeyChange(e.target.value)}
+                    placeholder="Paste one or multiple comma-separated keys (e.g. AIzaSyA..., AIzaSyB...) to auto-rotate on quotas"
+                    style={{ ...s.fInput, width: '100%', fontSize: 12, fontFamily: 'monospace' }}
+                  />
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 5 }}>
+                    💡 <strong>High-Volume Architecture:</strong> Generating automatically prioritizes <strong>Flash-Lite models (~1,500 free requests/day)</strong>. Providing multiple comma-separated free keys automatically rotates to the next key if one hits limits!
                   </div>
                 </div>
 
